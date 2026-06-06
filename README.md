@@ -1,5 +1,3 @@
-# github.io
-Training the inner eye
 <!DOCTYPE html>
 <html lang="en">
 <head>
