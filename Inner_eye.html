@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Mind's Eye — A Training Progression</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=Spectral:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#060507;
+    --ink-2:#0b0a0d;
+    --lum:#f5f1e8;
+    --muted:#8a857c;
+    --muted-dim:#5b5751;
+    --accent:#e3b15e;
+    --accent-soft:rgba(227,177,94,0.16);
+    --line:rgba(245,241,232,0.10);
+    --line-soft:rgba(245,241,232,0.05);
+    --red:#e0564b; --blue:#5b8def; --teal:#3fb89a; --violet:#9b6fe0; --amber:#e3b15e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ink);
+    background-image:radial-gradient(ellipse 90% 60% at 50% 0%, #131218 0%, #09080b 45%, #050406 100%);
+    color:var(--lum);
+    font-family:"Spectral",Georgia,serif;
+    font-weight:300;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:0 20px 120px;
+    position:relative;
+  }
+  /* faint grain overlay for atmosphere */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{max-width:760px;margin:0 auto;position:relative;z-index:1}
+
+  /* ---------- Header ---------- */
+  header{padding:90px 0 40px;text-align:center}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;font-weight:400;font-size:0.72rem;
+    letter-spacing:0.42em;text-transform:uppercase;color:var(--accent);opacity:0.85;
+    margin-bottom:26px;
+  }
+  h1{
+    font-family:"Fraunces",serif;font-weight:300;font-size:clamp(2.6rem,8vw,4.4rem);
+    line-height:1.02;letter-spacing:-0.02em;margin-bottom:22px;
+  }
+  h1 em{font-style:italic;color:var(--accent)}
+  .lede{font-size:1.08rem;color:var(--muted);max-width:46ch;margin:0 auto;line-height:1.7}
+  .sound-toggle{display:inline-block;margin-top:26px;font-size:0.62rem;color:var(--muted)}
+  .sound-toggle.off{color:var(--muted-dim);opacity:0.7}
+
+  /* ---------- Panels ---------- */
+  .panel{
+    border:1px solid var(--line);border-radius:18px;padding:30px 28px;margin:26px 0;
+    background:linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0));
+  }
+  .panel h2{
+    font-family:"IBM Plex Mono",monospace;font-weight:400;font-size:0.74rem;letter-spacing:0.28em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:20px;
+  }
+  .panel p{color:var(--muted);font-size:0.98rem;margin-bottom:10px}
+  .panel p strong{color:var(--lum);font-weight:500}
+  .rules{list-style:none;display:grid;gap:14px}
+  .rules li{display:flex;gap:14px;color:var(--muted);font-size:0.98rem;align-items:baseline}
+  .rules li b{
+    font-family:"IBM Plex Mono",monospace;color:var(--accent);font-size:0.8rem;font-weight:400;
+    flex:0 0 auto;min-width:1.4em;
+  }
+  .rules li span strong{color:var(--lum);font-weight:500}
+
+  /* ---------- Calibration ---------- */
+  .calib-row{margin:22px 0}
+  .calib-head{
+    display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;
+    font-family:"IBM Plex Mono",monospace;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;
+  }
+  .calib-head .axis{color:var(--lum)}
+  .calib-head .ends{color:var(--muted-dim);font-size:0.66rem;letter-spacing:0.06em}
+  .calib-head .ends b{color:var(--accent);font-weight:400}
+  .calib-strip{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:0;align-items:center;
+    background:#040305;border:1px solid var(--line-soft);border-radius:12px;overflow:hidden;
+  }
+  .calib-cell{height:78px;display:flex;align-items:center;justify-content:center;position:relative}
+  .calib-cell:not(:last-child){border-right:1px solid var(--line-soft)}
+  .calib-dot{width:40px;height:40px;border-radius:50%;background:var(--lum)}
+  .calib-note{margin-top:18px;color:var(--muted-dim);font-size:0.9rem;font-style:italic}
+
+  /* ---------- Exercise cards ---------- */
+  .count{
+    font-family:"IBM Plex Mono",monospace;font-size:0.72rem;letter-spacing:0.3em;
+    text-transform:uppercase;color:var(--muted-dim);text-align:center;margin:60px 0 10px;
+  }
+  .card{
+    border:1px solid var(--line);border-radius:20px;margin:22px 0;overflow:hidden;
+    background:linear-gradient(180deg, rgba(255,255,255,0.022), rgba(255,255,255,0.004));
+    opacity:0;transform:translateY(14px);
+    animation:rise 0.7s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .card-head{display:flex;align-items:flex-start;gap:18px;padding:26px 26px 4px}
+  .num{
+    font-family:"Fraunces",serif;font-weight:300;font-size:2.6rem;line-height:0.9;
+    color:var(--accent);flex:0 0 auto;font-variant-numeric:tabular-nums;
+  }
+  .card-titles{flex:1}
+  .card-titles h3{font-family:"Fraunces",serif;font-weight:400;font-size:1.5rem;line-height:1.15;margin-bottom:6px}
+  .diff{display:flex;gap:5px;margin-top:8px}
+  .diff i{width:6px;height:6px;border-radius:50%;background:var(--muted-dim);display:block}
+  .diff i.on{background:var(--accent);box-shadow:0 0 6px rgba(227,177,94,0.6)}
+  .card-body{padding:6px 26px 26px}
+  .aim{display:flex;gap:12px;margin:14px 0 4px;align-items:baseline}
+  .tag{
+    font-family:"IBM Plex Mono",monospace;font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--accent-soft);border-radius:6px;padding:3px 8px;flex:0 0 auto;
+    background:var(--accent-soft);
+  }
+  .aim p{color:var(--lum);font-size:1.02rem;font-weight:400}
+  .detail{color:var(--muted);font-size:0.96rem;margin-top:12px}
+  .lookfor{color:var(--muted-dim);font-size:0.9rem;margin-top:10px;font-style:italic}
+  .lookfor b{color:var(--accent);font-style:normal;font-family:"IBM Plex Mono",monospace;
+    font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;margin-right:8px}
+
+  /* ---------- Stage (demo viewport) ---------- */
+  .stage{
+    margin:20px 0 4px;height:230px;border-radius:14px;background:#030203;
+    border:1px solid var(--line-soft);position:relative;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 0 60px rgba(0,0,0,0.7);
+  }
+  .stage svg{overflow:visible}
+  .glow-w{filter:drop-shadow(0 0 10px rgba(245,241,232,0.45))}
+  .shp-stroke{fill:none;stroke:var(--lum);stroke-width:2.5}
+  /* animations */
+  .anim-rotate{animation:rotate 11s linear infinite;transform-origin:center}
+  .anim-pulse{animation:pulse 4.5s ease-in-out infinite;transform-origin:center}
+  .anim-drift{animation:drift 12s ease-in-out infinite}
+  .anim-hue{animation:hue 10s linear infinite}
+  @keyframes rotate{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{transform:scale(0.7)}50%{transform:scale(1.18)}}
+  @keyframes drift{
+    0%{transform:translate(-70px,-34px)}25%{transform:translate(72px,-20px)}
+    50%{transform:translate(60px,38px)}75%{transform:translate(-58px,30px)}
+    100%{transform:translate(-70px,-34px)}
+  }
+  @keyframes hue{to{filter:hue-rotate(360deg) drop-shadow(0 0 12px rgba(224,86,75,0.5))}}
+  .stage-label{
+    position:absolute;bottom:10px;left:0;right:0;text-align:center;
+    font-family:"IBM Plex Mono",monospace;font-size:0.6rem;letter-spacing:0.22em;
+    text-transform:uppercase;color:var(--muted-dim);
+  }
+
+  /* 3D cube */
+  .scene3d{perspective:600px;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+  .cube{position:relative;width:120px;height:120px;transform-style:preserve-3d;animation:spin3d 16s linear infinite}
+  @keyframes spin3d{
+    0%{transform:rotateX(-22deg) rotateY(0)}
+    100%{transform:rotateX(-22deg) rotateY(360deg)}
+  }
+  .face{
+    position:absolute;width:120px;height:120px;border:1.5px solid rgba(227,177,94,0.55);
+    background:rgba(227,177,94,0.045);box-shadow:0 0 14px rgba(227,177,94,0.18) inset;
+  }
+  .f1{transform:translateZ(60px)} .f2{transform:rotateY(180deg) translateZ(60px)}
+  .f3{transform:rotateY(90deg) translateZ(60px)} .f4{transform:rotateY(-90deg) translateZ(60px)}
+  .f5{transform:rotateX(90deg) translateZ(60px)} .f6{transform:rotateX(-90deg) translateZ(60px)}
+
+  /* ---------- Timer ---------- */
+  .timer{
+    display:flex;align-items:center;gap:22px;margin-top:22px;padding-top:22px;
+    border-top:1px solid var(--line-soft);flex-wrap:wrap;
+  }
+  .ring-wrap{position:relative;width:84px;height:84px;flex:0 0 auto}
+  .ring-wrap svg{position:absolute;inset:0;transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--line);stroke-width:5}
+  .ring-fg{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;
+    transition:stroke-dashoffset 0.95s linear;filter:drop-shadow(0 0 4px rgba(227,177,94,0.5))}
+  .ring-time{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:"IBM Plex Mono",monospace;font-size:1.1rem;color:var(--lum);font-variant-numeric:tabular-nums;
+  }
+  .ring-time.done{color:var(--accent)}
+  .t-controls{display:flex;flex-direction:column;gap:12px}
+  .t-row{display:flex;gap:8px;align-items:center}
+  button{
+    font-family:"IBM Plex Mono",monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--lum);background:rgba(245,241,232,0.04);border:1px solid var(--line);
+    padding:9px 16px;border-radius:8px;cursor:pointer;transition:all 0.2s;
+  }
+  button:hover{background:var(--accent-soft);border-color:rgba(227,177,94,0.4);color:var(--accent)}
+  button.primary{background:var(--accent-soft);border-color:rgba(227,177,94,0.4);color:var(--accent)}
+  button.step{padding:9px 12px;min-width:38px}
+  .t-target{font-family:"IBM Plex Mono",monospace;font-size:0.74rem;color:var(--muted);letter-spacing:0.08em}
+  .t-target b{color:var(--lum);font-weight:400}
+
+  footer{text-align:center;margin-top:80px;color:var(--muted-dim);font-size:0.88rem;font-style:italic;line-height:1.7}
+  footer .mono{font-family:"IBM Plex Mono",monospace;font-style:normal;font-size:0.66rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted-dim);display:block;margin-top:18px}
+
+  /* ---------- Failure-mode box ---------- */
+  .fbox{
+    margin-top:18px;padding:15px 16px 17px;border:1px dashed var(--line);border-radius:12px;
+    background:rgba(255,255,255,0.012);
+  }
+  .fbox-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:12px}
+  .fbox-title{
+    font-family:"IBM Plex Mono",monospace;font-size:0.6rem;letter-spacing:0.2em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .fbtn{padding:6px 12px;font-size:0.6rem;color:var(--muted-dim)}
+  .fbtn.on{color:var(--accent);border-color:rgba(227,177,94,0.4);background:var(--accent-soft)}
+  .fcells{display:flex;gap:14px;flex-wrap:wrap}
+  .fcell{display:flex;flex-direction:column;align-items:center;gap:8px;width:62px}
+  .fmini{
+    width:62px;height:52px;background:#030203;border:1px solid var(--line-soft);
+    border-radius:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .fcap{
+    font-family:"IBM Plex Mono",monospace;font-size:0.5rem;letter-spacing:0.06em;
+    text-transform:uppercase;color:var(--muted-dim);text-align:center;line-height:1.4;
+  }
+  .fglow{display:inline-flex;line-height:0}
+  .fshape{transform-origin:center}
+  .fpair{display:flex;gap:9px;align-items:center}
+  .ftri{display:flex;gap:6px;align-items:center}
+  .fpair .fshape{width:18px;height:18px}
+  .ftri .fshape{width:14px;height:14px}
+  /* gating: paused unless the box is playing */
+  .fmini .fshape{animation-play-state:paused}
+  .fbox.playing .fmini .fshape{animation-play-state:running}
+
+  .ffFlicker{animation:ffFlicker 2.2s infinite}
+  .ffFade{animation:ffFade 2.6s ease-in-out infinite}
+  .ffBlur{animation:ffBlur 2.4s ease-in-out infinite}
+  .ffDrift{animation:ffDrift 3s ease-in-out infinite}
+  .ffFragment{animation:ffFragment 2.8s infinite}
+  .ffWobble{animation:ffWobble 1.8s ease-in-out infinite}
+  .ffJump{animation:ffJump 2.6s steps(5) infinite}
+  .ffStall{animation:ffStall 3s ease-in-out infinite}
+  .ffMelt{animation:ffMelt 2.4s ease-in-out infinite}
+  .ffSnap{animation:ffSnap 2.6s ease-in-out infinite}
+  .ffDistort{animation:ffDistort 2.2s ease-in-out infinite}
+  .ffDesat{animation:ffDesat 2.8s ease-in-out infinite}
+  .ffBleed{animation:ffBleed 2.4s ease-in-out infinite}
+  .ffHueJump{animation:ffHueJump 2.8s steps(4) infinite}
+  .ffRevert{animation:ffRevert 2.6s ease-in-out infinite}
+  .ffFreeze{animation:ffFreeze 2.6s ease-in-out infinite}
+  .ffFlatten{animation:ffFlatten 2.6s ease-in-out infinite}
+  .ffNecker{animation:ffNecker 2.8s infinite}
+  .ffGhost{animation:ffGhost 2.8s ease-in-out infinite}
+  .ffShrink{animation:ffShrink 2.8s ease-in-out infinite}
+  .ffMergeL{animation:ffMergeL 2.4s ease-in-out infinite}
+  .ffMergeR{animation:ffMergeR 2.4s ease-in-out infinite}
+  .ffSwapA{animation:ffSwapA 2.2s ease-in-out infinite}
+  .ffSwapB{animation:ffSwapB 2.2s ease-in-out infinite}
+
+  @keyframes ffFlicker{0%,22%{opacity:1}26%,38%{opacity:0}42%,68%{opacity:1}72%{opacity:0}76%,100%{opacity:1}}
+  @keyframes ffFade{0%{opacity:1}75%{opacity:0.05}100%{opacity:1}}
+  @keyframes ffBlur{0%,100%{filter:blur(0)}50%{filter:blur(4px)}}
+  @keyframes ffDrift{0%,100%{transform:translate(0,0)}20%{transform:translate(9px,-6px)}45%{transform:translate(-8px,5px)}70%{transform:translate(7px,7px)}}
+  @keyframes ffFragment{0%,100%{clip-path:inset(0)}28%{clip-path:inset(0 0 58% 0)}55%{clip-path:inset(58% 0 0 0)}80%{clip-path:inset(0 60% 0 0)}}
+  @keyframes ffWobble{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(7deg) scale(1.06)}50%{transform:rotate(-6deg) scale(0.94)}75%{transform:rotate(4deg) scale(1.02)}}
+  @keyframes ffJump{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+  @keyframes ffStall{0%{transform:rotate(0)}22%{transform:rotate(150deg)}28%,68%{transform:rotate(150deg)}100%{transform:rotate(360deg)}}
+  @keyframes ffMelt{0%,100%{transform:scaleY(1);filter:blur(0)}55%{transform:scaleY(0.45) translateY(5px);filter:blur(3px)}}
+  @keyframes ffSnap{0%{transform:translateX(0)}38%{transform:translateX(15px)}54%{transform:translateX(15px)}56%{transform:translateX(0)}100%{transform:translateX(0)}}
+  @keyframes ffDistort{0%,100%{transform:scale(1,1)}50%{transform:scale(1.35,0.55)}}
+  @keyframes ffDesat{0%{filter:saturate(1)}78%{filter:saturate(0.05)}100%{filter:saturate(1)}}
+  @keyframes ffBleed{0%,100%{filter:blur(0.3px) brightness(1)}50%{filter:blur(4px) brightness(1.35)}}
+  @keyframes ffHueJump{0%{filter:hue-rotate(0)}100%{filter:hue-rotate(360deg)}}
+  @keyframes ffRevert{0%{filter:hue-rotate(0)}40%{filter:hue-rotate(130deg)}45%{filter:hue-rotate(0)}100%{filter:hue-rotate(0)}}
+  @keyframes ffFreeze{0%{transform:scale(0.72)}33%{transform:scale(1.15)}40%,100%{transform:scale(0.95)}}
+  @keyframes ffFlatten{0%,100%{transform:scaleY(1)}55%{transform:scaleY(0.1)}}
+  @keyframes ffNecker{0%,46%{transform:perspective(140px) rotateY(0)}50%,96%{transform:perspective(140px) rotateY(180deg)}100%{transform:perspective(140px) rotateY(0)}}
+  @keyframes ffGhost{0%,100%{opacity:0.1}50%{opacity:0.24}}
+  @keyframes ffShrink{0%{transform:scale(1)}70%{transform:scale(0.22)}100%{transform:scale(1)}}
+  @keyframes ffMergeL{0%,100%{transform:translateX(0)}50%{transform:translateX(13px)}}
+  @keyframes ffMergeR{0%,100%{transform:translateX(0)}50%{transform:translateX(-13px)}}
+  @keyframes ffSwapA{0%,100%{opacity:1}50%{opacity:0.16}}
+  @keyframes ffSwapB{0%,100%{opacity:0.16}50%{opacity:1}}
+
+  @media (max-width:520px){
+    .num{font-size:2.1rem}
+    .card-titles h3{font-size:1.3rem}
+    .stage{height:200px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .anim-rotate,.anim-pulse,.anim-drift,.anim-hue,.cube{animation:none}
+    .card{animation:none;opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">A Progression for the Mind's Eye</div>
+    <h1>Training the <em>inner</em> image</h1>
+    <p class="lede">Twelve graded exercises. Advance one dimension at a time — hold, then control, then colour, then complexity. Let the image come; never force it.</p>
+    <button id="soundBtn" class="sound-toggle">&#9834;&nbsp; Completion chime: on</button>
+  </header>
+
+  <!-- HOW TO USE -->
+  <div class="panel">
+    <h2>How to use this</h2>
+    <ul class="rules">
+      <li><b>01</b><span><strong>One axis at a time.</strong> Each exercise adds a single new demand. Don't stack two at once.</span></li>
+      <li><b>02</b><span><strong>Advance on stability, not novelty.</strong> Move to the next number only when you can summon and hold the current target for its full time, fairly steadily and with low effort, most days for about a week.</span></li>
+      <li><b>03</b><span><strong>Effort is the enemy.</strong> Strain raises arousal, which flattens imagery. Hold a relaxed, curious gaze inward and let the picture arrive.</span></li>
+      <li><b>04</b><span><strong>Anchor first if you stall.</strong> Glance at a real version of the shape, close your eyes, then rebuild it from the fading trace.</span></li>
+    </ul>
+    <p style="margin-top:22px"><strong>Why the black field?</strong> You reference mental images against the dark behind closed eyes. A black background matches that condition, maximises contrast, and keeps ambient light low — turn your screen brightness down too. The glowing shapes below are the <em>quality</em> to aim for, not a literal picture to copy.</p>
+  </div>
+
+  <!-- CALIBRATION -->
+  <div class="panel">
+    <h2>What to look for — calibration</h2>
+    <p style="margin-bottom:6px">Vividness isn't one thing. It's <strong>brightness</strong>, <strong>sharpness</strong> and <strong>saturation</strong> — semi-independent dials. Here's each one running from "barely there" on the left to "target" on the right, so you know which dial you're turning.</p>
+    <div id="calib"></div>
+    <p class="calib-note">Honest note: your mental image will rarely reach the far right, and that's fine. Nudging from the first cell to the second or third is already real progress — chasing photographic perfection just reintroduces strain.</p>
+  </div>
+
+  <div class="count">— The Progression · 12 Exercises —</div>
+  <div id="cards"></div>
+
+  <footer>
+    Practise short and daily — ten to twenty minutes beats an occasional long session.<br>
+    You're making a brain-state familiar, which is a matter of frequency, not force.
+    <span class="mono">Hold · Control · Colour · Combine · Solidify</span>
+  </footer>
+
+</div>
+
+<script>
+// ---------- Calibration strips ----------
+function calibStrips(){
+  const rows = [
+    {axis:"Brightness", left:"dim", right:"luminous",
+      cells:[{o:0.10},{o:0.28},{o:0.58},{o:1}], color:"var(--lum)", blur:0, sat:1},
+    {axis:"Sharpness", left:"blurred", right:"crisp",
+      cells:[{b:7},{b:3.5},{b:1.2},{b:0}], color:"var(--lum)", o:0.95},
+    {axis:"Saturation", left:"washed out", right:"vivid",
+      cells:[{s:0.08},{s:0.35},{s:0.65},{s:1}], color:"var(--red)", o:0.95, blur:0}
+  ];
+  let html = "";
+  rows.forEach(r=>{
+    html += `<div class="calib-row">
+      <div class="calib-head">
+        <span class="axis">${r.axis}</span>
+        <span class="ends">${r.left} &nbsp;→&nbsp; <b>${r.right}</b></span>
+      </div>
+      <div class="calib-strip">`;
+    r.cells.forEach(c=>{
+      const op = (c.o!==undefined)?c.o:(r.o!==undefined?r.o:1);
+      const bl = (c.b!==undefined)?c.b:(r.blur!==undefined?r.blur:0);
+      const st = (c.s!==undefined)?c.s:(r.sat!==undefined?r.sat:1);
+      const glow = r.color==="var(--red)"
+        ? `drop-shadow(0 0 ${10*op}px rgba(224,86,75,${0.5*op}))`
+        : `drop-shadow(0 0 ${12*op}px rgba(245,241,232,${0.45*op}))`;
+      html += `<div class="calib-cell"><div class="calib-dot"
+        style="background:${r.color};opacity:${op};filter:blur(${bl}px) saturate(${st}) ${glow}"></div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById("calib").innerHTML = html;
+}
+
+// ---------- Shape helpers ----------
+function svgShape(kind, opts){
+  opts = opts||{};
+  const cls = opts.cls||"";
+  const stroke = opts.fill ? "none" : (opts.color||"var(--lum)");
+  const fill = opts.fill ? (opts.color||"var(--lum)") : "none";
+  const sw = opts.fill ? 0 : 2.5;
+  let inner = "";
+  if(kind==="circle") inner = `<circle cx="60" cy="60" r="42"/>`;
+  if(kind==="square") inner = `<rect x="22" y="22" width="76" height="76" rx="3"/>`;
+  if(kind==="triangle") inner = `<polygon points="60,18 102,96 18,96"/>`;
+  return `<svg width="120" height="120" viewBox="0 0 120 120" class="${cls}">
+    <g style="fill:${fill};stroke:${stroke};stroke-width:${sw};stroke-linejoin:round">${inner}</g></svg>`;
+}
+function glowFilter(color,op){
+  return color ? `drop-shadow(0 0 12px ${color})` : `drop-shadow(0 0 10px rgba(245,241,232,0.45))`;
+}
+
+// ---------- Stage renderers ----------
+function stage(inner,label){
+  return `<div class="stage">${inner}<div class="stage-label">${label}</div></div>`;
+}
+function demo(type){
+  switch(type){
+    case "hold":
+      return stage(`<div class="glow-w">${svgShape("circle")}</div>`,"summon · hold steady");
+    case "clarity":
+      return stage(`<div class="glow-w" style="filter:drop-shadow(0 0 16px rgba(245,241,232,0.6))">${svgShape("triangle")}</div>`,"crisp edges · even glow");
+    case "rotate":
+      return stage(`<div class="glow-w anim-rotate">${svgShape("square")}</div>`,"slow controlled rotation");
+    case "drift":
+      return stage(`<div class="glow-w anim-drift">${svgShape("circle")}</div>`,"glide it across the field");
+    case "pulse":
+      return stage(`<div class="glow-w anim-pulse">${svgShape("triangle")}</div>`,"grow & shrink smoothly");
+    case "color":
+      return stage(`<div style="filter:${glowFilter('rgba(91,141,239,0.55)')}">${svgShape("circle",{fill:true,color:"var(--blue)"})}</div>`,"one saturated, steady colour");
+    case "hue":
+      return stage(`<div class="anim-hue" style="filter:drop-shadow(0 0 12px rgba(224,86,75,0.5))">${svgShape("circle",{fill:true,color:"var(--red)"})}</div>`,"morph the hue on purpose");
+    case "two":
+      return stage(`<div style="display:flex;gap:40px" class="glow-w">
+        ${svgShape("circle")}${svgShape("square")}</div>`,"hold two forms at once");
+    case "multi":
+      return stage(`<div style="display:flex;gap:30px;align-items:center">
+        <div style="filter:${glowFilter('rgba(224,86,75,0.5)')}">${svgShape("triangle",{fill:true,color:"var(--red)"})}</div>
+        <div style="filter:${glowFilter('rgba(63,184,154,0.5)')}">${svgShape("circle",{fill:true,color:"var(--teal)"})}</div>
+        <div style="filter:${glowFilter('rgba(155,111,224,0.5)')}">${svgShape("square",{fill:true,color:"var(--violet)"})}</div>
+      </div>`,"colours + spatial relations");
+    case "animateScene":
+      return stage(`<div style="position:relative;width:100%;height:100%">
+        <div class="anim-drift" style="position:absolute;top:50%;left:50%;margin:-60px;filter:drop-shadow(0 0 12px rgba(224,86,75,0.5))">${svgShape("triangle",{fill:true,color:"var(--red)"})}</div>
+        <div class="anim-pulse" style="position:absolute;top:50%;left:50%;margin:-60px;filter:drop-shadow(0 0 12px rgba(91,141,239,0.5))">${svgShape("circle",{fill:true,color:"var(--blue)"})}</div>
+        <div class="anim-hue" style="position:absolute;top:50%;left:50%;margin:-60px;animation-duration:8s">${svgShape("square",{fill:true,color:"var(--teal)"})}</div>
+      </div>`,"the scene moves & shifts together");
+    case "cube":
+      return stage(`<div class="scene3d"><div class="cube">
+        <div class="face f1"></div><div class="face f2"></div><div class="face f3"></div>
+        <div class="face f4"></div><div class="face f5"></div><div class="face f6"></div>
+      </div></div>`,"depth · solidity · rotation");
+    case "scene":
+      return stage(`<svg width="240" height="150" viewBox="0 0 240 150" style="opacity:0.55"
+          class="glow-w">
+        <g style="fill:none;stroke:var(--lum);stroke-width:1.5;stroke-linejoin:round">
+          <rect x="40" y="20" width="160" height="110" rx="2"/>
+          <line x1="120" y1="20" x2="120" y2="130"/>
+          <line x1="40" y1="75" x2="200" y2="75"/>
+          <circle cx="80" cy="48" r="3" style="fill:var(--accent);stroke:none"/>
+        </g></svg>`,"your own place — let memory render it");
+    default: return stage("","");
+  }
+}
+
+// ---------- Exercise data ----------
+const ex = [
+  {n:1,d:1,t:"Summon & hold",aim:"Bring one simple outline shape into being — and keep it there.",
+   detail:"Pick whichever of square, triangle or circle comes easiest. Start by holding it for just 5 seconds, then rebuild it; over days stretch toward the full time. The skill being trained is duration, not detail.",
+   look:"a single clean outline that doesn't dissolve or drift after a second or two.",demo:"hold",sec:20},
+  {n:1.2,d:1,t:"Brighten & sharpen",aim:"Take that same shape and turn up its clarity — crisp edges, even fill, steady brightness.",
+   detail:"Don't add anything new. Just work the brightness and sharpness dials from the calibration panel on the one shape you already hold.",
+   look:"edges that stay defined rather than smudging; a fill that glows evenly instead of flickering.",demo:"clarity",sec:20},
+  {n:2,d:2,t:"Rotate it",aim:"Turn the single shape slowly, under your control.",
+   detail:"Rotation is mental control made visible — it exercises exactly the top-down circuit you're trying to strengthen. A slowly turning shape is often easier to hold than a frozen one, because it gives your mind something to track.",
+   look:"smooth, even turning — not jumping or snapping between positions.",demo:"rotate",sec:25},
+  {n:3,d:2,t:"Move it",aim:"Glide the shape around the field without letting it fall apart.",
+   detail:"Translate it left, right, up, down, in a slow loop. Keep its form intact while its position changes.",
+   look:"the shape staying whole and bright while it moves, not melting at the edges.",demo:"drift",sec:25},
+  {n:4,d:2,t:"Grow & shrink",aim:"Scale the shape up and down smoothly while holding its form.",
+   detail:"Let it swell and contract like a slow breath. This adds a second kind of control — size — on the same single object.",
+   look:"a steady, continuous change of size with the outline holding its proportions.",demo:"pulse",sec:25},
+  {n:5,d:3,t:"Add colour",aim:"Give one shape a single, saturated, steady colour.",
+   detail:"Colour is its own dial and it loves to wash out — that's the work here. Hold one rich hue (deep blue, red, green) without it greying or drifting. Glance at a real coloured object first if it won't hold.",
+   look:"a colour that stays vivid and constant, not pale, patchy or sliding toward grey.",demo:"color",sec:25},
+  {n:6,d:3,t:"Shift the hue",aim:"Deliberately morph the colour from one hue into another.",
+   detail:"Now combine control with colour: slowly turn red → orange → green → blue and back, on the single shape. This is your \u201cchanging colours\u201d idea, done on one object before any scene.",
+   look:"a smooth glide through the spectrum rather than abrupt jumps between colours.",demo:"hue",sec:25},
+  {n:7,d:3,t:"Two shapes",aim:"Hold two monochrome forms in the field at the same time.",
+   detail:"This is the real jump — two elements means neither gets your full resources. Only arrive here once a single shape is solid. Keep both present; notice the one that fades and rebuild it.",
+   look:"both shapes coexisting steadily — not one vanishing the moment you attend to the other.",demo:"two",sec:25},
+  {n:8,d:4,t:"A small arrangement",aim:"Hold two or three coloured shapes with a clear spatial relationship.",
+   detail:"Place them — beside, above, overlapping. Now you're carrying form, colour and number together. Build it piece by piece rather than all at once.",
+   look:"a small stable composition where positions and colours stay put.",demo:"multi",sec:30},
+  {n:9,d:4,t:"Set it in motion",aim:"Let the whole arrangement move and change together — your animated scene.",
+   detail:"One shape drifts, one pulses, one shifts hue — at the same time. This is the \u201cGIF\u201d stage: multiple elements, multiple dynamics, held as one living image.",
+   look:"a scene that keeps cohering while several things change inside it.",demo:"animateScene",sec:30},
+  {n:10,d:5,t:"Make it solid",aim:"Build a three-dimensional form with real depth, and rotate it.",
+   detail:"A cube you can turn to see its faces; later a shaded sphere. Solidity and depth sit near the top of the difficulty hierarchy — expect this to take real time.",
+   look:"a sense of volume and near/far faces, not a flat outline pretending to be 3D.",demo:"cube",sec:30},
+  {n:11,d:5,t:"A place you know",aim:"Drop the abstract shapes for a familiar room, face, or view — and let memory do the rendering.",
+   detail:"This is often easier than abstract forms, because memory fills in detail for you, and it's where vivid imagery finally becomes useful. The sketch below is only a prompt — replace it with somewhere real to you.",
+   look:"detail arriving on its own — light, texture, a sense of being there — rather than effortful construction.",demo:"scene",sec:45}
+];
+
+// ---------- Failure modes ----------
+const FF = {
+  flicker:{l:"Flickering in & out",a:"ffFlicker"},
+  fade:{l:"Fading away",a:"ffFade"},
+  dim:{l:"Dimming",a:"ffFade"},
+  blur:{l:"Blurring",a:"ffBlur"},
+  drift:{l:"Drifting off-centre",a:"ffDrift"},
+  fragment:{l:"Partial / piecemeal",a:"ffFragment"},
+  wobble:{l:"Edges wobbling",a:"ffWobble"},
+  jump:{l:"Snapping, not smooth",a:"ffJump"},
+  stall:{l:"Stalling mid-turn",a:"ffStall"},
+  melt:{l:"Melting as it moves",a:"ffMelt"},
+  snap:{l:"Snapping to centre",a:"ffSnap"},
+  distort:{l:"Losing its form",a:"ffDistort"},
+  desat:{l:"Washing out to grey",a:"ffDesat",c:1},
+  bleed:{l:"Colour bleeding",a:"ffBleed",c:1},
+  huejump:{l:"Hue jumping",a:"ffHueJump",c:1},
+  revert:{l:"Snapping back to start",a:"ffRevert",c:1},
+  freeze:{l:"Motion freezing",a:"ffFreeze"},
+  flatten:{l:"Flattening, no depth",a:"ffFlatten",sq:1},
+  necker:{l:"Faces flipping",a:"ffNecker",sq:1},
+  ghost:{l:"Known but not seen",a:"ffGhost"},
+  shrink:{l:"Narrowing to a scrap",a:"ffShrink"},
+  onefades:{l:"One vanishes",t:"onefades"},
+  merge:{l:"Merging together",t:"merge"},
+  swap:{l:"Attention ping-pong",t:"swap"},
+  collapse:{l:"Positions drifting",t:"collapse"}
+};
+const failMap = [
+  ["flicker","fade","fragment"],   // 1 summon & hold
+  ["blur","dim","wobble"],         // 2 brighten & sharpen
+  ["jump","drift","stall"],        // 3 rotate
+  ["melt","snap","fade"],          // 4 move
+  ["distort","flicker","wobble"],  // 5 grow & shrink
+  ["desat","bleed","flicker"],     // 6 add colour
+  ["huejump","revert","desat"],    // 7 shift hue
+  ["onefades","merge","swap"],     // 8 two shapes
+  ["collapse","onefades","desat"], // 9 arrangement
+  ["freeze","merge","drift"],      // 10 set in motion
+  ["flatten","necker","fade"],     // 11 make it solid
+  ["ghost","fragment","shrink"]    // 12 a place you know
+];
+const RGB={"var(--red)":"224,86,75","var(--blue)":"91,141,239","var(--teal)":"63,184,154","var(--violet)":"155,111,224","var(--accent)":"227,177,94","var(--lum)":"245,241,232"};
+// which shape(s) each exercise practises, for the failure minis
+const failVisual=[
+  {s:["circle"]},                                                        // 1
+  {s:["triangle"]},                                                      // 2
+  {s:["square"]},                                                        // 3
+  {s:["circle"]},                                                        // 4
+  {s:["triangle"]},                                                      // 5
+  {s:["circle"],f:1,c:["var(--blue)"]},                                  // 6
+  {s:["circle"],f:1,c:["var(--red)"]},                                   // 7
+  {s:["circle","square"]},                                               // 8
+  {s:["triangle","circle","square"],f:1,c:["var(--red)","var(--teal)","var(--violet)"]}, // 9
+  {s:["triangle","circle","square"],f:1,c:["var(--red)","var(--blue)","var(--teal)"]},   // 10
+  {s:["square"],g:1},                                                    // 11 (cube face, gold)
+  {s:["scene"]}                                                          // 12
+];
+function fShape(vis,idx,anim,delay){
+  const kind=vis.s[idx]||vis.s[0];
+  const filled=!!vis.f, gold=!!vis.g;
+  const color=filled?(vis.c[idx]||vis.c[0]):null;
+  const glow=gold?"227,177,94":(filled?(RGB[color]||"245,241,232"):"245,241,232");
+  const stroke=gold?"var(--accent)":(filled?"none":"var(--lum)");
+  const fill=filled?color:"none";
+  const sw=filled?0:2.4;
+  let inner="";
+  if(kind==="circle") inner='<circle cx="14" cy="14" r="11"/>';
+  else if(kind==="square") inner='<rect x="3.5" y="3.5" width="21" height="21" rx="2"/>';
+  else if(kind==="triangle") inner='<polygon points="14,2.5 25.5,24.5 2.5,24.5"/>';
+  else if(kind==="scene") inner='<rect x="3" y="5.5" width="22" height="17" rx="1.5"/><line x1="14" y1="5.5" x2="14" y2="22.5"/><line x1="3" y1="14" x2="25" y2="14"/>';
+  const dly=delay?`animation-delay:${delay}s`:"";
+  return `<span class="fglow" style="filter:drop-shadow(0 0 5px rgba(${glow},.5))"><svg class="fshape ${anim||''}" width="26" height="26" viewBox="0 0 28 28" style="${dly}"><g style="fill:${fill};stroke:${stroke};stroke-width:${sw};stroke-linejoin:round">${inner}</g></svg></span>`;
+}
+function failShape(m,vis){
+  if(m.t==="onefades") return `<div class="fpair">${fShape(vis,0)}${fShape(vis,1,"ffFade")}</div>`;
+  if(m.t==="merge")    return `<div class="fpair">${fShape(vis,0,"ffMergeL")}${fShape(vis,1,"ffMergeR")}</div>`;
+  if(m.t==="swap")     return `<div class="fpair">${fShape(vis,0,"ffSwapA")}${fShape(vis,1,"ffSwapB")}</div>`;
+  if(m.t==="collapse") return `<div class="ftri">${fShape(vis,0,"ffDrift")}${fShape(vis,1,"ffDrift",.5)}${fShape(vis,2,"ffDrift",1)}</div>`;
+  return fShape(vis,0,m.a);
+}
+function failBox(i){
+  const vis=failVisual[i];
+  const cells = failMap[i].map(k=>{
+    const m = FF[k];
+    return `<div class="fcell"><div class="fmini">${failShape(m,vis)}</div><span class="fcap">${m.l}</span></div>`;
+  }).join("");
+  return `<div class="fbox">
+    <div class="fbox-head">
+      <span class="fbox-title">Common ways it fails</span>
+      <button class="fbtn">&#9655; Play</button>
+    </div>
+    <div class="fcells">${cells}</div>
+  </div>`;
+}
+function wireFailBoxes(){
+  document.querySelectorAll(".fbtn").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const box=b.closest(".fbox");
+      const on=box.classList.toggle("playing");
+      b.classList.toggle("on",on);
+      b.innerHTML = on ? "&#10074;&#10074; Pause" : "&#9655; Play";
+    });
+  });
+}
+
+// ---------- Render cards ----------
+function fmt(s){const m=Math.floor(s/60);const r=s%60;return m+":"+String(r).padStart(2,"0");}
+function dots(d){let h="";for(let i=1;i<=5;i++)h+=`<i class="${i<=d?'on':''}"></i>`;return h;}
+const R=37, C=2*Math.PI*R;
+
+function render(){
+  let html="";
+  ex.forEach((e,i)=>{
+    const label = i+1;
+    html += `<div class="card" style="animation-delay:${i*0.05}s">
+      <div class="card-head">
+        <div class="num">${String(label).padStart(2,'0')}</div>
+        <div class="card-titles">
+          <h3>${e.t}</h3>
+          <div class="diff" title="difficulty ${e.d} of 5">${dots(e.d)}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="aim"><span class="tag">Aim</span><p>${e.aim}</p></div>
+        <p class="detail">${e.detail}</p>
+        <p class="lookfor"><b>Look for</b>${e.look}</p>
+        ${demo(e.demo)}
+        ${failBox(i)}
+        <div class="timer" data-sec="${e.sec}">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 84 84">
+              <circle class="ring-bg" cx="42" cy="42" r="${R}"/>
+              <circle class="ring-fg" cx="42" cy="42" r="${R}"
+                style="stroke-dasharray:${C};stroke-dashoffset:0"/>
+            </svg>
+            <div class="ring-time">${fmt(e.sec)}</div>
+          </div>
+          <div class="t-controls">
+            <div class="t-row">
+              <button class="primary act-start">Begin hold</button>
+              <button class="act-reset">Reset</button>
+            </div>
+            <div class="t-row">
+              <button class="step act-minus">–5s</button>
+              <button class="step act-plus">+5s</button>
+              <span class="t-target">target <b class="tgt">${fmt(e.sec)}</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById("cards").innerHTML = html;
+  wireTimers();
+  wireFailBoxes();
+}
+
+// ---------- Timer logic ----------
+function wireTimers(){
+  document.querySelectorAll(".timer").forEach(t=>{
+    let total = parseInt(t.dataset.sec,10);
+    let remaining = total;
+    let running = false, iv=null;
+    const fg = t.querySelector(".ring-fg");
+    const disp = t.querySelector(".ring-time");
+    const tgt = t.querySelector(".tgt");
+    const startBtn = t.querySelector(".act-start");
+
+    function paint(){
+      disp.textContent = remaining<=0 ? "✓" : fmt(remaining);
+      disp.classList.toggle("done", remaining<=0);
+      const frac = total>0 ? remaining/total : 0;
+      fg.style.strokeDashoffset = (C*(1-frac)).toFixed(1);
+    }
+    function stop(){running=false;clearInterval(iv);startBtn.textContent="Begin hold";startBtn.classList.add("primary");}
+    function reset(){stop();remaining=total;paint();}
+
+    startBtn.addEventListener("click",()=>{
+      ensureAudio();
+      if(running){stop();startBtn.textContent="Resume";return;}
+      if(remaining<=0) remaining=total;
+      running=true;startBtn.textContent="Pause";startBtn.classList.remove("primary");
+      iv=setInterval(()=>{
+        remaining--;paint();
+        if(remaining<=0){stop();startBtn.textContent="Begin hold";chime();}
+      },1000);
+    });
+    t.querySelector(".act-reset").addEventListener("click",reset);
+    t.querySelector(".act-minus").addEventListener("click",()=>{
+      if(running) return; total=Math.max(5,total-5);remaining=total;tgt.textContent=fmt(total);paint();
+    });
+    t.querySelector(".act-plus").addEventListener("click",()=>{
+      if(running) return; total=Math.min(600,total+5);remaining=total;tgt.textContent=fmt(total);paint();
+    });
+    paint();
+  });
+}
+
+// ---------- Sound ----------
+let audioCtx=null, soundOn=true;
+function ensureAudio(){
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended") audioCtx.resume();
+  }catch(e){}
+}
+function chime(){
+  if(!soundOn) return;
+  ensureAudio();
+  if(!audioCtx) return;
+  const ctx=audioCtx, now=ctx.currentTime;
+  const notes=[587.33, 739.99, 987.77]; // D5 · F#5 · B5 — a soft rising bell
+  notes.forEach((f,i)=>{
+    const t=now + i*0.17;
+    const osc=ctx.createOscillator(), g=ctx.createGain();
+    osc.type="sine"; osc.frequency.value=f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+1.5);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(t); osc.stop(t+1.6);
+  });
+}
+const soundBtn=document.getElementById("soundBtn");
+soundBtn.addEventListener("click",()=>{
+  soundOn=!soundOn;
+  ensureAudio();
+  soundBtn.innerHTML = soundOn ? "&#9834;&nbsp; Completion chime: on" : "&#9834;&nbsp; Completion chime: off";
+  soundBtn.classList.toggle("off", !soundOn);
+});
+
+calibStrips();
+render();
+</script>
+</body>
+</html>
