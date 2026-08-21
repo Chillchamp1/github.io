@@ -31,14 +31,14 @@ Germany with its state borders sits underneath for orientation.
 
 The animation opens at the quietest minute of the day, found by scanning
 per-minute occupancy rather than hard-coded, and runs at 4x by default: a full
-day in about 90 seconds. A ring opens outward at the station where a service begins and closes inward
-where one terminates, in that service's colour — a regional ring travels a
-tenth as far as a mainline one, since at full reach twenty-six thousand of them
-bury the intercity and high-speed events — at 4x the 05:00–07:00 ramp
-reads as the whole country blooming awake. The strip behind the scrubber counts
-the same two events across the day: services starting above the midline,
-terminating below it. Both series share one ink because position already
-distinguishes them, which keeps the categorical hues reserved for the trains.
+day in about 90 seconds. A ring opens outward at the station where a service
+begins, in that service's colour — a regional ring travels a tenth as far as a
+mainline one, since at full reach twenty-six thousand of them bury the
+intercity and high-speed events — so at 4x the 05:00–07:00 ramp reads as the
+whole country blooming awake. Terminations are not marked: one ring per service
+is already dense, and two left the map permanently speckled. The strip behind
+the scrubber counts the same starts across the day, in one ink because the
+categorical hues stay reserved for the trains.
 
 The clock sits on the Baltic about 30 km off the Fischland-Darß coast, where
 the nearest station is far enough away that it never covers the network. Giving
@@ -149,7 +149,6 @@ canvas and blitted each frame, so the per-frame cost is the moving trains
 alone: around 60 fps with 1,660 trains on screen at 3x pixel density. The day
 profile is likewise drawn once per resize and blitted.
 
-Origin and termination rings come from a time-sorted event index — two entries
-per service — so each frame binary-searches the live window instead of
-rescanning 27,757 trips. Ring lifetime scales with the playback multiplier, so
+Origin rings come from a time-sorted event index — one entry per service — so
+each frame binary-searches the live window instead of rescanning 27,757 trips. Ring lifetime scales with the playback multiplier, so
 an event stays visible for roughly two thirds of a second at any speed.

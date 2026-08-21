@@ -209,7 +209,7 @@
     <div id="profile">
       <canvas id="profcv"></canvas>
       <input id="scrub" type="range" min="0" max="86399" step="60" value="0"
-             aria-label="Time of day. The strip behind shows services starting above the line and terminating below it.">
+             aria-label="Time of day. The strip behind shows how many services begin at each hour.">
     </div>
     <div class="spd" role="group" aria-label="Playback speed">
       <button data-mps="4">1&times;</button>
@@ -367,27 +367,26 @@ for (const [label, alat, alon] of CITY_ANCHORS){
   if (best && bestD < (3/111.32)**2) LABELS.push({label, s:best});
 }
 
-/* Every service's first departure and last arrival, sorted by time. Rings
-   bloom at origins and close at termini, and the same two events drive the
-   day-profile strip under the controls. Times fold into one day, so a service
-   arriving at 25:10 rings at 01:10. */
+/* Every service's first departure, sorted by time. A ring blooms at each
+   origin, and the same events drive the day-profile strip under the controls.
+   Times fold into one day, so a service leaving at 24:40 rings at 00:40.
+   Terminations are deliberately not indexed: with 26,410 regional services in
+   a day, one mark apiece is already dense and two left the map speckled. */
 const RING_SCALE = CLASSES.map(k => (CLASS_META[k] || {}).ring ?? 1);
 const DOT_SCALE  = CLASSES.map(k => (CLASS_META[k] || {}).size ?? 1);
-const EVN = TRIPS.length * 2;
+const EVN = TRIPS.length;
 const EVT = new Int32Array(EVN), EVS = new Int32Array(EVN);
-const EVC = new Uint8Array(EVN), EVK = new Uint8Array(EVN);
-const STARTS_MIN = new Int32Array(1440), ENDS_MIN = new Int32Array(1440);
+const EVC = new Uint8Array(EVN);
+const STARTS_MIN = new Int32Array(1440);
 {
-  const raw = [];
-  for (const t of TRIPS){
-    const a = t.s[0], z = t.s[t.s.length-1];
-    raw.push([a[2] % DAY_SECONDS, a[0], t.c, 0]);
-    raw.push([z[1] % DAY_SECONDS, z[0], t.c, 1]);
-  }
+  const raw = TRIPS.map(t => {
+    const a = t.s[0];
+    return [a[2] % DAY_SECONDS, a[0], t.c];
+  });
   raw.sort((x,y) => x[0]-y[0]);
   raw.forEach((e,i) => {
-    EVT[i]=e[0]; EVS[i]=e[1]; EVC[i]=e[2]; EVK[i]=e[3];
-    (e[3] ? ENDS_MIN : STARTS_MIN)[Math.floor(e[0]/60) % 1440]++;
+    EVT[i]=e[0]; EVS[i]=e[1]; EVC[i]=e[2];
+    STARTS_MIN[Math.floor(e[0]/60) % 1440]++;
   });
 }
 
@@ -509,10 +508,9 @@ function renderBase(){
   baseReady = true;
 }
 
-/* The day profile: services beginning above the midline, ending below it.
-   Position carries the distinction, so both series share one ink rather than
-   spending two categorical hues that belong to the trains. Static, so it is
-   drawn once per resize and blitted underneath the scrubber. */
+/* The day profile: services beginning, binned across the 24 hours. One ink
+   rather than a categorical hue, which stays reserved for the trains. Static,
+   so it is drawn once per resize and blitted underneath the scrubber. */
 function sizeProfile(){
   const r = prof.getBoundingClientRect();
   if (!r.width || !r.height) return;
@@ -524,50 +522,43 @@ function sizeProfile(){
   c.setTransform(DPR,0,0,DPR,0,0);
   c.clearRect(0,0,profW,profH);
 
-  const GUT = 26;                       /* left gutter for the two labels */
+  const GUT = 26;                       /* left gutter for the label */
   const plotW = Math.max(20, profW - GUT);
-  const mid = profH*0.50, arm = Math.min(mid, profH-mid) - 6;
+  const base = profH - 10;              /* baseline, clear of the hour marks */
+  const arm = base - 3;
   const bins = Math.max(48, Math.min(240, Math.floor(plotW)));
   const per = 1440/bins;
-  const up = new Float64Array(bins), dn = new Float64Array(bins);
-  for (let m = 0; m < 1440; m++){
-    const b = Math.min(bins-1, Math.floor(m/per));
-    up[b] += STARTS_MIN[m]; dn[b] += ENDS_MIN[m];
-  }
+  const up = new Float64Array(bins);
+  for (let m = 0; m < 1440; m++)
+    up[Math.min(bins-1, Math.floor(m/per))] += STARTS_MIN[m];
   let peak = 1;
-  for (let b = 0; b < bins; b++) peak = Math.max(peak, up[b], dn[b]);
+  for (let b = 0; b < bins; b++) peak = Math.max(peak, up[b]);
 
   const bw = plotW/bins;
-  const draw = (arr, sign, alpha) => {
-    c.fillStyle = rgba(pick("ink2"), alpha);
-    for (let b = 0; b < bins; b++){
-      const hgt = (arr[b]/peak) * arm;
-      if (hgt < 0.4) continue;
-      c.fillRect(GUT + b*bw, sign < 0 ? mid-hgt : mid, Math.max(0.7, bw-0.6), hgt);
-    }
-  };
-  draw(up, -1, 0.85);
-  draw(dn,  1, 0.45);
+  c.fillStyle = rgba(pick("ink2"), 0.85);
+  for (let b = 0; b < bins; b++){
+    const hgt = (up[b]/peak) * arm;
+    if (hgt < 0.4) continue;
+    c.fillRect(GUT + b*bw, base-hgt, Math.max(0.7, bw-0.6), hgt);
+  }
 
-  /* Midline, plus quarter-day ticks so the axis can be read. */
+  /* Baseline, plus quarter-day ticks so the axis can be read. */
   c.fillStyle = rgba(pick("ink3"), 0.5);
-  c.fillRect(GUT, mid-0.5, plotW, 1);
+  c.fillRect(GUT, base, plotW, 1);
   c.font = '500 8px "IBM Plex Mono",monospace';
   c.textAlign = "center";
   for (const hr of [6,12,18]){
     const x = GUT + (hr/24)*plotW;
     c.fillStyle = rgba(pick("ink3"), 0.28);
-    c.fillRect(x-0.5, 2, 1, profH-4);
+    c.fillRect(x-0.5, 2, 1, base-2);
     c.fillStyle = rgba(pick("ink3"), 0.8);
     c.textBaseline = "bottom";
     c.fillText(String(hr).padStart(2,"0"), x, profH);
   }
   c.textAlign = "left";
-  c.fillStyle = rgba(pick("ink3"), 0.95);
   c.textBaseline = "bottom";
-  c.fillText("start", 0, mid-2);
-  c.textBaseline = "top";
-  c.fillText("end", 0, mid+2);
+  c.fillStyle = rgba(pick("ink3"), 0.95);
+  c.fillText("start", 0, base);
 }
 
 /* ====================================================================== */
@@ -698,9 +689,10 @@ function draw(){
     }
   }
 
-  /* --- origin and termination rings ---
-     A service beginning opens a ring outwards from its first station; one
-     terminating closes a ring inwards on its last. Both fade as they go. */
+  /* --- origin rings ---
+     A service beginning opens a ring outwards from its first station, fading
+     as it goes. Terminations are not drawn: two marks per service left the
+     map permanently speckled, regional green swamping everything else. */
   {
     const span = pulseSpan();
     const from = simSec - span;
@@ -712,18 +704,16 @@ function draw(){
       if (f < 0 || f >= 1) return;
       const st = ST[EVS[idx]];
       if (st.x < -20 || st.x > W+20 || st.y < -20 || st.y > H+20) return;
-      const grow = EVK[idx] === 0;
       const cls = EVC[idx];
       /* The ring starts just clear of the train's own dot and only its travel
          is scaled. Scaling the whole radius instead put a small ring inside
          its dot, where there was nothing to see. Stroke width is never scaled
          either, so a short ring is still a legible line. */
-      const r = DOT_R*DOT_SCALE[cls] + 1.1
-              + (grow ? f : 1-f) * 7 * RING_SCALE[cls];
+      const r = DOT_R*DOT_SCALE[cls] + 1.1 + f * 7 * RING_SCALE[cls];
       ctx.beginPath();
       ctx.arc(st.x, st.y, r, 0, 6.2832);
-      ctx.strokeStyle = rgba(hues[cls], (1-f) * (grow ? 0.5 : 0.36));
-      ctx.lineWidth = Math.max(1/DPR, grow ? 1.2 : 1);
+      ctx.strokeStyle = rgba(hues[cls], (1-f) * 0.5);
+      ctx.lineWidth = Math.max(1/DPR, 1.2);
       ctx.stroke();
     };
     for (; i < EVN && EVT[i] <= simSec; i++) visit(i);
@@ -803,8 +793,8 @@ function updateChrome(){
     : "";
   document.getElementById("legend-note").textContent =
     "Count = trains moving at this minute. Dot size follows category; regional " +
-    "is drawn small. A ring opens where a service begins and closes where one " +
-    "terminates; the strip by the scrubber counts those across the day. " +
+    "is drawn small. A ring opens where a service begins; the strip by the " +
+    "scrubber counts those starts across the day. " +
     "Urban transit (S-Bahn, U-Bahn, tram, bus) is excluded." + scopeNote;
 }
 
