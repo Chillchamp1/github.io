@@ -5,8 +5,12 @@ long-distance and regional train in the country, drawn from the official
 nationwide timetable. The map is dark at every hour, so the trains are the
 only bright thing on it.
 
+**Live: https://chillchamp1.github.io/github.io/**
+
 Open `index.html` — it is self-contained, so a local double-click works as well
 as GitHub Pages. No server, no build step, no network calls except the webfont.
+Every push to `main` republishes the site via `.github/workflows/pages.yml`; the
+whole page is one 6.7 MB file, so the first load takes a moment on a slow link.
 
 ## What is on screen
 
