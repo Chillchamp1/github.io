@@ -20,9 +20,9 @@ stations across all sixteen states.
 | Category | Trips | Drawn as |
 |---|---|---|
 | **ICE / TGV / RJ** | 800 | high-speed, full-size dot |
-| **IC / EC / FLX** | 534 | intercity, full-size dot |
+| **IC / EC / FLX** | 493 | intercity, full-size dot |
 | **RE / RB / MEX** | 26,410 | regional, half-size dot — deliberately the quietest mark |
-| **NJ / EN** | 13 | night services, **yellow** |
+| **NJ / EN** | 54 | night services, **yellow** |
 
 Urban transit — S-Bahn, U-Bahn, tram, bus, dial-a-ride — is filtered out; at
 national scale it would bury everything else. Rail-replacement buses carrying
@@ -44,6 +44,11 @@ is already dense, and two left the map permanently speckled. The strip behind
 the scrubber counts the same starts across the day, in one ink because the
 categorical hues stay reserved for the trains.
 
+A compact key — swatch, code, one word — is drawn on the map itself, in the
+open ground below Saxony. It costs the frame nothing and means a screen
+recording carries its own legend; the panel below the map keeps the full
+labels, the live counts and the note.
+
 The clock sits on the Baltic about 30 km off the Fischland-Darß coast, where
 the nearest station is far enough away that it never covers the network. Giving
 it open water rather than a reserved band hands the whole stage to the map.
@@ -57,9 +62,14 @@ empty bands; a wide desktop gets the neighbours. On
 phones the map keeps a full screen to itself and the legend, figures and
 controls sit below the fold.
 
-The night-train count is genuinely small: DELFI carries only the NightJet and
-EuroNight runs the operators deliver to it, and ordinary ICE/IC services
-finishing after midnight stay in their own categories.
+Finding the night trains takes more than matching on "NJ". DELFI names most
+NightJet and EuroNight runs by their long-distance line number with an N
+suffix — `12N` Basel–Berlin, `91N` Amsterdam–Wien, `20N` Hamburg–Basel — and
+only a couple of partner-operated legs literally "NJ", so a name match alone
+found 13 of the 54 and left the other 41 drawn as orange intercity trains. The
+builder now reads any N-suffixed line as a night service, scoped to route_type
+102, where every one of them is. Ordinary ICE/IC services finishing after
+midnight still stay in their own categories.
 
 ## The data
 
@@ -104,6 +114,21 @@ a feed uses extended GTFS route types (DELFI: 101 high-speed, 102
 long-distance, 105 sleeper, 106 regional rail) and name-first for plain
 type-2 feeds. Times are stored in whole minutes to keep the JSON compact.
 
+A portrait video for phones and social posts comes from the page itself:
+
+```sh
+node build/export_video.js --seconds 60 --start 00:00 --out german-rail-day.mp4
+```
+
+That gives 1080x1920 H.264. Playback is not screen-recorded -- the page is
+paused and the scrubber stepped one frame at a time, so each frame lands on an
+exact simulated minute however long the render takes, and the whole day fits
+the requested length regardless of machine speed. Frames go out as JPEG
+because PNG encoding at that size costs more per frame than the page takes to
+draw. `--start HH:MM` picks the clock time the day opens on; omit it to start
+where the page does, at the quietest minute of the night. Needs playwright and
+ffmpeg (`pip install imageio-ffmpeg` supplies one).
+
 The basemap only needs rebuilding if you change the geometry:
 
 ```sh
@@ -119,6 +144,7 @@ data/germany.json     generated basemap rings
 build/build_gtfs.py   GTFS feed(s) -> JSON, merged onto one service date
 build/build_geo.py    GeoJSON -> compact rings
 build/bundle.py       both JSON files -> inlined into index.html
+build/export_video.js index.html -> portrait MP4
 ```
 
 ## Colour and rendering

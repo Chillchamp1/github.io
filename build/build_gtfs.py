@@ -39,6 +39,12 @@ def read(path, name):
 
 
 NIGHT_NAME = re.compile(r"^(NJ|EN|DN|CNL)(?=[ \d]|$)")
+# DELFI names most NightJet and EuroNight runs by their long-distance line
+# number with an N suffix -- 12N Basel-Berlin, 91N Amsterdam-Wien -- and only
+# a couple of partner-operated legs literally "NJ". Without this they land in
+# intercity: 41 of the 54 night services were drawn as orange IC trains.
+# Scoped to route_type 102, where every N-suffixed line is a night service.
+NIGHT_LINE = re.compile(r"^\d+N$")
 REGIONAL_NAME = re.compile(r"^(IRE|RE|RB|MEX)(?=[ \d]|$)")
 NOISE_NAME = re.compile(r"^(AST|ALT|SEV|EV|Bus|Schiff|RUF)", re.I)
 
@@ -62,6 +68,8 @@ def classify(route):
         return "night", name
     if rt == 101:                                    # high-speed rail
         return ("regional", name) if REGIONAL_NAME.match(name) else ("ice", name)
+    if rt == 102 and NIGHT_LINE.match(name):
+        return "night", name
     if rt == 102:                                    # long-distance rail
         for cls, pat in CLASSES:
             if re.match(pat, name):
@@ -193,7 +201,9 @@ def main():
             if seq[i][2] < seq[i][1]:
                 seq[i][2] = seq[i][1]
         name = t["name"]
-        if name.isdigit():
+        # Bare line numbers ("17", "12N") mean nothing on hover; give them
+        # their category's prefix.
+        if name.isdigit() or (t["cls"] == "night" and NIGHT_LINE.match(name)):
             name = {"ice": "ICE ", "intercity": "IC ",
                     "night": "NJ "}.get(t["cls"], "") + name
         out_trips.append({"c": classes.index(t["cls"]), "n": name,
