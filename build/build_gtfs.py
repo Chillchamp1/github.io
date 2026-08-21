@@ -30,30 +30,48 @@ DROP_TYPES = {0, 1, 3, 4, 5, 6, 7, 11, 12}
 
 
 def read(path, name):
+    """Yield rows lazily -- stop_times.txt can run to gigabytes."""
     fp = os.path.join(path, name)
     if not os.path.exists(fp):
-        return []
+        return
     with open(fp, encoding="utf-8-sig", newline="") as f:
-        return list(csv.DictReader(f))
+        yield from csv.DictReader(f)
+
+
+NIGHT_NAME = re.compile(r"^(NJ|EN|DN|CNL)(?=[ \d]|$)")
+REGIONAL_NAME = re.compile(r"^(IRE|RE|RB|MEX)(?=[ \d]|$)")
+NOISE_NAME = re.compile(r"^(AST|ALT|SEV|EV|Bus|Schiff|RUF)", re.I)
 
 
 def classify(route):
+    """Type-first where the feed uses extended route types (DELFI), name-first
+    for plain type-2 feeds. Returns (class, display_name) or (None, name)."""
     name = (route.get("route_short_name") or route.get("route_long_name") or "").strip()
     if not name or DROP.match(name):
         return None, name
     try:
         rt = int(route.get("route_type") or 2)
-        # 2 = rail; 100-117 = extended rail types. Everything else is urban
-        # transit, bus or ferry, dropped regardless of name.
-        if rt != 2 and not (100 <= rt <= 117):
-            return None, name
-        if rt in DROP_TYPES:
-            return None, name
     except ValueError:
-        pass
+        rt = 2
+    # 2 = rail; 100-117 = extended rail. 109 is S-Bahn, 200+ coach/bus/etc.
+    if rt != 2 and not (100 <= rt <= 117):
+        return None, name
+    if rt in DROP_TYPES or rt == 109:
+        return None, name
+    if NIGHT_NAME.match(name) or rt == 105:          # 105 = sleeper rail
+        return "night", name
+    if rt == 101:                                    # high-speed rail
+        return ("regional", name) if REGIONAL_NAME.match(name) else ("ice", name)
+    if rt == 102:                                    # long-distance rail
+        for cls, pat in CLASSES:
+            if re.match(pat, name):
+                return cls, name
+        return "intercity", name
     for cls, pat in CLASSES:
         if re.match(pat, name):
             return cls, name
+    if rt in (103, 106) and not NOISE_NAME.match(name):
+        return "regional", name                      # (inter)regional rail
     return None, name
 
 
@@ -142,11 +160,19 @@ def main():
             t["st"].append((int(r["stop_sequence"]), ns + r["stop_id"], arr, dep))
 
     # Assemble, keeping only trips that actually touch the bbox.
-    used, order = {}, []
+    used, order, coord_key = {}, [], {}
 
     def idx(sid):
-        if sid not in used:
-            used[sid] = len(order)
+        """Feeds carry one stop per platform; merge to one station per
+        (name, ~100 m cell) so the map draws each station once."""
+        if sid in used:
+            return used[sid]
+        lon, lat, name = stops[sid]
+        key = (name, round(lon, 3), round(lat, 3))
+        if key in coord_key:
+            used[sid] = coord_key[key]
+        else:
+            used[sid] = coord_key[key] = len(order)
             order.append(sid)
         return used[sid]
 
@@ -159,14 +185,18 @@ def main():
         if not any(minlon <= stops[s][0] <= maxlon and minlat <= stops[s][1] <= maxlat
                    for _, s, _, _ in st):
             continue
-        seq = [[idx(s), a, d] for _, s, a, d in st]
+        seq = [[idx(s), a // 60, d // 60] for _, s, a, d in st]
         # Times must be non-decreasing for interpolation to behave.
         for i in range(1, len(seq)):
             if seq[i][1] < seq[i - 1][2]:
                 seq[i][1] = seq[i - 1][2]
             if seq[i][2] < seq[i][1]:
                 seq[i][2] = seq[i][1]
-        out_trips.append({"c": classes.index(t["cls"]), "n": t["name"],
+        name = t["name"]
+        if name.isdigit():
+            name = {"ice": "ICE ", "intercity": "IC ",
+                    "night": "NJ "}.get(t["cls"], "") + name
+        out_trips.append({"c": classes.index(t["cls"]), "n": name,
                           "h": t["head"], "s": seq})
         counts[t["cls"]] += 1
 
@@ -176,10 +206,11 @@ def main():
     d = datetime.date(int(args.date[:4]), int(args.date[4:6]), int(args.date[6:]))
     sources = []
     for src in args.gtfs:
-        feed = (read(src, "feed_info.txt") or [{}])[0]
+        feed = next(iter(read(src, "feed_info.txt")), {})
         sources.append(feed.get("feed_publisher_name",
                                 os.path.basename(os.path.abspath(src))))
     doc = {
+        "tunit": "min",
         "date": d.isoformat(),
         "weekday": d.strftime("%A"),
         "classes": classes,
