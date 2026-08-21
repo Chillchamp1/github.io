@@ -114,6 +114,21 @@ a feed uses extended GTFS route types (DELFI: 101 high-speed, 102
 long-distance, 105 sleeper, 106 regional rail) and name-first for plain
 type-2 feeds. Times are stored in whole minutes to keep the JSON compact.
 
+A portrait video for phones and social posts comes from the page itself:
+
+```sh
+node build/export_video.js --seconds 60 --start 12:00 --out german-rail-day.mp4
+```
+
+That gives 1080x1920 H.264. Playback is not screen-recorded -- the page is
+paused and the scrubber stepped one frame at a time, so each frame lands on an
+exact simulated minute however long the render takes, and the whole day fits
+the requested length regardless of machine speed. Frames go out as JPEG
+because PNG encoding at that size costs more per frame than the page takes to
+draw. `--start HH:MM` picks the clock time the day opens on; omit it to start
+where the page does, at the quietest minute of the night. Needs playwright and
+ffmpeg (`pip install imageio-ffmpeg` supplies one).
+
 The basemap only needs rebuilding if you change the geometry:
 
 ```sh
@@ -129,6 +144,7 @@ data/germany.json     generated basemap rings
 build/build_gtfs.py   GTFS feed(s) -> JSON, merged onto one service date
 build/build_geo.py    GeoJSON -> compact rings
 build/bundle.py       both JSON files -> inlined into index.html
+build/export_video.js index.html -> portrait MP4
 ```
 
 ## Colour and rendering
