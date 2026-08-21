@@ -20,9 +20,9 @@ stations across all sixteen states.
 | Category | Trips | Drawn as |
 |---|---|---|
 | **ICE / TGV / RJ** | 800 | high-speed, full-size dot |
-| **IC / EC / FLX** | 534 | intercity, full-size dot |
+| **IC / EC / FLX** | 493 | intercity, full-size dot |
 | **RE / RB / MEX** | 26,410 | regional, half-size dot — deliberately the quietest mark |
-| **NJ / EN** | 13 | night services, **yellow** |
+| **NJ / EN** | 54 | night services, **yellow** |
 
 Urban transit — S-Bahn, U-Bahn, tram, bus, dial-a-ride — is filtered out; at
 national scale it would bury everything else. Rail-replacement buses carrying
@@ -57,9 +57,14 @@ empty bands; a wide desktop gets the neighbours. On
 phones the map keeps a full screen to itself and the legend, figures and
 controls sit below the fold.
 
-The night-train count is genuinely small: DELFI carries only the NightJet and
-EuroNight runs the operators deliver to it, and ordinary ICE/IC services
-finishing after midnight stay in their own categories.
+Finding the night trains takes more than matching on "NJ". DELFI names most
+NightJet and EuroNight runs by their long-distance line number with an N
+suffix — `12N` Basel–Berlin, `91N` Amsterdam–Wien, `20N` Hamburg–Basel — and
+only a couple of partner-operated legs literally "NJ", so a name match alone
+found 13 of the 54 and left the other 41 drawn as orange intercity trains. The
+builder now reads any N-suffixed line as a night service, scoped to route_type
+102, where every one of them is. Ordinary ICE/IC services finishing after
+midnight still stay in their own categories.
 
 ## The data
 
