@@ -266,10 +266,10 @@ const GEO  = readJSON("geodata",   "/*GEO_START*/",  "/*GEO_END*/");
    reaches. Regional is the quietest mark on the map by a wide margin -- it
    outnumbers every other category roughly twenty to one. */
 const CLASS_META = {
-  ice:       {label:"ICE / TGV / RJ — high-speed", role:"ice",   size:0.50, secs:600, trail:6},
-  intercity: {label:"IC / EC — intercity",         role:"ic",    size:0.50, secs:600, trail:6},
-  regional:  {label:"RE / RB — regional",          role:"reg",   size:0.30, secs:350, trail:3},
-  night:     {label:"NJ / EN — night",             role:"night", size:0.43, secs:600, trail:6},
+  ice:       {label:"ICE / TGV / RJ — high-speed", role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
+  intercity: {label:"IC / EC — intercity",         role:"ic",    size:0.50, secs:600, trail:6, ring:1.00},
+  regional:  {label:"RE / RB — regional",          role:"reg",   size:0.30, secs:350, trail:3, ring:0.10},
+  night:     {label:"NJ / EN — night",             role:"night", size:0.43, secs:600, trail:6, ring:1.00},
 };
 const CLASSES = DATA.classes || ["ice","intercity","regional","night"];
 
@@ -371,6 +371,7 @@ for (const [label, alat, alon] of CITY_ANCHORS){
    bloom at origins and close at termini, and the same two events drive the
    day-profile strip under the controls. Times fold into one day, so a service
    arriving at 25:10 rings at 01:10. */
+const RING_SCALE = CLASSES.map(k => (CLASS_META[k] || {}).ring ?? 1);
 const EVN = TRIPS.length * 2;
 const EVT = new Int32Array(EVN), EVS = new Int32Array(EVN);
 const EVC = new Uint8Array(EVN), EVK = new Uint8Array(EVN);
@@ -711,11 +712,12 @@ function draw(){
       const st = ST[EVS[idx]];
       if (st.x < -20 || st.x > W+20 || st.y < -20 || st.y > H+20) return;
       const grow = EVK[idx] === 0;
-      const r = 1.5 + (grow ? f : 1-f) * 7;
+      const k = RING_SCALE[EVC[idx]];
+      const r = (1.5 + (grow ? f : 1-f) * 7) * k;
       ctx.beginPath();
       ctx.arc(st.x, st.y, r, 0, 6.2832);
       ctx.strokeStyle = rgba(hues[EVC[idx]], (1-f) * (grow ? 0.45 : 0.32));
-      ctx.lineWidth = grow ? 1.3 : 1;
+      ctx.lineWidth = Math.max(1/DPR, (grow ? 1.3 : 1) * k);
       ctx.stroke();
     };
     for (; i < EVN && EVT[i] <= simSec; i++) visit(i);
