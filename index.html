@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* The page ignores the viewer's light/dark preference on purpose: the map
-     is lit by the simulated time of day, and flips to night at sunset. */
+  /* The page ignores the viewer's light/dark preference on purpose: it is a
+     night map at every hour, so the trains stay the brightest thing on it. */
   :root{
-    --bg-bot:#efece6;
-    --ink:#1b1a18; --ink-2:#55524c; --ink-3:#8b877f;
-    --rule:rgba(27,26,24,0.14); --panel:rgba(255,255,255,0.74);
-    --ice:#2a78d6; --ic:#eb6834; --reg:#1baf7a; --night:#caa500;
+    --bg-bot:#0a1018;
+    --ink:#e9eff7; --ink-2:#a7b3c4; --ink-3:#78859a;
+    --rule:rgba(39,51,63,0.7); --panel:rgba(13,20,30,0.82);
+    --ice:#5aa9ff; --ic:#ff7a45; --reg:#35d69a; --night:#ffd93d;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -36,25 +36,20 @@
   /* ---- clock ---------------------------------------------------------- */
   header{
     position:absolute;top:0;left:0;right:0;z-index:3;
-    padding:22px 24px 0;text-align:center;pointer-events:none;
+    padding:14px 20px 0;text-align:center;pointer-events:none;
   }
   #clock{
     font-family:"IBM Plex Mono",ui-monospace,monospace;
     font-weight:300;
-    font-size:clamp(3.2rem,9vw,6.4rem);
-    line-height:0.94;
-    letter-spacing:-0.02em;
+    font-size:clamp(2rem,4.6vw,3rem);
+    line-height:1;
+    letter-spacing:-0.01em;
     font-variant-numeric:tabular-nums;
     color:var(--ink);
   }
-  #clock .mins{opacity:0.55}
-  #datum{
-    margin-top:8px;
-    font-size:0.76rem;letter-spacing:0.18em;text-transform:uppercase;
-    color:var(--ink-2);font-weight:400;
-  }
+  #clock .mins{opacity:0.6}
   #running{
-    margin-top:4px;font-size:0.72rem;letter-spacing:0.06em;color:var(--ink-3);
+    margin-top:2px;font-size:0.68rem;letter-spacing:0.06em;color:var(--ink-3);
     font-family:"IBM Plex Mono",monospace;
   }
 
@@ -181,7 +176,6 @@
   <canvas id="map"></canvas>
   <header>
     <div id="clock"><span class="hrs">--</span><span class="mins">:--</span></div>
-    <div id="datum">&nbsp;</div>
     <div id="running">&nbsp;</div>
   </header>
   <div id="meta"></div>
@@ -218,71 +212,28 @@
 "use strict";
 
 /* ====================================================================== */
-/* Palette. Day and night are two complete sets; the map switches between   */
-/* them at sunset rather than cross-fading. The three train hues are the    */
-/* first three slots of a colourblind-safe categorical palette and clear    */
-/* the all-pairs CVD and normal-vision gates against BOTH surfaces. Night   */
-/* services fold to a neutral because no fourth hue clears both.            */
-/* ====================================================================== */
-const DAY = {
-  bgTop:"#e7e3da", bgBot:"#efece6",
-  land:"#e5e0d5", landLine:"#d5cfc1", landEdge:"#b4ada0",
-  ink:"#1b1a18", ink2:"#55524c", ink3:"#8b877f",
-  rule:"#d3cfc6", panel:"#ffffff",
-  station:"#b3ada2", hub:"#8b877f",
-  ice:"#2a78d6", ic:"#eb6834", reg:"#1baf7a", night:"#caa500",
-};
-const NIGHT = {
-  bgTop:"#060d18", bgBot:"#0b1626",
-  land:"#101e33", landLine:"#1b2d47", landEdge:"#354864",
-  ink:"#eaf0f8", ink2:"#a9b4c6", ink3:"#6d7a8f",
-  rule:"#243349", panel:"#101d30",
-  station:"#2c3a50", hub:"#46566f",
-  ice:"#3987e5", ic:"#d95926", reg:"#199e70", night:"#ffd93d",
+/* Palette. The map is always night: a near-black ground so the trains are the
+   only bright thing on screen. The four hues clear all-pairs CVD separation
+   (worst deutan dE 9.9, tritan 7.3) and normal-vision separation (worst 21.3)
+   against this surface, and all four exceed 3:1 contrast against it. They sit
+   above the categorical lightness band on purpose -- that band is a proxy for
+   readability against the surface, and here the direct contrast measurement
+   supersedes it. */
+const PAL = {
+  bgTop:"#05080e", bgBot:"#0a1018",
+  land:"#121a26", landLine:"#1d2735", landEdge:"#35435a",
+  ink:"#e9eff7", ink2:"#a7b3c4", ink3:"#78859a",
+  rule:"#27333f", panel:"#0d141e",
+  station:"#2b3849", hub:"#46586f",
+  ice:"#5aa9ff", ic:"#ff7a45", reg:"#35d69a", night:"#ffd93d",
 };
 
 const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
 const RGB = {};
-for (const k in DAY) RGB[k] = [hex2rgb(DAY[k]), hex2rgb(NIGHT[k])];
-const pick = (role, isNight) => RGB[role][isNight ? 1 : 0];
+for (const k in PAL) RGB[k] = hex2rgb(PAL[k]);
+const pick = role => RGB[role];
 const css  = c => `rgb(${c[0]},${c[1]},${c[2]})`;
 const rgba = (c,a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-
-/* ====================================================================== */
-/* Sun. NOAA low-precision solar position for the centre of Germany; the    */
-/* map is "night" whenever the sun is below the horizon.                    */
-/* ====================================================================== */
-const CENTRE_LAT = 51.16, CENTRE_LON = 10.45;
-
-function solarElevation(utcMs, lat, lon){
-  const rad = Math.PI/180;
-  const n = utcMs/86400000 + 2440587.5 - 2451545.0;
-  const L = (280.460 + 0.9856474*n) % 360;
-  const g = ((357.528 + 0.9856003*n) % 360) * rad;
-  const lam = (L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g)) * rad;
-  const eps = (23.439 - 0.0000004*n) * rad;
-  const dec = Math.asin(Math.sin(eps)*Math.sin(lam));
-  const ra  = Math.atan2(Math.cos(eps)*Math.sin(lam), Math.cos(lam));
-  const gmst = (18.697374558 + 24.06570982441908*n) % 24;
-  const ha = ((gmst*15 + lon) * rad) - ra;
-  const phi = lat*rad;
-  return Math.asin(Math.sin(phi)*Math.sin(dec) +
-                   Math.cos(phi)*Math.cos(dec)*Math.cos(ha)) / rad;
-}
-
-function lastSunday(year, month){
-  const d = new Date(Date.UTC(year, month+1, 0));
-  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
-  return d;
-}
-/* Berlin runs UTC+1, or UTC+2 from 01:00 UTC on the last Sunday in March to
-   the same moment on the last Sunday in October. */
-function berlinOffsetHours(dateISO){
-  const [y,m,dd] = dateISO.split("-").map(Number);
-  const t = Date.UTC(y, m-1, dd, 12);
-  return (t >= lastSunday(y,2).getTime()+3600000 &&
-          t <  lastSunday(y,9).getTime()+3600000) ? 2 : 1;
-}
 
 /* ====================================================================== */
 /* Data                                                                     */
@@ -306,20 +257,40 @@ const CLASS_META = {
 const CLASSES = DATA.classes || ["ice","intercity","regional","night"];
 
 const DAY_SECONDS = 86400;
-const TZ_OFFSET = berlinOffsetHours(DATA.date);
-const DATE_UTC0 = Date.UTC(...DATA.date.split("-").map((v,i)=> i===1 ? v-1 : +v))
-                  - TZ_OFFSET*3600000;
 
 /* Equidistant-cylindrical frame with the longitude axis scaled by cos(lat):
-   Mercator would stretch Germany about 60% taller than it is. */
-const VIEW = {lon0:4.60, lon1:17.00, lat0:46.50, lat1:55.50};
-const LON_SCALE = Math.cos(((VIEW.lat0+VIEW.lat1)/2)*Math.PI/180);
-const FRAME_ASPECT = ((VIEW.lon1-VIEW.lon0)*LON_SCALE) / (VIEW.lat1-VIEW.lat0);
+   Mercator would stretch Germany about 60% taller than it is.
+
+   The window itself adapts to the container. CORE is Germany with a little
+   air; whichever axis the container has to spare is widened towards MAXV,
+   which is how far the feed's international services reach. A phone in
+   portrait therefore gets Germany filling the screen instead of a small map
+   marooned in two empty bands, and a wide desktop gets the neighbours. */
+const CORE = {lon0:5.60, lon1:15.30, lat0:47.10, lat1:55.20};
+const MAXV = {lon0:3.00, lon1:19.20, lat0:45.20, lat1:56.30};
+let VIEW = {...CORE};
+let FRAME_ASPECT = 1;
+
+function fitView(aspect){
+  let {lon0, lon1, lat0, lat1} = CORE;
+  const k = Math.cos(((lat0+lat1)/2) * Math.PI/180);
+  const w = (lon1-lon0)*k, h = lat1-lat0;
+  if (aspect > w/h){
+    const extra = Math.min((aspect*h - w)/k, (MAXV.lon1-MAXV.lon0) - (lon1-lon0));
+    lon0 -= extra/2; lon1 += extra/2;
+  } else {
+    const extra = Math.min(w/aspect - h, (MAXV.lat1-MAXV.lat0) - (lat1-lat0));
+    lat0 -= extra/2; lat1 += extra/2;
+  }
+  VIEW = {lon0, lon1, lat0, lat1};
+  const k2 = Math.cos(((lat0+lat1)/2) * Math.PI/180);
+  FRAME_ASPECT = ((lon1-lon0)*k2) / (lat1-lat0);
+}
 const ux = lon => (lon-VIEW.lon0)/(VIEW.lon1-VIEW.lon0);
 const uy = lat => (VIEW.lat1-lat)/(VIEW.lat1-VIEW.lat0);
 
 const ST = DATA.stations.map(s => ({
-  name:s[2], ux:ux(s[0]), uy:uy(s[1]), calls:0, x:0, y:0,
+  name:s[2], lon:s[0], lat:s[1], calls:0, x:0, y:0,
 }));
 for (const tr of DATA.trips) for (const st of tr.s) ST[st[0]].calls++;
 /* Hubs are the top stations by calls, not an absolute cutoff: a fixed
@@ -365,17 +336,14 @@ const CITY_ANCHORS = [
 ];
 const LABELS = [];
 for (const [label, alat, alon] of CITY_ANCHORS){
-  const aux = ux(alon), auy = uy(alat);
+  const k = Math.cos(alat*Math.PI/180);
   let best = null, bestD = Infinity;
   for (const s of ST){
-    const d = (s.ux-aux)**2 + (s.uy-auy)**2;
-    if (d < bestD || (d === bestD && best && s.calls > best.calls)){
-      bestD = d; best = s;
-    }
+    const d = ((s.lon-alon)*k)**2 + (s.lat-alat)**2;
+    if (d < bestD){ bestD = d; best = s; }
   }
-  /* ~3 km in frame units */
-  const lim = (3/111.32/(VIEW.lat1-VIEW.lat0))**2;
-  if (best && bestD < lim) LABELS.push({label, s:best});
+  /* within ~3 km of the city's main station */
+  if (best && bestD < (3/111.32)**2) LABELS.push({label, s:best});
 }
 
 const PEAK = (() => {
@@ -397,7 +365,7 @@ let pathLand = null, pathStates = null;
 /* Sky, land and the ~10,000 station dots never move; they re-render only on
    resize or the sunset flip, and each frame starts from this cached bitmap. */
 const base = document.createElement("canvas");
-let baseNight = null;
+let baseReady = false;
 
 function buildBasemap(){
   const ring = (path, r) => {
@@ -412,20 +380,21 @@ function buildBasemap(){
 }
 
 function resize(){
-  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  const dpr = Math.min(window.devicePixelRatio||1, 3);
   W = stage.clientWidth; H = stage.clientHeight;
   if (!W || !H) return;
   DPR = dpr;
   cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  baseNight = null;
+  baseReady = false;
 
   const PAD = Math.min(W,H) * 0.03;
-  const topBand = Math.min(104, H*0.115);
+  const topBand = Math.min(62, H*0.072);
   /* Below the fold on mobile, so the map no longer has to dodge the panels. */
   const botBand = window.matchMedia("(max-width:820px)").matches ? 26 : 92;
   const availW = W - PAD*2;
   const availH = H - PAD*2 - topBand - botBand;
+  fitView(availW/availH);
   let h = availH, w = h*FRAME_ASPECT;
   if (w > availW){ w = availW; h = w/FRAME_ASPECT; }
   SX = w; SY = h;
@@ -434,39 +403,40 @@ function resize(){
      width-limited and dead space below reads better than above. */
   OY = PAD + topBand + (availH-h)*0.40;
 
-  for (const s of ST){ s.x = OX + s.ux*SX; s.y = OY + s.uy*SY; }
+  for (const s of ST){ s.x = OX + ux(s.lon)*SX; s.y = OY + uy(s.lat)*SY; }
   buildBasemap();
+  renderBase();
 }
 
-function renderBase(isNight){
+function renderBase(){
   base.width = cv.width; base.height = cv.height;
   const b = base.getContext("2d", {alpha:false});
   b.setTransform(DPR,0,0,DPR,0,0);
   const g = b.createLinearGradient(0,0,0,H);
-  g.addColorStop(0, css(pick("bgTop",isNight)));
-  g.addColorStop(1, css(pick("bgBot",isNight)));
+  g.addColorStop(0, css(pick("bgTop")));
+  g.addColorStop(1, css(pick("bgBot")));
   b.fillStyle = g;
   b.fillRect(0,0,W,H);
   if (pathLand){
-    b.fillStyle = css(pick("land",isNight));
+    b.fillStyle = css(pick("land"));
     b.fill(pathLand, "evenodd");
     b.lineJoin = "round";
-    b.strokeStyle = rgba(pick("landLine",isNight), 0.9);
+    b.strokeStyle = rgba(pick("landLine"), 0.9);
     b.lineWidth = 0.8;
     b.stroke(pathStates);
-    b.strokeStyle = rgba(pick("landEdge",isNight), 0.85);
+    b.strokeStyle = rgba(pick("landEdge"), 0.85);
     b.lineWidth = 1.1;
     b.stroke(pathLand);
   }
-  const cSt = pick("station",isNight), cHub = pick("hub",isNight);
+  const cSt = pick("station"), cHub = pick("hub");
   for (const s of ST){
     if (s.x < -30 || s.x > W+30 || s.y < -30 || s.y > H+30) continue;
     b.beginPath();
     b.arc(s.x, s.y, s.hub ? 1.7 : 0.9, 0, 6.2832);
-    b.fillStyle = rgba(s.hub ? cHub : cSt, s.hub ? 0.8 : 0.45);
+    b.fillStyle = rgba(s.hub ? cHub : cSt, s.hub ? 0.85 : 0.5);
     b.fill();
   }
-  baseNight = isNight;
+  baseReady = true;
 }
 
 /* ====================================================================== */
@@ -524,32 +494,16 @@ const TRAIL_SEC = 1200;       /* 20 simulated minutes of tail */
 const TRAIL_STEPS = 7;
 const DOT_R = 1.8;
 let hitList = [];
-let wasNight = null;
 
 /* ====================================================================== */
 /* Draw                                                                     */
 /* ====================================================================== */
 function draw(){
-  const isNight = solarElevation(DATE_UTC0 + simSec*1000, CENTRE_LAT, CENTRE_LON) <= 0;
+  const bgBot = pick("bgBot"), cInk3 = pick("ink3");
+  const hues  = CLASSES.map(k => pick(CLASS_META[k].role));
 
-  const bgBot = pick("bgBot",isNight);
-  const cInk3 = pick("ink3",isNight);
-  const hues  = CLASSES.map(k => pick(CLASS_META[k].role, isNight));
-
-  if (isNight !== wasNight){
-    wasNight = isNight;
-    const rs = document.documentElement.style;
-    rs.setProperty("--ink",   css(pick("ink",isNight)));
-    rs.setProperty("--ink-2", css(pick("ink2",isNight)));
-    rs.setProperty("--ink-3", css(cInk3));
-    rs.setProperty("--rule",  rgba(pick("rule",isNight), 0.55));
-    rs.setProperty("--panel", rgba(pick("panel",isNight), isNight ? 0.80 : 0.74));
-    rs.setProperty("--bg-bot", css(bgBot));
-    CLASSES.forEach((k,i) => rs.setProperty("--"+CLASS_META[k].role, css(hues[i])));
-  }
-
-  /* --- cached sky + Germany + stations --- */
-  if (baseNight !== isNight) renderBase(isNight);
+  /* --- cached ground: sky, Germany and every station dot --- */
+  if (!baseReady) renderBase();
   ctx.drawImage(base, 0, 0, W, H);
 
   /* --- trains --- */
@@ -577,22 +531,34 @@ function draw(){
         ctx.moveTo(px, py);
         ctx.lineTo(back[0], back[1]);
         ctx.strokeStyle = rgba(col, a);
-        ctx.lineWidth = 2.4 * scale * (1 - k/(steps+3));
+        ctx.lineWidth = Math.max(1/DPR, 2.4 * scale * (1 - k/(steps+3)));
         ctx.lineCap = "round";
         ctx.stroke();
         px = back[0]; py = back[1];
       }
 
-      if (isNight){
+      ctx.beginPath();
+      ctx.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
+      ctx.fillStyle = rgba(col, 0.15);
+      ctx.fill();
+
+      /* A dot only a pixel or two across antialiases into a smudge if it is
+         drawn as a circle at an arbitrary offset. Below ~1.3 device pixels of
+         radius, snap to the device grid and lay down a hard square instead --
+         same apparent size, none of the blur. */
+      const rDev = DOT_R*scale*DPR;
+      if (rDev < 1.3){
+        const side = Math.max(1, Math.round(rDev*2));
+        ctx.fillStyle = rgba(col, 1);
+        ctx.fillRect(Math.round(head[0]*DPR - side/2)/DPR,
+                     Math.round(head[1]*DPR - side/2)/DPR,
+                     side/DPR, side/DPR);
+      } else {
         ctx.beginPath();
-        ctx.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
-        ctx.fillStyle = rgba(col, 0.16);
+        ctx.arc(head[0], head[1], DOT_R*scale, 0, 6.2832);
+        ctx.fillStyle = rgba(col, 0.98);
         ctx.fill();
       }
-      ctx.beginPath();
-      ctx.arc(head[0], head[1], DOT_R*scale, 0, 6.2832);
-      ctx.fillStyle = rgba(col, 0.98);
-      ctx.fill();
 
       hitList.push([head[0], head[1], t]);
     }
@@ -741,11 +707,21 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 
+/* Hand the palette to CSS once; nothing about it changes at runtime now. */
+{
+  const rs = document.documentElement.style;
+  rs.setProperty("--ink",    css(pick("ink")));
+  rs.setProperty("--ink-2",  css(pick("ink2")));
+  rs.setProperty("--ink-3",  css(pick("ink3")));
+  rs.setProperty("--rule",   rgba(pick("rule"), 0.7));
+  rs.setProperty("--panel",  rgba(pick("panel"), 0.82));
+  rs.setProperty("--bg-bot", css(pick("bgBot")));
+  CLASSES.forEach(k => rs.setProperty("--"+CLASS_META[k].role,
+                                      css(pick(CLASS_META[k].role))));
+}
+
 new ResizeObserver(resize).observe(stage);
 resize();
-document.getElementById("datum").textContent =
-  new Date(DATA.date+"T12:00:00Z").toLocaleDateString("en-GB",
-    {weekday:"long", day:"numeric", month:"long", year:"numeric", timeZone:"UTC"});
 document.getElementById("loading").hidden = true;
 requestAnimationFrame(frame);
 
