@@ -1,0 +1,46 @@
+name: Deploy to GitHub Pages
+
+# index.html is fully self-contained — both datasets are inlined at build
+# time — so there is nothing to compile here. The job publishes the
+# repository as it stands on main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and a queued run waits rather than cancelling, so
+# the published site always ends up matching the newest commit.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # enablement turns Pages on and points its source at this workflow,
+      # so the site needs no visit to the repository settings.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # Without this marker Pages runs the tree through Jekyll, which drops
+      # anything it reads as a template.
+      - run: touch .nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
