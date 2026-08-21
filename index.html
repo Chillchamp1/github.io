@@ -15,7 +15,7 @@
     --bg-bot:#efece6;
     --ink:#1b1a18; --ink-2:#55524c; --ink-3:#8b877f;
     --rule:rgba(27,26,24,0.14); --panel:rgba(255,255,255,0.74);
-    --ice:#2a78d6; --ic:#eb6834; --reg:#1baf7a; --night:#5d5b57;
+    --ice:#2a78d6; --ic:#eb6834; --reg:#1baf7a; --night:#caa500;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -202,8 +202,8 @@
     <input id="scrub" type="range" min="0" max="86399" step="60" value="0" aria-label="Time of day">
     <div class="spd" role="group" aria-label="Playback speed">
       <button data-mps="4">1&times;</button>
-      <button data-mps="8" aria-pressed="true">2&times;</button>
-      <button data-mps="16">4&times;</button>
+      <button data-mps="8">2&times;</button>
+      <button data-mps="16" aria-pressed="true">4&times;</button>
     </div>
   </div>
 </div>
@@ -230,7 +230,7 @@ const DAY = {
   ink:"#1b1a18", ink2:"#55524c", ink3:"#8b877f",
   rule:"#d3cfc6", panel:"#ffffff",
   station:"#b3ada2", hub:"#8b877f",
-  ice:"#2a78d6", ic:"#eb6834", reg:"#1baf7a", night:"#5d5b57",
+  ice:"#2a78d6", ic:"#eb6834", reg:"#1baf7a", night:"#caa500",
 };
 const NIGHT = {
   bgTop:"#060d18", bgBot:"#0b1626",
@@ -238,7 +238,7 @@ const NIGHT = {
   ink:"#eaf0f8", ink2:"#a9b4c6", ink3:"#6d7a8f",
   rule:"#243349", panel:"#101d30",
   station:"#2c3a50", hub:"#46566f",
-  ice:"#3987e5", ic:"#d95926", reg:"#199e70", night:"#98a1b3",
+  ice:"#3987e5", ic:"#d95926", reg:"#199e70", night:"#ffd93d",
 };
 
 const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
@@ -294,11 +294,14 @@ const GEO  = readJSON("geodata",   "/*GEO_START*/",  "/*GEO_END*/");
 
 /* Relative dot size per category: regional is deliberately the quietest mark
    on the map, night services sit between it and the mainline categories. */
+/* size scales the dot and the trail width; secs is how far back the trail
+   reaches. Regional is the quietest mark on the map by a wide margin -- it
+   outnumbers every other category roughly twenty to one. */
 const CLASS_META = {
-  ice:       {label:"ICE / TGV / RJ — high-speed", role:"ice",   size:1.00, trail:7},
-  intercity: {label:"IC / EC — intercity",         role:"ic",    size:1.00, trail:7},
-  regional:  {label:"RE / RB — regional",          role:"reg",   size:0.52, trail:4},
-  night:     {label:"NJ / EN — night",             role:"night", size:0.85, trail:6},
+  ice:       {label:"ICE / TGV / RJ — high-speed", role:"ice",   size:0.50, secs:600, trail:6},
+  intercity: {label:"IC / EC — intercity",         role:"ic",    size:0.50, secs:600, trail:6},
+  regional:  {label:"RE / RB — regional",          role:"reg",   size:0.30, secs:350, trail:3},
+  night:     {label:"NJ / EN — night",             role:"night", size:0.43, secs:600, trail:6},
 };
 const CLASSES = DATA.classes || ["ice","intercity","regional","night"];
 
@@ -492,8 +495,28 @@ function posAt(t, sec){
 /* ====================================================================== */
 /* Clock state                                                              */
 /* ====================================================================== */
-let simSec = 5*3600;
-let minutesPerSecond = 8;
+/* Open at the quietest minute of the day, so the morning build-up plays out
+   from an empty network. Occupancy is counted over two days and folded,
+   because trips running past midnight are drawn on both sides of it. */
+const QUIETEST_SEC = (() => {
+  const delta = new Int32Array(2882);
+  for (const t of TRIPS){
+    const a = Math.max(0, Math.floor(t.t0/60));
+    const b = Math.min(2879, Math.floor(t.t1/60));
+    if (b >= a){ delta[a]++; delta[b+1]--; }
+  }
+  const occ = new Int32Array(2880);
+  for (let m = 0, run = 0; m < 2880; m++){ run += delta[m]; occ[m] = run; }
+  let best = 0, bestN = Infinity;
+  for (let m = 0; m < 1440; m++){
+    const n = occ[m] + occ[m+1440];
+    if (n < bestN){ bestN = n; best = m; }
+  }
+  return best * 60;
+})();
+
+let simSec = QUIETEST_SEC;
+let minutesPerSecond = 16;
 let playing = true;
 let lastFrame = performance.now();
 
@@ -543,9 +566,10 @@ function draw(){
       const col = hues[t.c], scale = meta.size;
 
       const steps = meta.trail || TRAIL_STEPS;
+      const span = meta.secs || TRAIL_SEC;
       let px = head[0], py = head[1];
       for (let k = 1; k <= steps; k++){
-        const back = posAt(t, sec - (TRAIL_SEC/steps)*k);
+        const back = posAt(t, sec - (span/steps)*k);
         if (!back) break;
         const a = (1 - k/steps) * 0.55;
         if (a <= 0.02) break;
@@ -619,12 +643,15 @@ function updateChrome(){
 
 {
   const rows = document.getElementById("legend-rows");
+  /* Swatches are sized relative to the largest category so the legend shows
+     the same hierarchy the map does. */
+  const maxSize = Math.max(...CLASSES.map(k => (CLASS_META[k]||{size:1}).size));
   CLASSES.forEach((k,i) => {
     const meta = CLASS_META[k] || {label:k, role:"night", size:1};
-    const d = Math.max(6, Math.round(11*meta.size));
+    const d = Math.max(5, Math.round(12*meta.size/maxSize));
     rows.insertAdjacentHTML("beforeend",
       '<div class="lg"><span class="sw" style="background:var(--'+meta.role+
-      ');width:'+d+'px;height:'+d+'px;margin:0 '+((11-d)/2)+'px"></span>'+
+      ');width:'+d+'px;height:'+d+'px;margin:0 '+((12-d)/2)+'px"></span>'+
       '<span class="nm">'+meta.label+'</span>'+
       '<span class="ct" id="lg-count-'+i+'">0</span></div>');
   });

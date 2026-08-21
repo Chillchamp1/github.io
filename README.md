@@ -17,17 +17,21 @@ stations across all sixteen states.
 | **ICE / TGV / RJ** | 800 | high-speed, full-size dot |
 | **IC / EC / FLX** | 534 | intercity, full-size dot |
 | **RE / RB / MEX** | 26,410 | regional, half-size dot — deliberately the quietest mark |
-| **NJ / EN** | 13 | night services, neutral grey |
+| **NJ / EN** | 13 | night services, **yellow** |
 
 Urban transit — S-Bahn, U-Bahn, tram, bus, dial-a-ride — is filtered out; at
 national scale it would bury everything else. Rail-replacement buses carrying
 RE/RB-style names are excluded too. Each train carries a tail so the direction
-of travel reads at a glance; regional tails are shorter and thinner. Only the
+of travel reads at a glance: ten minutes for the mainline categories, six for
+regional, which is also drawn at 60% of their dot size. Only the
 largest cities are named, anchored by coordinate rather than by station name
 (every state's data supplier names stations differently). A faint outline of
 Germany with its state borders sits underneath for orientation.
 
-Hover a train for its line and destination. Space bar toggles playback. On
+The animation opens at the quietest minute of the day, found by scanning
+per-minute occupancy rather than hard-coded, and runs at 4x by default: a full
+day in about 90 seconds. Hover a train for its line and destination. Space bar
+toggles playback. On
 phones the map keeps a full screen to itself and the legend, figures and
 controls sit below the fold.
 
@@ -104,10 +108,19 @@ build/bundle.py       both JSON files -> inlined into index.html
 
 ## Colour and rendering
 
-The four categories use the first three slots of a colourblind-safe categorical
-palette plus a neutral. The three hues clear all-pairs CVD and normal-vision
-separation against *both* the day and the night background; no fourth hue does,
-which is why night trains are grey rather than a fourth colour.
+High-speed, intercity and regional use the first three slots of a
+colourblind-safe categorical palette, which clear all-pairs CVD and
+normal-vision separation against both the day and the night background.
+
+Night services are yellow, and yellow is the awkward one: bright enough to
+separate cleanly from the intercity orange and it falls outside the palette's
+lightness band on the light surface; dark enough to sit in the band and it
+closes on orange. The two surfaces therefore get different steps — a deep gold
+`#caa500` by day (passes every gate, with a CVD-separation warning against
+orange in the 6-8 band) and a bright `#ffd93d` at night (passes outright). The
+warning is acceptable here because the category is thirteen trips that run
+almost exclusively while the map is dark, and because dot size, the legend and
+the figures table all carry the identity independently of hue.
 
 Sky, land and the ~7,500 station dots are rendered once per sunset flip onto an
 offscreen canvas and blitted each frame, so the per-frame cost is the moving
