@@ -1,7 +1,9 @@
 # A Wednesday on the German rail network
 
-A 24-hour time-lapse of every scheduled long-distance train in Germany, drawn
-from the published timetable. At sunset the map flips to night.
+A 24-hour time-lapse of one real day of German rail traffic — every scheduled
+long-distance train in the country, plus the full regional service of the VBB
+area (Berlin-Brandenburg) — drawn from published timetables. At sunset the map
+flips to night.
 
 Open `index.html` — it is self-contained, so a local double-click works as well
 as GitHub Pages. No server, no build step, no network calls except the webfont.
@@ -12,7 +14,7 @@ as GitHub Pages. No server, no build step, no network calls except the webfont.
 |---|---|
 | **ICE / TGV / RJ** | high-speed, full-size dot |
 | **IC / EC** | intercity, full-size dot |
-| **RE / RB** | regional, half-size dot — deliberately the quietest mark |
+| **RE / RB / IRE** | regional, half-size dot — deliberately the quietest mark |
 | **NJ / EN** | night services, neutral grey |
 
 Urban transit — S-Bahn, U-Bahn, tram, bus — is filtered out; at national scale
@@ -33,34 +35,41 @@ whole map is dark — one clean change at sunset rather than a gradual fade. For
 
 ## The data
 
-`data/trains.json` is built from [`fredlockheed/db-fv-gtfs`](https://github.com/fredlockheed/db-fv-gtfs),
-an unofficial GTFS conversion of DB's public API by Patrick Brosi. The bundled
-extract is **Wednesday 6 March 2019**, a normal midweek day away from holidays
-and timetable changes: 713 trains, 565 stations.
+Two feeds, one real day: **Wednesday 4 May 2016**, the busiest ordinary
+Wednesday the two sources have in common. 2,179 trains, 948 stations.
 
-Night services are complete for that day: 20 NightJet and 9 EuroNight runs, none
-dropped by the filters. Sixty trips cross midnight, and they are drawn on both
-sides of it; note that half of those are ordinary ICE and IC services finishing
-late, not night trains.
+**Long distance** comes from [`fredlockheed/db-fv-gtfs`](https://github.com/fredlockheed/db-fv-gtfs)
+(CC BY 4.0 API data), an unofficial GTFS conversion of DB's public API by
+Patrick Brosi — 618 ICE/IC/EC plus TGV, RJ and D trains nationwide.
 
-**The feed is long-distance only.** It carries four regional routes in total, so
-that category is nearly empty — a property of the source, not of the German
-network, which runs on the order of 20,000 regional services a day. Regional
-coverage needs a second feed; see below.
+**Regional** comes from the 2016 VBB GTFS
+([`derhuerst/vbb-gtfs`](https://github.com/derhuerst/vbb-gtfs), CC BY 3.0,
+originally published on Berlin's open-data portal). The CSVs were deleted from
+that repository's working tree years ago but survive as plain blobs in its git
+history; `build/extract_vbb.py` pulls the rail slice straight out of commit
+`53995ef` (valid 2016-04-21 to 2016-12-10). That gives 1,529 real RE/RB/IRE
+runs on the day — **for the VBB area only**. No nationwide regional timetable
+is publicly mirrored anywhere this build environment can reach; swapping in the
+full gtfs.de regional feed (below) removes that limitation.
 
-`data/germany.json` is the basemap: the national outline and the sixteen state
-borders, from [`isellsoap/deutschlandGeoJSON`](https://github.com/isellsoap/deutschlandGeoJSON)
-(Unlicense, public domain), reduced to three-decimal coordinates.
+Night services are complete: every NJ/EN/CNL/D night run in the national feed
+survives the filters, and trips crossing midnight are drawn on both sides of
+it. Rail-replacement buses carrying RE/RB-style names (VBB route_type 700) are
+excluded, as is all urban transit.
 
 ## Rebuilding
 
 ```sh
 git clone https://github.com/fredlockheed/db-fv-gtfs /tmp/db-fv-gtfs
-python3 build/build_gtfs.py /tmp/db-fv-gtfs/2019 20190306 -o data/trains.json
+git clone --filter=blob:none --no-checkout \
+    https://github.com/derhuerst/vbb-gtfs /tmp/vbb-gtfs
+python3 build/extract_vbb.py /tmp/vbb-gtfs /tmp/vbb-regional
+python3 build/build_gtfs.py /tmp/db-fv-gtfs/2016 /tmp/vbb-regional 20160504 \
+    -o data/trains.json --note "Regional coverage is the VBB area ..."
 python3 build/bundle.py          # inlines the JSON back into index.html
 ```
 
-`build_gtfs.py` takes any GTFS feed and any service date. It reads `calendar.txt`
+`build_gtfs.py` takes one or more GTFS feeds and any service date they share. It reads `calendar.txt`
 and `calendar_dates.txt`, keeps rail and drops urban transit, and writes a
 compact JSON of stations and stop-time sequences. Nothing in `index.html` is
 specific to this feed.
@@ -80,13 +89,15 @@ long distance. Both work with the extractor as-is:
 ```sh
 curl -o de_rv.zip https://download.gtfs.de/germany/rv_free/latest.zip
 unzip -d de_rv de_rv.zip
-python3 build/build_gtfs.py de_rv 20260826 -o data/trains.json
+python3 build/build_gtfs.py de_fv de_rv 20260826 -o data/trains.json
 python3 build/bundle.py
 ```
 
-The regional feed is far larger, so expect a heavier JSON and thin the trip list
-if the animation drops frames. For a current long-distance feed use `de_fv` the
-same way — the 2019 extract is bundled only because it is small.
+That replaces the VBB-only regional layer with nationwide coverage and moves
+the day to the present. The nationwide regional feed is roughly 20,000 trips a
+day, so expect a much heavier JSON; thin the trip list if the animation drops
+frames. The 2016 extracts are bundled only because they are what is reachable
+from this build environment.
 
 ## Layout
 
@@ -94,7 +105,8 @@ same way — the 2019 extract is bundled only because it is small.
 index.html            the whole visualisation, data inlined
 data/trains.json      generated timetable extract
 data/germany.json     generated basemap rings
-build/build_gtfs.py   GTFS -> JSON
+build/build_gtfs.py   GTFS feed(s) -> JSON, merged onto one service date
+build/extract_vbb.py  VBB rail-regional slice out of git history
 build/build_geo.py    GeoJSON -> compact rings
 build/bundle.py       both JSON files -> inlined into index.html
 ```

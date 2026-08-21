@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Turn a GTFS feed into the compact JSON the animation consumes.
+"""Turn one or more GTFS feeds into the compact JSON the animation consumes.
 
 Usage:
-    python3 build/build_gtfs.py <gtfs-dir> <YYYYMMDD> [-o data/trains.json]
+    python3 build/build_gtfs.py <gtfs-dir> [<gtfs-dir> ...] <YYYYMMDD> [-o data/trains.json]
+
+Several feeds merge into one day: pass e.g. a long-distance feed and a
+regional feed covering the same service date. Feed-local IDs never collide
+across sources because each feed is namespaced internally.
 
 The feed must contain agency/routes/trips/stops/stop_times plus calendar.txt
 and/or calendar_dates.txt. Only rail is kept; buses and urban transit
@@ -11,13 +15,15 @@ and/or calendar_dates.txt. Only rail is kept; buses and urban transit
 import argparse, csv, json, os, sys, datetime, math, re
 
 # Ordered: first pattern that matches a route's name wins.
+# (?=[ \d]|$) instead of \b: feeds write both "RE 2083" and "RE1", and a
+# plain word boundary never fires between the E and the 1.
 CLASSES = [
-    ("ice",      r"^(ICE|ECE|TGV|RJX?)\b"),
-    ("intercity",r"^(IC|EC|D)\b"),
-    ("regional", r"^(RE|RB|IRE|IR|MEX|DZ|ALX|BRB|ERB|EVB|HLB|NWB|ODEG|VIA|WFB)\b"),
-    ("night",    r"^(NJ|EN|DN|CNL)\b"),
+    ("ice",      r"^(ICE|ECE|TGV|RJX?)(?=[ \d]|$)"),
+    ("intercity",r"^(IC|EC|D)(?=[ \d]|$)"),
+    ("regional", r"^(IRE|RE|RB|IR|MEX|DZ|ALX|BRB|ERB|EVB|HLB|NWB|ODEG|VIA|WFB)(?=[ \d]|$)"),
+    ("night",    r"^(NJ|EN|DN|CNL)(?=[ \d]|$)"),
 ]
-DROP = re.compile(r"^(S|U|STR|Bus|Str|Tram|SEV)\b", re.I)
+DROP = re.compile(r"^(S|U|STR|Bus|Str|Tram|SEV)(?=[ \d]|$)", re.I)
 
 # GTFS route_type values that are urban transit, dropped regardless of name.
 DROP_TYPES = {0, 1, 3, 4, 5, 6, 7, 11, 12}
@@ -36,7 +42,12 @@ def classify(route):
     if not name or DROP.match(name):
         return None, name
     try:
-        if int(route.get("route_type") or 2) in DROP_TYPES:
+        rt = int(route.get("route_type") or 2)
+        # 2 = rail; 100-117 = extended rail types. Everything else is urban
+        # transit, bus or ferry, dropped regardless of name.
+        if rt != 2 and not (100 <= rt <= 117):
+            return None, name
+        if rt in DROP_TYPES:
             return None, name
     except ValueError:
         pass
@@ -76,52 +87,59 @@ def active_services(path, date):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("gtfs")
+    ap.add_argument("gtfs", nargs="+",
+                    help="one or more GTFS directories, merged onto one day")
     ap.add_argument("date", help="service date, YYYYMMDD")
     ap.add_argument("-o", "--out", default="data/trains.json")
+    ap.add_argument("--note", default="",
+                    help="free-text provenance note carried into the JSON")
     ap.add_argument("--bbox", default="5.2,46.9,15.9,55.4",
                     help="minLon,minLat,maxLon,maxLat -- a trip is kept if it "
                          "calls at least once inside this box")
     args = ap.parse_args()
 
     minlon, minlat, maxlon, maxlat = (float(x) for x in args.bbox.split(","))
-    src = args.gtfs
 
-    stops = {}
-    for r in read(src, "stops.txt"):
-        try:
-            stops[r["stop_id"]] = (float(r["stop_lon"]), float(r["stop_lat"]),
-                                   r["stop_name"].strip())
-        except (ValueError, KeyError):
-            continue
+    stops, trips = {}, {}
+    for fi, src in enumerate(args.gtfs):
+        ns = f"{fi}:"          # feed-local IDs must not collide across feeds
+        for r in read(src, "stops.txt"):
+            try:
+                stops[ns + r["stop_id"]] = (float(r["stop_lon"]),
+                                            float(r["stop_lat"]),
+                                            r["stop_name"].strip())
+            except (ValueError, KeyError):
+                continue
 
-    routes = {}
-    for r in read(src, "routes.txt"):
-        cls, name = classify(r)
-        if cls:
-            routes[r["route_id"]] = (cls, name)
+        routes = {}
+        for r in read(src, "routes.txt"):
+            cls, name = classify(r)
+            if cls:
+                routes[r["route_id"]] = (cls, name)
 
-    services = active_services(src, args.date)
-    trips = {}
-    for r in read(src, "trips.txt"):
-        if r["service_id"] in services and r["route_id"] in routes:
-            cls, name = routes[r["route_id"]]
-            trips[r["trip_id"]] = {
-                "cls": cls, "name": name,
-                "head": (r.get("trip_headsign") or "").strip(), "st": [],
-            }
+        services = active_services(src, args.date)
+        feed_trips = 0
+        for r in read(src, "trips.txt"):
+            if r["service_id"] in services and r["route_id"] in routes:
+                cls, name = routes[r["route_id"]]
+                trips[ns + r["trip_id"]] = {
+                    "cls": cls, "name": name,
+                    "head": (r.get("trip_headsign") or "").strip(), "st": [],
+                }
+                feed_trips += 1
+        print(f"  {src}: {feed_trips} active trips")
 
-    for r in read(src, "stop_times.txt"):
-        t = trips.get(r["trip_id"])
-        if t is None or r["stop_id"] not in stops:
-            continue
-        arr = hhmmss(r.get("arrival_time") or "")
-        dep = hhmmss(r.get("departure_time") or "")
-        if arr is None and dep is None:
-            continue
-        arr = arr if arr is not None else dep
-        dep = dep if dep is not None else arr
-        t["st"].append((int(r["stop_sequence"]), r["stop_id"], arr, dep))
+        for r in read(src, "stop_times.txt"):
+            t = trips.get(ns + r["trip_id"])
+            if t is None or ns + r["stop_id"] not in stops:
+                continue
+            arr = hhmmss(r.get("arrival_time") or "")
+            dep = hhmmss(r.get("departure_time") or "")
+            if arr is None and dep is None:
+                continue
+            arr = arr if arr is not None else dep
+            dep = dep if dep is not None else arr
+            t["st"].append((int(r["stop_sequence"]), ns + r["stop_id"], arr, dep))
 
     # Assemble, keeping only trips that actually touch the bbox.
     used, order = {}, []
@@ -156,13 +174,18 @@ def main():
                 for s in order]
 
     d = datetime.date(int(args.date[:4]), int(args.date[4:6]), int(args.date[6:]))
-    feed = (read(src, "feed_info.txt") or [{}])[0]
+    sources = []
+    for src in args.gtfs:
+        feed = (read(src, "feed_info.txt") or [{}])[0]
+        sources.append(feed.get("feed_publisher_name",
+                                os.path.basename(os.path.abspath(src))))
     doc = {
         "date": d.isoformat(),
         "weekday": d.strftime("%A"),
         "classes": classes,
         "counts": counts,
-        "source": feed.get("feed_publisher_name", os.path.basename(os.path.abspath(src))),
+        "source": "; ".join(dict.fromkeys(sources)),
+        "note": args.note,
         "stations": stations,
         "trips": out_trips,
     }
