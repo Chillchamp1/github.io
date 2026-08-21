@@ -44,6 +44,11 @@ is already dense, and two left the map permanently speckled. The strip behind
 the scrubber counts the same starts across the day, in one ink because the
 categorical hues stay reserved for the trains.
 
+A compact key — swatch, code, one word — is drawn on the map itself, in the
+open ground below Saxony. It costs the frame nothing and means a screen
+recording carries its own legend; the panel below the map keeps the full
+labels, the live counts and the note.
+
 The clock sits on the Baltic about 30 km off the Fischland-Darß coast, where
 the nearest station is far enough away that it never covers the network. Giving
 it open water rather than a reserved band hands the whole stage to the map.

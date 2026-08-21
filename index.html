@@ -266,10 +266,16 @@ const GEO  = readJSON("geodata",   "/*GEO_START*/",  "/*GEO_END*/");
    reaches. Regional is the quietest mark on the map by a wide margin -- it
    outnumbers every other category roughly twenty to one. */
 const CLASS_META = {
-  ice:       {label:"ICE / TGV / RJ — high-speed", role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
-  intercity: {label:"IC / EC — intercity",         role:"ic",    size:0.50, secs:600, trail:6, ring:1.00},
-  regional:  {label:"RE / RB — regional",          role:"reg",   size:0.30, secs:350, trail:3, ring:0.10},
-  night:     {label:"NJ / EN — night",             role:"night", size:0.43, secs:600, trail:6, ring:1.00},
+  /* `key` is the two-word form the on-canvas legend uses; `label` is the
+     full one the HTML legend and the figures table carry. */
+  ice:       {label:"ICE / TGV / RJ — high-speed", key:["ICE","high-speed"],
+              role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
+  intercity: {label:"IC / EC — intercity",         key:["IC","intercity"],
+              role:"ic",    size:0.50, secs:600, trail:6, ring:1.00},
+  regional:  {label:"RE / RB — regional",          key:["RE","regional"],
+              role:"reg",   size:0.30, secs:350, trail:3, ring:0.10},
+  night:     {label:"NJ / EN — night",             key:["NJ","night"],
+              role:"night", size:0.43, secs:600, trail:6, ring:1.00},
 };
 const CLASSES = DATA.classes || ["ice","intercity","regional","night"];
 
@@ -346,6 +352,10 @@ const CITIES = [
 /* Open Baltic off the Fischland-Darss coast: the nearest station is about
    30 km away, so the clock sits on empty water rather than over the network. */
 const CLOCK_AT = {lat:54.80, lon:12.55};
+/* The key rides on the map itself, in the open ground below Saxony, so a
+   screen recording carries its own legend without a wider frame. Anchored by
+   coordinate like the clock and the city names, then clamped into view. */
+const LEGEND_AT = {lat:49.90, lon:14.20};
 
 const CITY_ANCHORS = [
   ["Hamburg",53.5528,10.0064], ["Berlin",52.5251,13.3694],
@@ -731,6 +741,8 @@ function draw(){
     c.drawImage(profBase, 0, 0);
   }
 
+  drawKey(hues, bgBot);
+
   /* --- city names, drawn last so the trains never bury them --- */
   ctx.font = '400 11px "IBM Plex Sans",system-ui,sans-serif';
   ctx.textAlign = "left"; ctx.textBaseline = "middle";
@@ -742,6 +754,45 @@ function draw(){
   for (const L of LABELS) ctx.fillText(L.label, L.s.x + 6, L.s.y - 6);
 
   updateChrome();
+}
+
+/* Compact category key on the canvas: swatch, code, one word. Kept to four
+   short rows so it fits the gap below Saxony at any viewport. */
+const KEY_ROWS = CLASSES.map(k => {
+  const [code, word] = (CLASS_META[k] || {}).key || [k, ""];
+  return {code, word};
+});
+const KEY_CODE_W = "XXXX";   /* codes right-pad to a common column */
+function drawKey(hues, bgBot){
+  const ROW = 14, PADX = 7, PADY = 6, DOT = 3;
+  ctx.font = '500 10px "IBM Plex Mono",monospace';
+  const codeW = ctx.measureText(KEY_CODE_W).width;
+  let textW = 0;
+  for (const r of KEY_ROWS) textW = Math.max(textW, codeW + ctx.measureText(r.word).width);
+  const boxW = PADX*2 + DOT*2 + 5 + textW, boxH = PADY*2 + ROW*KEY_ROWS.length;
+  const x = Math.max(6, Math.min(W - boxW - 6, OX + ux(LEGEND_AT.lon)*SX));
+  const y = Math.max(6, Math.min(H - boxH - 6, OY + uy(LEGEND_AT.lat)*SY));
+
+  ctx.beginPath();
+  ctx.roundRect(x, y, boxW, boxH, 5);
+  ctx.fillStyle = rgba(bgBot, 0.62);
+  ctx.fill();
+  ctx.strokeStyle = rgba(pick("rule"), 0.55);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  KEY_ROWS.forEach((r, i) => {
+    const cy = y + PADY + ROW*i + ROW/2;
+    ctx.beginPath();
+    ctx.arc(x + PADX + DOT, cy, DOT, 0, 6.2832);
+    ctx.fillStyle = rgba(hues[i], 1);
+    ctx.fill();
+    ctx.fillStyle = rgba(pick("ink2"), 0.95);
+    ctx.fillText(r.code, x + PADX + DOT*2 + 5, cy);
+    ctx.fillStyle = rgba(pick("ink3"), 0.9);
+    ctx.fillText(r.word, x + PADX + DOT*2 + 5 + codeW, cy);
+  });
 }
 
 /* ====================================================================== */
