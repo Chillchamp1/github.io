@@ -2,7 +2,8 @@
 
 A 24-hour time-lapse of one real day of German rail traffic — every scheduled
 long-distance and regional train in the country, drawn from the official
-nationwide timetable. At sunset the map flips to night.
+nationwide timetable. The map is dark at every hour, so the trains are the
+only bright thing on it.
 
 Open `index.html` — it is self-contained, so a local double-click works as well
 as GitHub Pages. No server, no build step, no network calls except the webfont.
@@ -31,20 +32,18 @@ Germany with its state borders sits underneath for orientation.
 The animation opens at the quietest minute of the day, found by scanning
 per-minute occupancy rather than hard-coded, and runs at 4x by default: a full
 day in about 90 seconds. Hover a train for its line and destination. Space bar
-toggles playback. On
+toggles playback.
+
+The window adapts to its container: whichever axis has room to spare is widened
+towards the reach of the feed's international services. A phone in portrait
+gets Germany filling the screen rather than a small map marooned between two
+empty bands; a wide desktop gets the neighbours. On
 phones the map keeps a full screen to itself and the legend, figures and
 controls sit below the fold.
 
 The night-train count is genuinely small: DELFI carries only the NightJet and
 EuroNight runs the operators deliver to it, and ordinary ICE/IC services
 finishing after midnight stay in their own categories.
-
-## Day and night
-
-The switch is driven by the real position of the sun over central Germany
-(NOAA low-precision solar position). Whenever the sun is below the horizon the
-whole map is dark — one clean change at sunset rather than a gradual fade. For
-13 May that lands at about 20:56.
 
 ## The data
 
@@ -108,20 +107,31 @@ build/bundle.py       both JSON files -> inlined into index.html
 
 ## Colour and rendering
 
-High-speed, intercity and regional use the first three slots of a
-colourblind-safe categorical palette, which clear all-pairs CVD and
-normal-vision separation against both the day and the night background.
+There is one surface — a near-black ground — and that is what makes the palette
+work. Freed from also having to read against a light background, the four hues
+are chosen purely for separation and luminance against the dark:
 
-Night services are yellow, and yellow is the awkward one: bright enough to
-separate cleanly from the intercity orange and it falls outside the palette's
-lightness band on the light surface; dark enough to sit in the band and it
-closes on orange. The two surfaces therefore get different steps — a deep gold
-`#caa500` by day (passes every gate, with a CVD-separation warning against
-orange in the 6-8 band) and a bright `#ffd93d` at night (passes outright). The
-warning is acceptable here because the category is thirteen trips that run
-almost exclusively while the map is dark, and because dot size, the legend and
-the figures table all carry the identity independently of hue.
+| | |
+|---|---|
+| high-speed | `#5aa9ff` |
+| intercity | `#ff7a45` |
+| regional | `#35d69a` |
+| night | `#ffd93d` |
 
-Sky, land and the ~7,500 station dots are rendered once per sunset flip onto an
-offscreen canvas and blitted each frame, so the per-frame cost is the moving
-trains alone — the page stays fluid with 1,600+ trains on screen.
+All-pairs CVD separation is worst at ΔE 9.9 (deutan) and 7.3 (tritan), normal
+vision at 21.3, and every hue clears 3:1 contrast against the ground. They sit
+above the categorical lightness band deliberately: that band is a proxy for
+readability against the surface, and here the direct contrast measurement
+supersedes it. Against the earlier two-surface palette this roughly doubles
+tritan separation, which had been its weakest point.
+
+The marks are small enough that pixel geometry matters. Device pixel ratio is
+honoured up to 3x, and any dot whose radius falls below about 1.3 device pixels
+is snapped to the device grid and drawn as a hard square rather than a circle —
+same apparent size, none of the antialiasing smudge that made the regional
+trains look blurred. Trail widths have a one-device-pixel floor for the same
+reason.
+
+Sky, land and the ~7,500 station dots are rendered once onto an offscreen
+canvas and blitted each frame, so the per-frame cost is the moving trains
+alone: 60 fps with 1,660 trains on screen at 3x pixel density.
