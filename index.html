@@ -372,6 +372,7 @@ for (const [label, alat, alon] of CITY_ANCHORS){
    day-profile strip under the controls. Times fold into one day, so a service
    arriving at 25:10 rings at 01:10. */
 const RING_SCALE = CLASSES.map(k => (CLASS_META[k] || {}).ring ?? 1);
+const DOT_SCALE  = CLASSES.map(k => (CLASS_META[k] || {}).size ?? 1);
 const EVN = TRIPS.length * 2;
 const EVT = new Int32Array(EVN), EVS = new Int32Array(EVN);
 const EVC = new Uint8Array(EVN), EVK = new Uint8Array(EVN);
@@ -712,12 +713,17 @@ function draw(){
       const st = ST[EVS[idx]];
       if (st.x < -20 || st.x > W+20 || st.y < -20 || st.y > H+20) return;
       const grow = EVK[idx] === 0;
-      const k = RING_SCALE[EVC[idx]];
-      const r = (1.5 + (grow ? f : 1-f) * 7) * k;
+      const cls = EVC[idx];
+      /* The ring starts just clear of the train's own dot and only its travel
+         is scaled. Scaling the whole radius instead put a small ring inside
+         its dot, where there was nothing to see. Stroke width is never scaled
+         either, so a short ring is still a legible line. */
+      const r = DOT_R*DOT_SCALE[cls] + 1.1
+              + (grow ? f : 1-f) * 7 * RING_SCALE[cls];
       ctx.beginPath();
       ctx.arc(st.x, st.y, r, 0, 6.2832);
-      ctx.strokeStyle = rgba(hues[EVC[idx]], (1-f) * (grow ? 0.45 : 0.32));
-      ctx.lineWidth = Math.max(1/DPR, (grow ? 1.3 : 1) * k);
+      ctx.strokeStyle = rgba(hues[cls], (1-f) * (grow ? 0.5 : 0.36));
+      ctx.lineWidth = Math.max(1/DPR, grow ? 1.2 : 1);
       ctx.stroke();
     };
     for (; i < EVN && EVT[i] <= simSec; i++) visit(i);

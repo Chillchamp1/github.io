@@ -32,9 +32,9 @@ Germany with its state borders sits underneath for orientation.
 The animation opens at the quietest minute of the day, found by scanning
 per-minute occupancy rather than hard-coded, and runs at 4x by default: a full
 day in about 90 seconds. A ring opens outward at the station where a service begins and closes inward
-where one terminates, in that service's colour — regional rings are drawn at a
-tenth of the size, since at full scale twenty-six thousand of them bury the
-mainline events — at 4x the 05:00–07:00 ramp
+where one terminates, in that service's colour — a regional ring travels a
+tenth as far as a mainline one, since at full reach twenty-six thousand of them
+bury the intercity and high-speed events — at 4x the 05:00–07:00 ramp
 reads as the whole country blooming awake. The strip behind the scrubber counts
 the same two events across the day: services starting above the midline,
 terminating below it. Both series share one ink because position already
