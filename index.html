@@ -34,9 +34,13 @@
   #dock{display:contents}
 
   /* ---- clock ---------------------------------------------------------- */
+  /* The clock is placed over the Baltic by resize(), which frees the whole
+     height of the stage for the map. left/top come from the projection. */
   header{
-    position:absolute;top:0;left:0;right:0;z-index:3;
-    padding:14px 20px 0;text-align:center;pointer-events:none;
+    position:absolute;z-index:3;
+    text-align:center;pointer-events:none;white-space:nowrap;
+    transform:translate(-50%,-50%);
+    text-shadow:0 0 10px var(--bg-bot), 0 0 4px var(--bg-bot);
   }
   #clock{
     font-family:"IBM Plex Mono",ui-monospace,monospace;
@@ -92,17 +96,26 @@
   #play{min-width:64px}
   .spd{display:flex;gap:5px}
   .spd button{padding:5px 8px;font-family:"IBM Plex Mono",monospace;font-size:0.72rem}
+  /* The scrubber is a transparent range input laid over the day profile, so
+     pointer, touch and keyboard seeking all stay native; its thumb is the
+     playhead. */
+  #profile{position:relative;width:268px;height:40px}
+  #profcv{position:absolute;inset:0;width:100%;height:100%;display:block}
   #scrub{
-    -webkit-appearance:none;appearance:none;width:190px;height:3px;
-    background:var(--rule);border-radius:2px;outline:none;cursor:pointer;
+    position:absolute;inset:0;margin:0;width:100%;height:100%;
+    -webkit-appearance:none;appearance:none;background:transparent;
+    outline:none;cursor:pointer;
   }
+  #scrub::-webkit-slider-runnable-track{background:transparent;height:100%}
+  #scrub::-moz-range-track{background:transparent;height:100%}
   #scrub::-webkit-slider-thumb{
-    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+    -webkit-appearance:none;width:3px;height:40px;border-radius:1px;
     background:var(--ink);cursor:pointer;
   }
   #scrub::-moz-range-thumb{
-    width:13px;height:13px;border:0;border-radius:50%;background:var(--ink);cursor:pointer;
+    width:3px;height:40px;border:0;border-radius:1px;background:var(--ink);cursor:pointer;
   }
+  #scrub:focus-visible{outline:1px solid var(--ink-3);outline-offset:2px}
 
   /* ---- provenance + table --------------------------------------------- */
   #meta{
@@ -160,7 +173,7 @@
     #legend,#controls,#figures{position:static;z-index:auto;max-width:none;min-width:0}
     #figures{display:block}
     #controls{flex-wrap:wrap;justify-content:space-between;padding:12px 14px}
-    #scrub{flex:1 1 130px;width:auto;min-width:0}
+    #profile{flex:1 1 140px;width:auto;min-width:0}
     #hint{
       display:block;position:absolute;left:0;right:0;bottom:10px;z-index:3;
       text-align:center;font-size:0.64rem;letter-spacing:0.14em;
@@ -193,7 +206,11 @@
   <aside id="figures" class="panel" aria-label="Trains by category"></aside>
   <div id="controls" class="panel">
     <button id="play" aria-pressed="true">Pause</button>
-    <input id="scrub" type="range" min="0" max="86399" step="60" value="0" aria-label="Time of day">
+    <div id="profile">
+      <canvas id="profcv"></canvas>
+      <input id="scrub" type="range" min="0" max="86399" step="60" value="0"
+             aria-label="Time of day. The strip behind shows services starting above the line and terminating below it.">
+    </div>
     <div class="spd" role="group" aria-label="Playback speed">
       <button data-mps="4">1&times;</button>
       <button data-mps="8">2&times;</button>
@@ -326,6 +343,10 @@ const CITIES = [
    stations differently ("Berlin Hbf", "S+U Berlin Hauptbahnhof", or plain
    "Hauptbahnhof (oben)" with no city at all). The nearest kept station
    within ~3 km of the city's main station gets the label. */
+/* Open Baltic off the Fischland-Darss coast: the nearest station is about
+   30 km away, so the clock sits on empty water rather than over the network. */
+const CLOCK_AT = {lat:54.80, lon:12.55};
+
 const CITY_ANCHORS = [
   ["Hamburg",53.5528,10.0064], ["Berlin",52.5251,13.3694],
   ["Bremen",53.0830,8.8139],   ["Hannover",52.3767,9.7410],
@@ -346,6 +367,35 @@ for (const [label, alat, alon] of CITY_ANCHORS){
   if (best && bestD < (3/111.32)**2) LABELS.push({label, s:best});
 }
 
+/* Every service's first departure and last arrival, sorted by time. Rings
+   bloom at origins and close at termini, and the same two events drive the
+   day-profile strip under the controls. Times fold into one day, so a service
+   arriving at 25:10 rings at 01:10. */
+const EVN = TRIPS.length * 2;
+const EVT = new Int32Array(EVN), EVS = new Int32Array(EVN);
+const EVC = new Uint8Array(EVN), EVK = new Uint8Array(EVN);
+const STARTS_MIN = new Int32Array(1440), ENDS_MIN = new Int32Array(1440);
+{
+  const raw = [];
+  for (const t of TRIPS){
+    const a = t.s[0], z = t.s[t.s.length-1];
+    raw.push([a[2] % DAY_SECONDS, a[0], t.c, 0]);
+    raw.push([z[1] % DAY_SECONDS, z[0], t.c, 1]);
+  }
+  raw.sort((x,y) => x[0]-y[0]);
+  raw.forEach((e,i) => {
+    EVT[i]=e[0]; EVS[i]=e[1]; EVC[i]=e[2]; EVK[i]=e[3];
+    (e[3] ? ENDS_MIN : STARTS_MIN)[Math.floor(e[0]/60) % 1440]++;
+  });
+}
+
+/* First event at or after `sec`. */
+function evLower(sec){
+  let lo = 0, hi = EVN;
+  while (lo < hi){ const m = (lo+hi) >> 1; if (EVT[m] < sec) lo = m+1; else hi = m; }
+  return lo;
+}
+
 const PEAK = (() => {
   const peak = CLASSES.map(()=>0), cur = CLASSES.map(()=>0), ev = [];
   for (const t of TRIPS){ ev.push([t.t0,1,t.c]); ev.push([t.t1,-1,t.c]); }
@@ -358,6 +408,10 @@ const PEAK = (() => {
 /* Canvas                                                                   */
 /* ====================================================================== */
 const stage = document.getElementById("stage");
+const hdr = document.querySelector("header");
+const prof = document.getElementById("profcv");
+const profBase = document.createElement("canvas");
+let profW = 0, profH = 0;
 const cv = document.getElementById("map");
 const ctx = cv.getContext("2d", {alpha:false});
 let W=0, H=0, SX=0, SY=0, OX=0, OY=0, DPR=1;
@@ -388,12 +442,14 @@ function resize(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   baseReady = false;
 
-  const PAD = Math.min(W,H) * 0.03;
-  const topBand = Math.min(62, H*0.072);
-  /* Below the fold on mobile, so the map no longer has to dodge the panels. */
-  const botBand = window.matchMedia("(max-width:820px)").matches ? 26 : 92;
+  /* No band is reserved for the clock any more -- it floats over the sea --
+     so the map gets the whole stage. Phones get tighter margins too, because
+     there the frame is width-limited and every pixel of width is height. */
+  const narrow = window.matchMedia("(max-width:820px)").matches;
+  const PAD = Math.min(W,H) * (narrow ? 0.012 : 0.03);
+  const botBand = narrow ? 26 : 92;
   const availW = W - PAD*2;
-  const availH = H - PAD*2 - topBand - botBand;
+  const availH = H - PAD*2 - botBand;
   fitView(availW/availH);
   let h = availH, w = h*FRAME_ASPECT;
   if (w > availW){ w = availW; h = w/FRAME_ASPECT; }
@@ -401,11 +457,23 @@ function resize(){
   OX = (W-w)/2;
   /* Bias upward rather than centring: on a portrait screen the frame is
      width-limited and dead space below reads better than above. */
-  OY = PAD + topBand + (availH-h)*0.40;
+  OY = PAD + (availH-h)*0.40;
 
   for (const s of ST){ s.x = OX + ux(s.lon)*SX; s.y = OY + uy(s.lat)*SY; }
   buildBasemap();
   renderBase();
+  placeClock();
+  sizeProfile();
+}
+
+/* Park the clock on its Baltic anchor, clamped so it can never leave the
+   viewport on an extreme aspect ratio. */
+function placeClock(){
+  const box = hdr.getBoundingClientRect();
+  const hw = box.width/2 || 60, hh = box.height/2 || 24;
+  const x = OX + ux(CLOCK_AT.lon)*SX, y = OY + uy(CLOCK_AT.lat)*SY;
+  hdr.style.left = Math.max(hw+8, Math.min(W-hw-8, x)) + "px";
+  hdr.style.top  = Math.max(hh+8, Math.min(H-hh-8, y)) + "px";
 }
 
 function renderBase(){
@@ -437,6 +505,67 @@ function renderBase(){
     b.fill();
   }
   baseReady = true;
+}
+
+/* The day profile: services beginning above the midline, ending below it.
+   Position carries the distinction, so both series share one ink rather than
+   spending two categorical hues that belong to the trains. Static, so it is
+   drawn once per resize and blitted underneath the scrubber. */
+function sizeProfile(){
+  const r = prof.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  profW = r.width; profH = r.height;
+  prof.width = Math.round(r.width*DPR); prof.height = Math.round(r.height*DPR);
+  profBase.width = prof.width; profBase.height = prof.height;
+
+  const c = profBase.getContext("2d");
+  c.setTransform(DPR,0,0,DPR,0,0);
+  c.clearRect(0,0,profW,profH);
+
+  const GUT = 26;                       /* left gutter for the two labels */
+  const plotW = Math.max(20, profW - GUT);
+  const mid = profH*0.50, arm = Math.min(mid, profH-mid) - 6;
+  const bins = Math.max(48, Math.min(240, Math.floor(plotW)));
+  const per = 1440/bins;
+  const up = new Float64Array(bins), dn = new Float64Array(bins);
+  for (let m = 0; m < 1440; m++){
+    const b = Math.min(bins-1, Math.floor(m/per));
+    up[b] += STARTS_MIN[m]; dn[b] += ENDS_MIN[m];
+  }
+  let peak = 1;
+  for (let b = 0; b < bins; b++) peak = Math.max(peak, up[b], dn[b]);
+
+  const bw = plotW/bins;
+  const draw = (arr, sign, alpha) => {
+    c.fillStyle = rgba(pick("ink2"), alpha);
+    for (let b = 0; b < bins; b++){
+      const hgt = (arr[b]/peak) * arm;
+      if (hgt < 0.4) continue;
+      c.fillRect(GUT + b*bw, sign < 0 ? mid-hgt : mid, Math.max(0.7, bw-0.6), hgt);
+    }
+  };
+  draw(up, -1, 0.85);
+  draw(dn,  1, 0.45);
+
+  /* Midline, plus quarter-day ticks so the axis can be read. */
+  c.fillStyle = rgba(pick("ink3"), 0.5);
+  c.fillRect(GUT, mid-0.5, plotW, 1);
+  c.font = '500 8px "IBM Plex Mono",monospace';
+  c.textAlign = "center";
+  for (const hr of [6,12,18]){
+    const x = GUT + (hr/24)*plotW;
+    c.fillStyle = rgba(pick("ink3"), 0.28);
+    c.fillRect(x-0.5, 2, 1, profH-4);
+    c.fillStyle = rgba(pick("ink3"), 0.8);
+    c.textBaseline = "bottom";
+    c.fillText(String(hr).padStart(2,"0"), x, profH);
+  }
+  c.textAlign = "left";
+  c.fillStyle = rgba(pick("ink3"), 0.95);
+  c.textBaseline = "bottom";
+  c.fillText("start", 0, mid-2);
+  c.textBaseline = "top";
+  c.fillText("end", 0, mid+2);
 }
 
 /* ====================================================================== */
@@ -490,6 +619,9 @@ let minutesPerSecond = 16;
 let playing = true;
 let lastFrame = performance.now();
 
+/* Ring lifetime is tied to playback speed so a start is always visible for
+   roughly two thirds of a second, whatever the multiplier. */
+const pulseSpan = () => Math.max(180, Math.min(960, minutesPerSecond*60*0.65));
 const TRAIL_SEC = 1200;       /* 20 simulated minutes of tail */
 const TRAIL_STEPS = 7;
 const DOT_R = 1.8;
@@ -564,6 +696,43 @@ function draw(){
     }
   }
 
+  /* --- origin and termination rings ---
+     A service beginning opens a ring outwards from its first station; one
+     terminating closes a ring inwards on its last. Both fade as they go. */
+  {
+    const span = pulseSpan();
+    const from = simSec - span;
+    let i = evLower(from < 0 ? 0 : from);
+    const visit = (idx) => {
+      let age = simSec - EVT[idx];
+      if (age < 0) age += DAY_SECONDS;
+      const f = age/span;
+      if (f < 0 || f >= 1) return;
+      const st = ST[EVS[idx]];
+      if (st.x < -20 || st.x > W+20 || st.y < -20 || st.y > H+20) return;
+      const grow = EVK[idx] === 0;
+      const r = 1.5 + (grow ? f : 1-f) * 7;
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, r, 0, 6.2832);
+      ctx.strokeStyle = rgba(hues[EVC[idx]], (1-f) * (grow ? 0.45 : 0.32));
+      ctx.lineWidth = grow ? 1.3 : 1;
+      ctx.stroke();
+    };
+    for (; i < EVN && EVT[i] <= simSec; i++) visit(i);
+    if (from < 0){                       /* window straddles midnight */
+      const wrap = DAY_SECONDS + from;
+      for (let j = evLower(wrap); j < EVN; j++) visit(j);
+    }
+  }
+
+  /* --- the day profile under the controls --- */
+  if (profW){
+    const c = prof.getContext("2d");
+    c.setTransform(1,0,0,1,0,0);
+    c.clearRect(0,0,prof.width,prof.height);
+    c.drawImage(profBase, 0, 0);
+  }
+
   /* --- city names, drawn last so the trains never bury them --- */
   ctx.font = '400 11px "IBM Plex Sans",system-ui,sans-serif';
   ctx.textAlign = "left"; ctx.textBaseline = "middle";
@@ -626,8 +795,9 @@ function updateChrome(){
     : "";
   document.getElementById("legend-note").textContent =
     "Count = trains moving at this minute. Dot size follows category; regional " +
-    "is drawn small. Urban transit (S-Bahn, U-Bahn, tram, bus) is excluded." +
-    scopeNote;
+    "is drawn small. A ring opens where a service begins and closes where one " +
+    "terminates; the strip by the scrubber counts those across the day. " +
+    "Urban transit (S-Bahn, U-Bahn, tram, bus) is excluded." + scopeNote;
 }
 
 document.getElementById("meta").innerHTML =
@@ -721,6 +891,7 @@ function frame(now){
 }
 
 new ResizeObserver(resize).observe(stage);
+new ResizeObserver(sizeProfile).observe(document.getElementById("profile"));
 resize();
 document.getElementById("loading").hidden = true;
 requestAnimationFrame(frame);

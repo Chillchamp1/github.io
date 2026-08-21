@@ -31,10 +31,20 @@ Germany with its state borders sits underneath for orientation.
 
 The animation opens at the quietest minute of the day, found by scanning
 per-minute occupancy rather than hard-coded, and runs at 4x by default: a full
-day in about 90 seconds. Hover a train for its line and destination. Space bar
-toggles playback.
+day in about 90 seconds. A ring opens outward at the station where a service begins and closes inward
+where one terminates, in that service's colour — at 4x the 05:00–07:00 ramp
+reads as the whole country blooming awake. The strip behind the scrubber counts
+the same two events across the day: services starting above the midline,
+terminating below it. Both series share one ink because position already
+distinguishes them, which keeps the categorical hues reserved for the trains.
 
-The window adapts to its container: whichever axis has room to spare is widened
+The clock sits on the Baltic about 30 km off the Fischland-Darß coast, where
+the nearest station is far enough away that it never covers the network. Giving
+it open water rather than a reserved band hands the whole stage to the map.
+
+Hover a train for its line and destination. Space bar toggles playback.
+
+The window itself adapts to its container: whichever axis has room to spare is widened
 towards the reach of the feed's international services. A phone in portrait
 gets Germany filling the screen rather than a small map marooned between two
 empty bands; a wide desktop gets the neighbours. On
@@ -134,4 +144,10 @@ reason.
 
 Sky, land and the ~7,500 station dots are rendered once onto an offscreen
 canvas and blitted each frame, so the per-frame cost is the moving trains
-alone: 60 fps with 1,660 trains on screen at 3x pixel density.
+alone: around 60 fps with 1,660 trains on screen at 3x pixel density. The day
+profile is likewise drawn once per resize and blitted.
+
+Origin and termination rings come from a time-sorted event index — two entries
+per service — so each frame binary-searches the live window instead of
+rescanning 27,757 trips. Ring lifetime scales with the playback multiplier, so
+an event stays visible for roughly two thirds of a second at any speed.
