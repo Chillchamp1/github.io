@@ -43,6 +43,19 @@
     color:var(--ink-3);
   }
   #nets button[aria-pressed="true"]{color:var(--ink);border-color:var(--rule)}
+  /* The US region picker sits right under the network pills, on the map,
+     so it is reachable without a scroll on any screen. */
+  #regions{
+    position:fixed;z-index:6;left:14px;top:56px;
+    display:flex;gap:4px;padding:4px;flex-wrap:wrap;max-width:70vw;
+  }
+  #regions[hidden]{display:none}
+  #regions button{
+    padding:3px 9px;font-size:0.7rem;border:1px solid transparent;
+    color:var(--ink-3);
+  }
+  #regions button[aria-pressed="true"]{color:var(--ink);border-color:var(--rule)}
+  body[data-regions] #meta{top:96px}
 
   /* ---- clock ---------------------------------------------------------- */
   header{
@@ -107,7 +120,6 @@
   #play{min-width:64px}
   .spd{display:flex;gap:5px}
   .spd button{padding:5px 8px;font-family:"IBM Plex Mono",monospace;font-size:0.72rem}
-  #regions[hidden]{display:none}
   /* The scrubber is a transparent range input laid over the day profile, so
      pointer, touch and keyboard seeking all stay native; its thumb is the
      playhead. */
@@ -180,7 +192,7 @@
     body{overflow:auto;overflow-x:hidden}
     #stage{position:relative;inset:auto;width:100%;height:100svh;height:100dvh}
     #meta,#figbtn{display:none}
-    #nets{position:absolute}
+    #nets,#regions{position:absolute}
     #dock{
       display:flex;flex-direction:column;gap:12px;
       padding:12px 12px 20px;
@@ -207,6 +219,7 @@
     <div id="running">&nbsp;</div>
   </header>
   <nav id="nets" class="panel" aria-label="Network"></nav>
+  <div id="regions" class="panel" role="group" aria-label="Region" hidden></div>
   <div id="meta"></div>
   <div id="hint">Scroll for legend and controls<span>&#8964;</span></div>
 </div>
@@ -232,7 +245,6 @@
       <button data-mps="8">2&times;</button>
       <button data-mps="16" aria-pressed="true">4&times;</button>
     </div>
-    <div class="spd" id="regions" role="group" aria-label="Region" hidden></div>
   </div>
 </div>
 
@@ -416,9 +428,10 @@ const NETWORKS = {
     label:"Tokyo", pill:"Tokyo", unit:"trains",
     data:"data/tokyo-trains.json", geo:"data/tokyo-geo.json",
     minorPxPerDeg:400,
-    /* The network sleeps from about 01:30 to 04:30. When almost nothing is
-       moving, playback fast-forwards so nobody waits through a dead map. */
-    ffwdBelow:30,
+    /* The network sleeps from about 01:00 to 04:30. When little is moving,
+       playback accelerates -- gently enough that the night reads as sped-up
+       time rather than a jump cut. */
+    ffwdBelow:60, ffwdBoost:5,
     classes:{
       ltdexp:  {label:"Limited express / liner", key:["Ltd Exp","liner"],
                 role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
@@ -1112,6 +1125,8 @@ function buildChrome(){
   holder.innerHTML = "";
   const views = Object.entries(NET.views);
   holder.hidden = views.length < 2;
+  if (holder.hidden) document.body.removeAttribute("data-regions");
+  else document.body.setAttribute("data-regions", "");
   for (const [id, v] of views){
     const b = document.createElement("button");
     b.textContent = v.label;
@@ -1226,7 +1241,7 @@ function frame(now){
        nobody should sit through three empty hours of Tokyo at 4x. */
     const min = Math.floor(simSec/60) % 1440;
     ffwd = !!(NET.ffwdBelow && OCC && OCC[min] < NET.ffwdBelow);
-    simSec += dt * minutesPerSecond * 60 * (ffwd ? 20 : 1);
+    simSec += dt * minutesPerSecond * 60 * (ffwd ? (NET.ffwdBoost || 5) : 1);
     if (simSec >= DAY_SECONDS) simSec -= DAY_SECONDS;
   }
   if (DATA) draw();

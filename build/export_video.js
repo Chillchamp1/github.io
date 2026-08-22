@@ -8,7 +8,7 @@
  *
  * The app fetches its data, so point --url at an http(s) server, with the
  * network in the hash (#de, #us, #tokyo, #berlin). --warp N fast-forwards
- * 20x whenever fewer than N trains are on screen, mirroring the page's own
+ * 5x whenever fewer than N trains are on screen, mirroring the page's own
  * overnight fast-forward -- use it for Tokyo, whose network sleeps.
  *
  * Needs playwright (any recent Chromium) and ffmpeg on PATH; if ffmpeg is
@@ -93,7 +93,7 @@ function ffmpeg(){
     let mult = 1;
     if (WARP > 0){
       const n = await page.$eval("#running", el => parseInt(el.textContent) || 0);
-      if (n < WARP) mult = 20;
+      if (n < WARP) mult = 5;
     }
     simT += STEP * mult;
     if (frames % 100 === 0){
