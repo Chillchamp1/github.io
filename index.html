@@ -29,6 +29,11 @@
 
   #stage{position:fixed;inset:0;overflow:hidden}
   #map{position:absolute;inset:0;width:100%;height:100%;display:block}
+  /* The glow layer keeps a small backing store; the CSS stretch is the blur,
+     and the compositor does the additive blend instead of a canvas blit. */
+  #glow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
+        mix-blend-mode:screen;mix-blend-mode:plus-lighter}
+  #glow[hidden]{display:none}
   #dock{display:contents}
 
   /* ---- network switcher ------------------------------------------------ */
@@ -120,6 +125,14 @@
   #play{min-width:64px}
   .spd{display:flex;gap:5px}
   .spd button{padding:5px 8px;font-family:"IBM Plex Mono",monospace;font-size:0.72rem}
+  /* Bloom controls: a toggle, then two small sliders that only appear when
+     the glow is on. */
+  #bloomctl label{
+    display:flex;align-items:center;gap:4px;
+    font-size:0.66rem;color:var(--ink-3);
+  }
+  #bloomctl[data-on="false"] label{display:none}
+  #bloomctl input[type=range]{width:64px;accent-color:var(--ink-3)}
   /* The scrubber is a transparent range input laid over the day profile, so
      pointer, touch and keyboard seeking all stay native; its thumb is the
      playhead. */
@@ -214,6 +227,7 @@
 
 <div id="stage">
   <canvas id="map"></canvas>
+  <canvas id="glow" hidden></canvas>
   <header>
     <div id="clock"><span class="hrs">--</span><span class="mins">:--</span></div>
     <div id="running">&nbsp;</div>
@@ -244,6 +258,13 @@
       <button data-mps="4">1&times;</button>
       <button data-mps="8">2&times;</button>
       <button data-mps="16" aria-pressed="true">4&times;</button>
+    </div>
+    <div class="spd" id="bloomctl" data-on="false" aria-label="Glow">
+      <button id="bloom" aria-pressed="false">Glow</button>
+      <label title="Bloom diameter">&#8960;<input id="bloomd" type="range"
+             min="2" max="24" step="1" value="6"></label>
+      <label title="Bloom intensity">&#9728;<input id="bloomi" type="range"
+             min="0.1" max="1" step="0.05" value="0.5"></label>
     </div>
   </div>
 </div>
@@ -575,6 +596,13 @@ function setView(id){
   VIEWID = id;
   const v = NET.views[id];
   CORE = v.core; MAXV = v.maxv; CLOCK_AT = v.clock; LEGEND_AT = v.key;
+  /* Starting bloom values follow the zoom: a city frame has bigger marks
+     and takes a wider, brighter glow. Hand-tuned values stay put. */
+  if (!bloomTouched){
+    [bloomD, bloomI] = viewMps(v) === 8 ? [10, 0.6] : [6, 0.5];
+    const d = document.getElementById("bloomd"), i = document.getElementById("bloomi");
+    if (d){ d.value = bloomD; i.value = bloomI; }
+  }
   minutesPerSecond = viewMps(v);
   document.querySelectorAll(".spd button[data-mps]").forEach(o =>
     o.setAttribute("aria-pressed", String(+o.dataset.mps === minutesPerSecond)));
@@ -700,6 +728,12 @@ let W=0, H=0, SX=0, SY=0, OX=0, OY=0, DPR=1;
 let pathLand = null, pathStates = null;
 const base = document.createElement("canvas");
 let baseReady = false;
+/* Bloom: the visible trains are drawn once more, tiny, into the #glow
+   overlay; its CSS stretch back to full size is the blur, and the
+   compositor's blend mode is the additive pass. Off by default, so the
+   standard view and every video stay untouched. */
+const glowSmall = document.getElementById("glow");
+let bloomOn = false, bloomD = 6, bloomI = 0.5, bloomTouched = false;
 let KEY_BOX = {x:0,y:0,w:0,h:0};
 let CLOCK_BOX = {x:0,y:0,w:0,h:0};
 /* placeClock measures the header, but at layout time the "N trains running"
@@ -940,6 +974,7 @@ function draw(){
   ctx.drawImage(base, 0, 0, W, H);
 
   hitList = [];
+  const g = ctx;
   for (const t of TRIPS){
     const meta = CLASS_META[CLASSES[t.c]] || {size:1};
     for (const off of (t.t1 > DAY_SECONDS ? [0, DAY_SECONDS] : [0])){
@@ -957,33 +992,33 @@ function draw(){
         if (!back) break;
         const a = (1 - k/steps) * 0.55;
         if (a <= 0.02) break;
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(back[0], back[1]);
-        ctx.strokeStyle = rgba(col, a);
-        ctx.lineWidth = Math.max(1/DPR, 2.4 * scale * (1 - k/(steps+3)));
-        ctx.lineCap = "round";
-        ctx.stroke();
+        g.beginPath();
+        g.moveTo(px, py);
+        g.lineTo(back[0], back[1]);
+        g.strokeStyle = rgba(col, a);
+        g.lineWidth = Math.max(1/DPR, 2.4 * scale * (1 - k/(steps+3)));
+        g.lineCap = "round";
+        g.stroke();
         px = back[0]; py = back[1];
       }
 
-      ctx.beginPath();
-      ctx.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
-      ctx.fillStyle = rgba(col, 0.15);
-      ctx.fill();
+      g.beginPath();
+      g.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
+      g.fillStyle = rgba(col, 0.15);
+      g.fill();
 
       const rDev = DOT_R*scale*DPR;
       if (rDev < 1.3){
         const side = Math.max(1, Math.round(rDev*2));
-        ctx.fillStyle = rgba(col, 1);
-        ctx.fillRect(Math.round(head[0]*DPR - side/2)/DPR,
+        g.fillStyle = rgba(col, 1);
+        g.fillRect(Math.round(head[0]*DPR - side/2)/DPR,
                      Math.round(head[1]*DPR - side/2)/DPR,
                      side/DPR, side/DPR);
       } else {
-        ctx.beginPath();
-        ctx.arc(head[0], head[1], DOT_R*scale, 0, 6.2832);
-        ctx.fillStyle = rgba(col, 0.98);
-        ctx.fill();
+        g.beginPath();
+        g.arc(head[0], head[1], DOT_R*scale, 0, 6.2832);
+        g.fillStyle = rgba(col, 0.98);
+        g.fill();
       }
       hitList.push([head[0], head[1], t]);
     }
@@ -1003,17 +1038,44 @@ function draw(){
       if (st.x < -20 || st.x > W+20 || st.y < -20 || st.y > H+20) return;
       const cls = EVC[idx];
       const r = DOT_R*DOT_SCALE[cls] + 1.1 + f * 7 * RING_SCALE[cls];
-      ctx.beginPath();
-      ctx.arc(st.x, st.y, r, 0, 6.2832);
-      ctx.strokeStyle = rgba(hues[cls], (1-f) * 0.5);
-      ctx.lineWidth = Math.max(1/DPR, 1.2);
-      ctx.stroke();
+      g.beginPath();
+      g.arc(st.x, st.y, r, 0, 6.2832);
+      g.strokeStyle = rgba(hues[cls], (1-f) * 0.5);
+      g.lineWidth = Math.max(1/DPR, 1.2);
+      g.stroke();
     };
     for (; i < EVN && EVT[i] <= simSec; i++) visit(i);
     if (from < 0){
       const wrap = DAY_SECONDS + from;
       for (let j = evLower(wrap); j < EVN; j++) visit(j);
     }
+  }
+  /* Glow: replay the dots just drawn (hitList already holds every visible
+     train) into the small overlay. Dots only -- trails and rings stay
+     crisp. */
+  if (bloomOn){
+    const k = Math.max(2, Math.round(bloomD / 2));
+    const sw = Math.max(2, Math.round(W / k));
+    const sh = Math.max(2, Math.round(H / k));
+    if (glowSmall.width !== sw || glowSmall.height !== sh){
+      glowSmall.width = sw; glowSmall.height = sh;
+    }
+    const gs = glowSmall.getContext("2d");
+    gs.setTransform(1,0,0,1,0,0);
+    gs.clearRect(0, 0, sw, sh);
+    gs.setTransform(sw/W, 0, 0, sh/H, 0, 0);
+    for (const [hx, hy, t] of hitList){
+      const scale = (CLASS_META[CLASSES[t.c]] || {size:1}).size;
+      gs.beginPath();
+      gs.arc(hx, hy, 3.6*scale, 0, 6.2832);
+      gs.fillStyle = rgba(hues[t.c], 0.15);
+      gs.fill();
+      gs.beginPath();
+      gs.arc(hx, hy, DOT_R*scale, 0, 6.2832);
+      gs.fillStyle = rgba(hues[t.c], 0.98);
+      gs.fill();
+    }
+    glowSmall.style.opacity = bloomI;
   }
 
   if (profW){
@@ -1233,6 +1295,22 @@ document.querySelectorAll(".spd button[data-mps]").forEach(b => {
   });
 });
 elScrub.addEventListener("input", () => { simSec = +elScrub.value; lastMinute = -1; });
+{
+  const holder = document.getElementById("bloomctl");
+  const btn = document.getElementById("bloom");
+  btn.addEventListener("click", () => {
+    bloomOn = !bloomOn;
+    btn.setAttribute("aria-pressed", String(bloomOn));
+    holder.setAttribute("data-on", String(bloomOn));
+    glowSmall.hidden = !bloomOn;
+  });
+  document.getElementById("bloomd").addEventListener("input", e => {
+    bloomD = +e.target.value; bloomTouched = true;
+  });
+  document.getElementById("bloomi").addEventListener("input", e => {
+    bloomI = +e.target.value; bloomTouched = true;
+  });
+}
 window.addEventListener("keydown", e => {
   if (e.code === "Space" && e.target.tagName !== "INPUT"){ e.preventDefault(); playBtn.click(); }
 });
