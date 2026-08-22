@@ -28,7 +28,11 @@ const arg = (name, dflt) => {
   const i = argv.indexOf("--" + name);
   return i === -1 ? dflt : argv[i + 1];
 };
-const SECONDS = Number(arg("seconds", 60));
+/* --mps renders at a playback speed (simulated minutes per video second),
+   e.g. 16 for the app's 4x, 8 for 2x -- the video then lasts 1440/mps
+   seconds. --seconds is the fixed-length alternative. */
+const MPS     = Number(arg("mps", 0));
+const SECONDS = MPS > 0 ? 1440 / MPS : Number(arg("seconds", 60));
 const FPS     = Number(arg("fps", 30));
 const WIDTH   = Number(arg("width", 540));    /* CSS px; x scale = pixels */
 const HEIGHT  = Number(arg("height", 960));

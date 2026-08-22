@@ -156,16 +156,17 @@ calendars in this DELFI snapshot end on 30 April 2026, so 13 May would show
 a Berlin without a U-Bahn. 11 March is the latest ordinary Wednesday with
 every mode at full service — found by scanning, not assumed.
 
-## The Netherlands page
+## The Benelux page
 
-`#nl` is the Dutch network: **6,181 trains on Wednesday 26 August 2026** —
-NS, every regional operator (Arriva, Keolis, Blauwnet, VIAS, Eurobahn…),
-the internationals (ICE, Eurostar, Intercity direct) and both night-train
-operators, built by `build/build_nl.py` from the OVapi/NDOV national GTFS
-plus European Sleeper's own feed (absent from the aggregate). OVapi's
-route names carry the service type in plain words, so classification is a
-word match, not a regex hunt. Basemap: CBS province boundaries via
-cartomap/nl. Metro, tram, bus and ferries excluded.
+`#nl` is the Benelux: **11,024 trains on Wednesday 10 June 2026** — the
+OVapi/NDOV national GTFS for the Netherlands, SNCB/NMBS for Belgium, the
+Luxembourg national feed for CFL, and European Sleeper's own feed (absent
+from the aggregates). The day is 10 June because Luxembourg's open feed
+covers early summer only — the latest Wednesday inside all four validity
+windows. Benelux playback runs 20% slower than the other networks; its
+density earns the extra dwell. Basemap: Natural Earth 1:10M country shapes
+(world-atlas) with CBS province lines inside the Netherlands. Metro, tram,
+bus and ferries excluded.
 
 ## The data
 
