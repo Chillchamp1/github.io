@@ -16,7 +16,7 @@ section in its Figures panel — what is missing, what is weak, and why. The old
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
 Every day starts at midnight, and a network that sleeps overnight (Tokyo)
-fast-forwards 20× while fewer than 30 trains are moving, so nobody waits
+fast-forwards gently (5×) while fewer than 60 trains are moving, so nobody waits
 through three empty hours. City labels are placed by a collision pass at
 layout time: nothing may cover the clock, the on-canvas key or another label;
 major cities win, minor ones yield. Every push to `main` republishes the site
@@ -216,7 +216,7 @@ A portrait video for phones and social posts comes from the page itself:
 python3 -m http.server 8000 &
 node build/export_video.js --url http://localhost:8000/index.html#de \
      --seconds 60 --start 00:00 --out german-rail-day.mp4
-# Tokyo sleeps overnight: add --warp 30 so the video fast-forwards the gap
+# Tokyo sleeps overnight: add --warp 60 so the video fast-forwards the gap
 ```
 
 That gives 1080x1920 H.264. Playback is not screen-recorded -- the page is
