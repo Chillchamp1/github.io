@@ -71,6 +71,37 @@ builder now reads any N-suffixed line as a night service, scoped to route_type
 102, where every one of them is. Ordinary ICE/IC services finishing after
 midnight still stay in their own categories.
 
+## The US page
+
+`usa.html` is the same animation for the United States: **Wednesday 10 June
+2026, 5,737 trains** — Amtrak nationwide (Acela drawn as the high-speed
+category, the fifteen overnight long-distance routes as the night category)
+plus every commuter rail operator with a *current* open timetable, twenty
+feeds from Metra to SunRail. The US spans four time zones, so every feed is
+shifted to Eastern using its GTFS agency_timezone; the page says so and shows
+one Eastern clock. Subways, light rail and streetcars are excluded, matching
+the German page's exclusion of the S-Bahn.
+
+Honesty over coverage: operators whose published GTFS was stale for the
+chosen day are **left out rather than drawn from an old schedule** —
+Metrolink (expired 2023), VRE, ACE, Shore Line East, Rio Metro Rail Runner
+(2024), Tri-Rail (base calendar ended August 2025), DCTA (February 2026),
+TEXRail (absent from its operator's feed) and the Alaska Railroad (no GTFS at
+all). Together they run roughly 400 trains a day; what is shown is about 93%
+of US mainline passenger service, and every one of the 5,737 trips was
+verified stop-by-stop against the raw feeds by an independent audit script,
+Eastern-time conversion included.
+
+```sh
+python3 build/build_us.py <feeds-dir> 20260610 -o data/us-trains.json
+python3 build/build_geo_us.py us-states.json -o data/us-geo.json
+python3 build/bundle.py -d data/us-trains.json -g data/us-geo.json -p usa.html
+```
+
+Basemap: lower-48 state polygons from PublicaMundi/MappingAPI (US Census
+geometry, public domain). Alaska, Hawaii and Puerto Rico are dropped — no
+feed in the bundle serves them, and Alaska alone would double the frame.
+
 ## The data
 
 `data/trains.json` is built from the **official DELFI e.V. GTFS dataset**

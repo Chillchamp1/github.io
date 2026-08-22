@@ -853,7 +853,8 @@ document.getElementById("meta").innerHTML =
   "<strong>" + DATA.trips.length + " scheduled trains</strong> over one " +
   DATA.weekday + " on the German rail network, drawn from published " +
   "timetables for " + new Date(DATA.date+"T12:00:00Z").toLocaleDateString(
-    "en-GB", {day:"numeric", month:"long", year:"numeric", timeZone:"UTC"}) + ".";
+    "en-GB", {day:"numeric", month:"long", year:"numeric", timeZone:"UTC"}) +
+  ". <a href=\"usa.html\">USA version &rarr;</a>";
 
 {
   const fig = document.getElementById("figures");
