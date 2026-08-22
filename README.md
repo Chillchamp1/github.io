@@ -7,10 +7,12 @@ only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-The four networks — Germany, the USA, Greater Tokyo and Berlin — live in one
+The five networks — Germany, the Netherlands, the USA, Greater Tokyo and
+Berlin — live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
-fragment: `#de`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`, `#us/nw`),
-`#tokyo`, `#berlin`. The old per-country pages redirect there. Each dataset is
+fragment: `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
+`#us/nw`), `#tokyo`, `#berlin`. Every network carries a "Data notes & gaps"
+section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
 Every day starts at midnight, and a network that sleeps overnight (Tokyo)
@@ -153,6 +155,17 @@ The date differs from the national page deliberately: BVG's U-Bahn and tram
 calendars in this DELFI snapshot end on 30 April 2026, so 13 May would show
 a Berlin without a U-Bahn. 11 March is the latest ordinary Wednesday with
 every mode at full service — found by scanning, not assumed.
+
+## The Netherlands page
+
+`#nl` is the Dutch network: **6,181 trains on Wednesday 26 August 2026** —
+NS, every regional operator (Arriva, Keolis, Blauwnet, VIAS, Eurobahn…),
+the internationals (ICE, Eurostar, Intercity direct) and both night-train
+operators, built by `build/build_nl.py` from the OVapi/NDOV national GTFS
+plus European Sleeper's own feed (absent from the aggregate). OVapi's
+route names carry the service type in plain words, so classification is a
+word match, not a regex hunt. Basemap: CBS province boundaries via
+cartomap/nl. Metro, tram, bus and ferries excluded.
 
 ## The data
 

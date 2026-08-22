@@ -300,6 +300,55 @@ const NETWORKS = {
       d.weekday + " on the German rail network, drawn from published timetables for " +
       dateStr(d) + ".",
     note: "Urban transit (S-Bahn, U-Bahn, tram, bus) is excluded.",
+    caveats: "Coverage is the complete official DELFI dataset, every operator " +
+      "in all sixteen states, and each trip was verified stop-by-stop against " +
+      "the raw feed. Known weaknesses: positions are interpolated in a " +
+      "straight line between timetabled stops, so trains cut corners between " +
+      "stations; a few international night trains are listed by two operators " +
+      "(codeshares) and draw as one dot on top of another; and this is the " +
+      "published schedule — no delays, no cancellations.",
+  },
+  nl: {
+    label:"Netherlands", pill:"NL", unit:"trains",
+    data:"data/nl-trains.json", geo:"data/nl-geo.json",
+    minorPxPerDeg:120,
+    classes:{
+      ice:       {label:"ICE / Eurostar / IC direct", key:["Int'l","high-speed"],
+                  role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
+      intercity: {label:"Intercity",                  key:["IC","intercity"],
+                  role:"ic",    size:0.44, secs:500, trail:5, ring:0.50},
+      regional:  {label:"Sprinter / stoptrein",       key:["SPR","sprinter"],
+                  role:"reg",   size:0.32, secs:350, trail:3, ring:0.10},
+      night:     {label:"Nightjet / European Sleeper", key:["Night",""],
+                  role:"night", size:0.43, secs:600, trail:6, ring:1.00},
+    },
+    views:{ nl: {label:"Netherlands",
+      core:{lon0:3.35, lon1:7.25, lat0:50.72, lat1:53.55},
+      maxv:{lon0:2.30, lon1:8.80, lat0:50.10, lat1:54.10},
+      clock:{lat:52.95, lon:3.95}, key:{lat:51.95, lon:3.45}} },
+    cities:[
+      ["Amsterdam",52.3789,4.9003,1],  ["Rotterdam",51.9249,4.4690,1],
+      ["Den Haag",52.0809,4.3240,1],   ["Utrecht",52.0894,5.1103,1],
+      ["Eindhoven",51.4433,5.4790,1],  ["Groningen",53.2109,6.5641,1],
+      ["Maastricht",50.8503,5.7052,1], ["Zwolle",52.5049,6.0906,0],
+      ["Leeuwarden",53.1961,5.7925,0], ["Arnhem",51.9849,5.8996,0],
+      ["Nijmegen",51.8433,5.8526,0],   ["Breda",51.5955,4.7797,0],
+      ["Tilburg",51.5605,5.0836,0],    ["Amersfoort",52.1536,5.3705,0],
+      ["Schiphol",52.3094,4.7622,0],   ["Haarlem",52.3878,4.6383,0],
+      ["Leiden",52.1664,4.4823,0],     ["Almere",52.3749,5.2178,0],
+      ["Enschede",52.2223,6.8895,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on the Dutch rail network, drawn from published timetables for " +
+      dateStr(d) + ".",
+    note: "Metro, tram, bus and ferries are excluded.",
+    caveats: "Coverage is the complete OVapi/NDOV national dataset — NS, " +
+      "every regional operator, the internationals — plus European " +
+      "Sleeper’s own feed, since it is missing from the aggregate. Known " +
+      "weaknesses: positions are interpolated in a straight line between " +
+      "stops; cross-border runs are drawn only as far as the source feeds " +
+      "describe them; this is the published schedule, with no delays or " +
+      "engineering work.",
   },
   us: {
     label:"USA", pill:"USA", unit:"trains",
@@ -354,6 +403,14 @@ const NETWORKS = {
       d.weekday + " on the US passenger rail network, drawn from published timetables for " +
       dateStr(d) + ". All clocks Eastern Time.",
     note: "Subways, light rail, streetcars and buses are excluded.",
+    caveats: "About 93% of US mainline passenger service is shown; every " +
+      "included trip was verified stop-by-stop against the raw feeds. " +
+      "MISSING, because their published timetables were stale for this date " +
+      "and old schedules would be drawn as if current: Metrolink (Los " +
+      "Angeles — which is why there is no LA region view), Virginia Railway " +
+      "Express, ACE, Shore Line East, Rail Runner, Tri-Rail, DCTA A-train " +
+      "and TEXRail; the Alaska Railroad publishes no data at all. Together " +
+      "roughly 400 of ~6,100 daily trains. Amtrak itself is 100% covered.",
   },
   tokyo: {
     label:"Tokyo", pill:"Tokyo", unit:"trains",
@@ -391,6 +448,14 @@ const NETWORKS = {
     note: "Unlike the national networks this one includes subways: they are " +
       "the fabric of Tokyo rail. Through-running trains are stitched into one " +
       "journey. Overnight, when almost nothing moves, playback fast-forwards.",
+    caveats: "The weakest sourcing of the four networks, stated openly: no " +
+      "official open feed for Japanese rail exists, so this uses the " +
+      "mini-tokyo-3d community dataset (© Akihiko Kusanagi, MIT), itself " +
+      "compiled from official ODPT data. It carries a generic weekday " +
+      "pattern rather than a dated calendar, so this is a typical weekday, " +
+      "not a specific one. Shinkansen are absent — no open timetable exists " +
+      "for them. 586 of 600 sampled trips matched the raw dataset " +
+      "row-for-row; the rest are through-running chains stitched by design.",
   },
   berlin: {
     label:"Berlin", pill:"Berlin", unit:"services",
@@ -427,6 +492,12 @@ const NETWORKS = {
     note: "Unlike the national networks this one keeps the urban modes: " +
       "S-Bahn, U-Bahn and tram (Potsdam’s too). Only buses and ferries " +
       "are excluded.",
+    caveats: "The date is 11 March 2026 — earlier than the Germany page — " +
+      "because BVG’s U-Bahn and tram calendars in this DELFI snapshot end on " +
+      "30 April: a later Wednesday would show a Berlin with no U-Bahn at " +
+      "all. 11 March is the latest ordinary Wednesday with every mode at " +
+      "full service, found by scanning each week. European Sleeper, " +
+      "Snälltåget and PKP night trains are absent from the source feed.",
   },
 };
 const dateStr = d => new Date(d.date+"T12:00:00Z").toLocaleDateString(
@@ -1016,7 +1087,8 @@ function buildChrome(){
   document.getElementById("legend-note").textContent =
     "Count = " + NET.unit + " moving inside the frame at this minute. Dot size " +
     "follows category. A ring opens where a service begins; the strip by the " +
-    "scrubber counts those starts across the day. " + NET.note + scopeNote;
+    "scrubber counts those starts across the day. " + NET.note + scopeNote +
+    " Data notes and known gaps: see the Figures panel.";
 
   document.getElementById("meta").innerHTML = NET.meta(DATA);
 
@@ -1031,7 +1103,9 @@ function buildChrome(){
     frows + "<tr><td>All categories</td><td>" + total + "</td><td>&mdash;</td></tr>" +
     "</tbody></table><p>Trips = distinct scheduled services on the day. Peak = " +
     "the most of that category moving at once." +
-    (DATA.note ? " " + DATA.note : "") + " Source: " + DATA.source + ".</p>";
+    (DATA.note ? " " + DATA.note : "") + " Source: " + DATA.source + ".</p>" +
+    (NET.caveats ? "<h2 style=\"margin-top:14px\">Data notes &amp; gaps</h2><p style=\"margin-top:4px\">" +
+      NET.caveats + "</p>" : "");
 
   /* region row only where a network has more than one view */
   const holder = document.getElementById("regions");
