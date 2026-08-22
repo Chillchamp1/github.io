@@ -93,10 +93,20 @@ def main():
 
         for r in rows(Z, "stops.txt"):
             try:
-                stops[ns + r["stop_id"]] = (float(r["stop_lon"]),
-                                            float(r["stop_lat"]), r["stop_name"])
+                lon, lat = float(r["stop_lon"]), float(r["stop_lat"])
             except (ValueError, KeyError):
                 continue
+            # OVapi carries a few foreign stops with junk coordinates near
+            # (0,0) -- Muenster-Haeger sat on the Greenwich meridian and sent
+            # every train on its line streaking 5,800 km across the frame.
+            # Anything outside a broad NW-Europe window is dropped; the trip
+            # then interpolates between its valid neighbours. London (-0.13)
+            # and Praha (14.4) stay inside.
+            if not (-2.0 <= lon <= 16.0 and 41.0 <= lat <= 57.5):
+                continue
+            if abs(lon) < 0.01 and abs(lat) < 0.01:
+                continue
+            stops[ns + r["stop_id"]] = (lon, lat, r["stop_name"])
 
         feed_trips = 0
         for r in rows(Z, "trips.txt"):
