@@ -321,9 +321,10 @@ const NETWORKS = {
       "published schedule — no delays, no cancellations.",
   },
   nl: {
-    label:"Netherlands", pill:"NL", unit:"trains",
+    label:"Benelux", pill:"BNL", unit:"trains",
+    speedFactor:0.8,
     data:"data/nl-trains.json", geo:"data/nl-geo.json",
-    minorPxPerDeg:120,
+    minorPxPerDeg:100,
     classes:{
       ice:       {label:"ICE / Eurostar / IC direct", key:["Int'l","high-speed"],
                   role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
@@ -334,10 +335,10 @@ const NETWORKS = {
       night:     {label:"Nightjet / European Sleeper", key:["Night",""],
                   role:"night", size:0.43, secs:600, trail:6, ring:1.00},
     },
-    views:{ nl: {label:"Netherlands",
-      core:{lon0:3.35, lon1:7.25, lat0:50.72, lat1:53.55},
-      maxv:{lon0:2.30, lon1:8.80, lat0:50.10, lat1:54.10},
-      clock:{lat:52.95, lon:3.95}, key:{lat:51.95, lon:3.45}} },
+    views:{ nl: {label:"Benelux",
+      core:{lon0:2.45, lon1:7.30, lat0:49.42, lat1:53.55},
+      maxv:{lon0:1.60, lon1:8.90, lat0:48.90, lat1:54.10},
+      clock:{lat:52.95, lon:3.95}, key:{lat:51.35, lon:2.72}} },
     cities:[
       ["Amsterdam",52.3789,4.9003,1],  ["Rotterdam",51.9249,4.4690,1],
       ["Den Haag",52.0809,4.3240,1],   ["Utrecht",52.0894,5.1103,1],
@@ -349,18 +350,25 @@ const NETWORKS = {
       ["Schiphol",52.3094,4.7622,0],   ["Haarlem",52.3878,4.6383,0],
       ["Leiden",52.1664,4.4823,0],     ["Almere",52.3749,5.2178,0],
       ["Enschede",52.2223,6.8895,0],
+      ["Brussel",50.8354,4.3369,1],    ["Antwerpen",51.2172,4.4212,1],
+      ["Gent",51.0357,3.7105,1],       ["Liège",50.6244,5.5666,1],
+      ["Luxembourg",49.5998,6.1332,1], ["Charleroi",50.4048,4.4385,0],
+      ["Namur",50.4687,4.8618,0],      ["Leuven",50.8813,4.7156,0],
+      ["Brugge",51.1972,3.2166,0],     ["Mechelen",51.0176,4.4829,0],
+      ["Hasselt",50.9305,5.3277,0],
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
-      d.weekday + " on the Dutch rail network, drawn from published timetables for " +
+      d.weekday + " on the Benelux rail networks, drawn from published timetables for " +
       dateStr(d) + ".",
     note: "Metro, tram, bus and ferries are excluded.",
-    caveats: "Coverage is the complete OVapi/NDOV national dataset — NS, " +
-      "every regional operator, the internationals — plus European " +
-      "Sleeper’s own feed, since it is missing from the aggregate. Known " +
-      "weaknesses: positions are interpolated in a straight line between " +
-      "stops; cross-border runs are drawn only as far as the source feeds " +
-      "describe them; this is the published schedule, with no delays or " +
-      "engineering work.",
+    caveats: "Three national datasets: OVapi/NDOV for the Netherlands, " +
+      "SNCB/NMBS for Belgium, the Luxembourg national feed for CFL, plus " +
+      "European Sleeper’s own feed. The day is 10 June 2026 because " +
+      "Luxembourg’s open feed covers early summer only — the latest " +
+      "Wednesday inside all four validity windows. Known weaknesses: " +
+      "positions are interpolated in a straight line between stops; " +
+      "cross-border runs are drawn only as far as the source feeds " +
+      "describe them; this is the published schedule, with no delays.",
   },
   us: {
     label:"USA", pill:"USA", unit:"trains",
@@ -433,17 +441,20 @@ const NETWORKS = {
        time rather than a jump cut. */
     ffwdBelow:60, ffwdBoost:5,
     classes:{
+      /* Urban headways are short: a trail longer than the gap to the train
+         behind melts the line into a solid streak, so the dense classes get
+         trails well under one peak headway. */
       ltdexp:  {label:"Limited express / liner", key:["Ltd Exp","liner"],
-                role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
+                role:"ice",   size:0.50, secs:480, trail:5, ring:1.00},
       express: {label:"Rapid / Express",         key:["Rapid","express"],
-                role:"ic",    size:0.40, secs:450, trail:4, ring:0.30},
+                role:"ic",    size:0.40, secs:240, trail:3, ring:0.30},
       local:   {label:"Local",                   key:["Local",""],
-                role:"reg",   size:0.30, secs:350, trail:3, ring:0.10},
+                role:"reg",   size:0.30, secs:140, trail:2, ring:0.10},
     },
     views:{ tokyo: {label:"Tokyo",
-      core:{lon0:138.95, lon1:140.45, lat0:35.08, lat1:36.06},
-      maxv:{lon0:138.55, lon1:140.95, lat0:34.82, lat1:36.38},
-      clock:{lat:35.42, lon:139.95}, key:{lat:35.11, lon:139.42}} },
+      core:{lon0:139.33, lon1:140.13, lat0:35.37, lat1:35.92},
+      maxv:{lon0:138.75, lon1:140.80, lat0:35.02, lat1:36.15},
+      clock:{lat:35.45, lon:139.93}, key:{lat:35.42, lon:140.05}} },
     cities:[
       ["Tokyo",35.6812,139.7671,1],     ["Shinjuku",35.6896,139.7003,1],
       ["Shibuya",35.6580,139.7016,1],   ["Ikebukuro",35.7295,139.7109,1],
@@ -472,6 +483,7 @@ const NETWORKS = {
   },
   berlin: {
     label:"Berlin", pill:"Berlin", unit:"services",
+    defaultMps:8,
     data:"data/berlin-trains.json", geo:"data/berlin-geo.json",
     minorPxPerDeg:900,
     classes:{
@@ -479,19 +491,21 @@ const NETWORKS = {
               role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
       regio: {label:"RE / RB — regional",       key:["Regio","regional"],
               role:"ic",    size:0.42, secs:450, trail:4, ring:0.40},
+      /* U-Bahn and tram run every few minutes: keep their trails shorter
+         than a headway or the lines melt into solid streaks. */
       sbahn: {label:"S-Bahn",                   key:["S-Bahn",""],
-              role:"reg",   size:0.34, secs:350, trail:3, ring:0.10},
+              role:"reg",   size:0.34, secs:160, trail:2, ring:0.10},
       ubahn: {label:"U-Bahn",                   key:["U-Bahn",""],
-              role:"night", size:0.30, secs:350, trail:3, ring:0.10},
+              role:"night", size:0.30, secs:110, trail:2, ring:0.10},
       tram:  {label:"Tram",                     key:["Tram",""],
-              role:"tram",  size:0.24, secs:300, trail:2, ring:0.05},
+              role:"tram",  size:0.24, secs:100, trail:2, ring:0.05},
     },
     views:{ berlin: {label:"Berlin",
       core:{lon0:13.03, lon1:13.81, lat0:52.29, lat1:52.71},
       maxv:{lon0:12.80, lon1:14.04, lat0:52.16, lat1:52.84},
       clock:{lat:52.665, lon:13.72}, key:{lat:52.33, lon:13.71}} },
     cities:[
-      ["Hauptbahnhof",52.5251,13.3694,1],  ["Alexanderplatz",52.5216,13.4114,1],
+      ["Hbf",52.5251,13.3694,1],           ["Alex",52.5216,13.4114,1],
       ["Zoo",52.5072,13.3324,1],           ["Ostkreuz",52.5031,13.4693,0],
       ["Südkreuz",52.4754,13.3654,0],      ["Gesundbrunnen",52.5487,13.3885,0],
       ["Spandau",52.5344,13.1974,1],       ["Potsdam",52.3917,13.0667,1],
@@ -1168,6 +1182,9 @@ async function switchNetwork(id, viewId){
   netsEl.querySelectorAll("button").forEach(b =>
     b.setAttribute("aria-pressed", String(b.dataset.net === id)));
   setView(NET.views[viewId] ? viewId : Object.keys(NET.views)[0]);
+  minutesPerSecond = NET.defaultMps || 16;
+  document.querySelectorAll(".spd button[data-mps]").forEach(o =>
+    o.setAttribute("aria-pressed", String(+o.dataset.mps === minutesPerSecond)));
   writeHash();
   const loading = document.getElementById("loading");
   loading.hidden = false;
@@ -1241,7 +1258,8 @@ function frame(now){
        nobody should sit through three empty hours of Tokyo at 4x. */
     const min = Math.floor(simSec/60) % 1440;
     ffwd = !!(NET.ffwdBelow && OCC && OCC[min] < NET.ffwdBelow);
-    simSec += dt * minutesPerSecond * 60 * (ffwd ? (NET.ffwdBoost || 5) : 1);
+    simSec += dt * minutesPerSecond * 60 * (NET.speedFactor || 1) *
+              (ffwd ? (NET.ffwdBoost || 5) : 1);
     if (simSec >= DAY_SECONDS) simSec -= DAY_SECONDS;
   }
   if (DATA) draw();

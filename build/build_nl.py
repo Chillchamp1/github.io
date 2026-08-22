@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""One day of Dutch rail from the OVapi national GTFS plus European
+"""One day of Benelux rail: the OVapi national GTFS for the Netherlands,
+SNCB/NMBS for Belgium, the Luxembourg national feed for CFL, and European
 Sleeper's own feed.
 
 Usage:
@@ -24,17 +25,20 @@ CLASSES = ["ice", "intercity", "regional", "night"]
 def classify(short, long, rtype):
     if rtype == "105":
         return "night"
-    if rtype != "2":
+    # SNCB uses 100/101/103 for rail; OVapi and CFL plain 2. Buses (3, 700)
+    # and everything urban fall through to None.
+    if rtype not in ("2", "100", "101", "103"):
         return None
     s = (short or long or "").lower()
-    if s.startswith(("nightjet", "european sleeper", "nachttrein")):
+    if s.startswith(("nightjet", "european sleeper", "nachttrein", "nj ")):
         return "night"
-    if s.startswith(("ice", "eurostar", "intercity direct", "eurocity",
-                     "ec ", "thalys", "govolta")):
+    if s.startswith(("ice", "eurostar", "eur", "est", "intercity direct",
+                     "eurocity", "ec ", "thalys", "tha", "tgv", "govolta")):
         return "ice"
-    if s.startswith("intercity"):
+    if s.startswith(("intercity", "ic")):
         return "intercity"
-    if s.startswith(("sprinter", "stoptrein", "sneltrein")):
+    if s.startswith(("sprinter", "stoptrein", "sneltrein",
+                     "l", "s", "p", "t", "re", "rb", "ter", "exp", "ext", "trn")):
         return "regional"
     return "regional"          # unnamed rail in a national feed: local
 
