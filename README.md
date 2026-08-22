@@ -7,10 +7,20 @@ only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-Open `index.html` — it is self-contained, so a local double-click works as well
-as GitHub Pages. No server, no build step, no network calls except the webfont.
-Every push to `main` republishes the site via `.github/workflows/pages.yml`; the
-whole page is one 6.7 MB file, so the first load takes a moment on a slow link.
+The five networks — Germany, the Netherlands, the USA, Greater Tokyo and
+Berlin — live in one
+app at `index.html`, switched by the pills in the top-left corner or by URL
+fragment: `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
+`#us/nw`), `#tokyo`, `#berlin`. Every network carries a "Data notes & gaps"
+section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
+fetched when its network is first opened, so the app needs http(s) — GitHub
+Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
+Every day starts at midnight, and a network that sleeps overnight (Tokyo)
+fast-forwards 20× while fewer than 30 trains are moving, so nobody waits
+through three empty hours. City labels are placed by a collision pass at
+layout time: nothing may cover the clock, the on-canvas key or another label;
+major cities win, minor ones yield. Every push to `main` republishes the site
+via `.github/workflows/pages.yml`.
 
 ## What is on screen
 
@@ -146,6 +156,17 @@ calendars in this DELFI snapshot end on 30 April 2026, so 13 May would show
 a Berlin without a U-Bahn. 11 March is the latest ordinary Wednesday with
 every mode at full service — found by scanning, not assumed.
 
+## The Netherlands page
+
+`#nl` is the Dutch network: **6,181 trains on Wednesday 26 August 2026** —
+NS, every regional operator (Arriva, Keolis, Blauwnet, VIAS, Eurobahn…),
+the internationals (ICE, Eurostar, Intercity direct) and both night-train
+operators, built by `build/build_nl.py` from the OVapi/NDOV national GTFS
+plus European Sleeper's own feed (absent from the aggregate). OVapi's
+route names carry the service type in plain words, so classification is a
+word match, not a regex hunt. Basemap: CBS province boundaries via
+cartomap/nl. Metro, tram, bus and ferries excluded.
+
 ## The data
 
 `data/trains.json` is built from the **official DELFI e.V. GTFS dataset**
@@ -192,7 +213,10 @@ type-2 feeds. Times are stored in whole minutes to keep the JSON compact.
 A portrait video for phones and social posts comes from the page itself:
 
 ```sh
-node build/export_video.js --seconds 60 --start 00:00 --out german-rail-day.mp4
+python3 -m http.server 8000 &
+node build/export_video.js --url http://localhost:8000/index.html#de \
+     --seconds 60 --start 00:00 --out german-rail-day.mp4
+# Tokyo sleeps overnight: add --warp 30 so the video fast-forwards the gap
 ```
 
 That gives 1080x1920 H.264. Playback is not screen-recorded -- the page is
