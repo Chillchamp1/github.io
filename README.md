@@ -163,8 +163,9 @@ OVapi/NDOV national GTFS for the Netherlands, SNCB/NMBS for Belgium, the
 Luxembourg national feed for CFL, and European Sleeper's own feed (absent
 from the aggregates). The day is 10 June because Luxembourg's open feed
 covers early summer only — the latest Wednesday inside all four validity
-windows. Benelux playback runs 20% slower than the other networks; its
-density earns the extra dwell. Basemap: Natural Earth 1:10M country shapes
+windows. One time-scale rule covers every network: a city-scale frame
+(under ~300 km across) defaults to 2×, a national one to 4×, so trains
+cover pixels at a comparable rate whether the frame is Berlin or the US. Basemap: Natural Earth 1:10M country shapes
 (world-atlas) with CBS province lines inside the Netherlands. Metro, tram,
 bus and ferries excluded.
 

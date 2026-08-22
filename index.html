@@ -322,7 +322,6 @@ const NETWORKS = {
   },
   nl: {
     label:"Benelux", pill:"BNL", unit:"trains",
-    speedFactor:0.8,
     data:"data/nl-trains.json", geo:"data/nl-geo.json",
     minorPxPerDeg:100,
     classes:{
@@ -338,7 +337,7 @@ const NETWORKS = {
     views:{ nl: {label:"Benelux",
       core:{lon0:2.45, lon1:7.30, lat0:49.42, lat1:53.55},
       maxv:{lon0:1.60, lon1:8.90, lat0:48.90, lat1:54.10},
-      clock:{lat:52.95, lon:3.95}, key:{lat:51.35, lon:2.72}} },
+      clock:{lat:52.95, lon:3.95}, key:{lat:49.05, lon:4.50}} },
     cities:[
       ["Amsterdam",52.3789,4.9003,1],  ["Rotterdam",51.9249,4.4690,1],
       ["Den Haag",52.0809,4.3240,1],   ["Utrecht",52.0894,5.1103,1],
@@ -483,7 +482,6 @@ const NETWORKS = {
   },
   berlin: {
     label:"Berlin", pill:"Berlin", unit:"services",
-    defaultMps:8,
     data:"data/berlin-trains.json", geo:"data/berlin-geo.json",
     minorPxPerDeg:900,
     classes:{
@@ -563,10 +561,23 @@ async function fetchJSON(url){
   return j;
 }
 
+/* One time-scale rule for every network: the zoom decides the speed. A
+   city-scale frame (under ~300 km across) runs at 2x, a national one at
+   4x -- so trains cover pixels at a comparable, watchable rate whether the
+   frame is Berlin or the whole US. The speed buttons still override. */
+function viewMps(v){
+  const mid = (v.core.lat0 + v.core.lat1) / 2;
+  const spanKm = (v.core.lon1 - v.core.lon0) *
+                 Math.cos(mid * Math.PI/180) * 111.32;
+  return spanKm < 300 ? 8 : 16;
+}
 function setView(id){
   VIEWID = id;
   const v = NET.views[id];
   CORE = v.core; MAXV = v.maxv; CLOCK_AT = v.clock; LEGEND_AT = v.key;
+  minutesPerSecond = viewMps(v);
+  document.querySelectorAll(".spd button[data-mps]").forEach(o =>
+    o.setAttribute("aria-pressed", String(+o.dataset.mps === minutesPerSecond)));
 }
 
 function applyData(data, geo){
@@ -1182,9 +1193,6 @@ async function switchNetwork(id, viewId){
   netsEl.querySelectorAll("button").forEach(b =>
     b.setAttribute("aria-pressed", String(b.dataset.net === id)));
   setView(NET.views[viewId] ? viewId : Object.keys(NET.views)[0]);
-  minutesPerSecond = NET.defaultMps || 16;
-  document.querySelectorAll(".spd button[data-mps]").forEach(o =>
-    o.setAttribute("aria-pressed", String(+o.dataset.mps === minutesPerSecond)));
   writeHash();
   const loading = document.getElementById("loading");
   loading.hidden = false;
@@ -1258,8 +1266,7 @@ function frame(now){
        nobody should sit through three empty hours of Tokyo at 4x. */
     const min = Math.floor(simSec/60) % 1440;
     ffwd = !!(NET.ffwdBelow && OCC && OCC[min] < NET.ffwdBelow);
-    simSec += dt * minutesPerSecond * 60 * (NET.speedFactor || 1) *
-              (ffwd ? (NET.ffwdBoost || 5) : 1);
+    simSec += dt * minutesPerSecond * 60 * (ffwd ? (NET.ffwdBoost || 5) : 1);
     if (simSec >= DAY_SECONDS) simSec -= DAY_SECONDS;
   }
   if (DATA) draw();
