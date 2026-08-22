@@ -64,6 +64,11 @@ the nearest station is far enough away that it never covers the network. Giving
 it open water rather than a reserved band hands the whole stage to the map.
 
 Hover a train for its line and destination. Space bar toggles playback.
+The Glow button adds an optional bloom around the trains — off by default,
+with diameter (⌀) and intensity (☀) sliders; starting values follow the
+zoom, bigger for city frames than for national ones. The glow lives on a
+small overlay canvas that the compositor stretches and screens over the
+map, so it costs almost nothing even without a GPU.
 
 The window itself adapts to its container: whichever axis has room to spare is widened
 towards the reach of the feed's international services. A phone in portrait
