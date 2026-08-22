@@ -200,7 +200,10 @@ type-2 feeds. Times are stored in whole minutes to keep the JSON compact.
 A portrait video for phones and social posts comes from the page itself:
 
 ```sh
-node build/export_video.js --seconds 60 --start 00:00 --out german-rail-day.mp4
+python3 -m http.server 8000 &
+node build/export_video.js --url http://localhost:8000/index.html#de \
+     --seconds 60 --start 00:00 --out german-rail-day.mp4
+# Tokyo sleeps overnight: add --warp 30 so the video fast-forwards the gap
 ```
 
 That gives 1080x1920 H.264. Playback is not screen-recorded -- the page is

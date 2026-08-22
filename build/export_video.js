@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 /* Render index.html to a portrait MP4 for phones and social posts.
  *
- *   node build/export_video.js [--seconds 60] [--fps 30] [--start 12:00]
- *                              [--width 540] [--height 960] [--scale 2]
- *                              [--out day.mp4]
+ *   node build/export_video.js [--url http://localhost:8000/#de]
+ *                              [--seconds 60] [--fps 30] [--start 00:00]
+ *                              [--warp 0] [--width 540] [--height 960]
+ *                              [--scale 2] [--out day.mp4]
+ *
+ * The app fetches its data, so point --url at an http(s) server, with the
+ * network in the hash (#de, #us, #tokyo, #berlin). --warp N fast-forwards
+ * 20x whenever fewer than N trains are on screen, mirroring the page's own
+ * overnight fast-forward -- use it for Tokyo, whose network sleeps.
  *
  * Needs playwright (any recent Chromium) and ffmpeg on PATH; if ffmpeg is
  * missing, `pip install imageio-ffmpeg` supplies one and this script finds it.
@@ -30,8 +36,9 @@ const SCALE   = Number(arg("scale", 2));
 /* Clock time the day opens on, HH:MM. Omit to start where the page does,
    at the quietest minute of the night. */
 const START   = arg("start", "");
-const OUT     = path.resolve(arg("out", "german-rail-day.mp4"));
-const PAGE    = path.resolve(arg("page", path.join(__dirname, "..", "index.html")));
+const WARP    = Number(arg("warp", 0));
+const OUT     = path.resolve(arg("out", "rail-day.mp4"));
+const URL     = arg("url", "http://localhost:8000/index.html#de");
 
 /* ffmpeg from PATH, else the one imageio-ffmpeg bundles. */
 function ffmpeg(){
@@ -55,10 +62,12 @@ function ffmpeg(){
                                       deviceScaleFactor:SCALE});
   const errs = [];
   page.on("pageerror", e => errs.push(e.message));
-  await page.goto("file://" + PAGE);
-  await page.waitForTimeout(1500);
-  /* The scroll hint belongs to the page, not to the picture. */
-  await page.addStyleTag({content:"#hint{display:none!important}"});
+  await page.goto(URL);
+  await page.waitForFunction(() => document.getElementById("loading").hidden,
+                             null, {timeout: 60000});
+  await page.waitForTimeout(800);
+  /* Chrome that belongs to the app, not to the picture. */
+  await page.addStyleTag({content:"#hint,#nets,#meta{display:none!important}"});
   await page.$eval("#play", el => el.click());        /* pause */
   let start = await page.evaluate(
     () => Number(document.getElementById("scrub").value));
