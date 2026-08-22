@@ -111,6 +111,41 @@ TopoJSON by `build/build_geo_us.py` itself. Alaska, Hawaii and Puerto Rico
 are dropped — no feed in the bundle serves them, and Alaska alone would
 double the frame.
 
+## The Tokyo page
+
+`tokyo.html` is Greater Tokyo's entire urban rail network over one generic
+weekday: **34,206 trains** on 179 lines at 2,201 stations — JR East, both
+subway operators, every private railway, monorails and trams. Unlike the
+national pages it *includes* subways, because they are the fabric of Tokyo
+rail. Three classes: limited expresses and fee-charging liners, the
+rapid/express family, and locals. The 14,693 through-running handovers in
+the source are stitched into single journeys, so a Tokyu train continuing
+into the subway neither dies at the boundary nor blooms a false origin
+ring — a Yamanote set even runs its consecutive loops as one dot.
+
+Data: the [mini-tokyo-3d](https://github.com/nagix/mini-tokyo-3d) dataset,
+MIT license, © Akihiko Kusanagi, itself derived from ODPT open data. It
+publishes weekday/holiday *patterns* rather than dated calendars, so the
+page shows "one weekday" and the snapshot date. There is no open Shinkansen
+timetable, so Tokyo has no high-speed category. Built by
+`build/build_tokyo.py`; audit: 586 of 600 sampled trips matched the raw
+files row-for-row, the other 14 are stitched chains verified by hand.
+
+## The Berlin page
+
+`berlin.html` answers "what does *everything on rails* in one city look
+like": **16,456 services on Wednesday 11 March 2026** — 308 long-distance,
+1,458 regional, 3,116 S-Bahn, 4,294 U-Bahn and 7,280 tram runs (Potsdam's
+trams included; only buses and ferries are excluded). Five classes, with the
+S-Bahn in its green and the U-Bahn in its traditional yellow; trams take a
+fifth hue (#ff8fd8). Same DELFI dataset as the national page, cut to a
+Berlin/Potsdam box by `build/build_berlin.py`.
+
+The date differs from the national page deliberately: BVG's U-Bahn and tram
+calendars in this DELFI snapshot end on 30 April 2026, so 13 May would show
+a Berlin without a U-Bahn. 11 March is the latest ordinary Wednesday with
+every mode at full service — found by scanning, not assumed.
+
 ## The data
 
 `data/trains.json` is built from the **official DELFI e.V. GTFS dataset**
