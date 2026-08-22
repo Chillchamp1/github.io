@@ -71,18 +71,26 @@ function ffmpeg(){
 
   const clip = {x:0, y:0, width:WIDTH, height:HEIGHT};
   const t0 = Date.now();
-  for (let i = 0; i < N; i++){
+  let simT = 0, frames = 0;
+  for (let i = 0; i < N * 2 && simT < DAY; i++){
     await page.$eval("#scrub", (el, v) => {
       el.value = v;
       el.dispatchEvent(new Event("input", {bubbles:true}));
-    }, Math.round((start + i*STEP) % DAY));
+    }, Math.round((start + simT) % DAY));
     await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
-    await page.screenshot({path:path.join(dir, `f${String(i).padStart(5,"0")}.jpg`),
+    await page.screenshot({path:path.join(dir, `f${String(frames).padStart(5,"0")}.jpg`),
                            type:"jpeg", quality:92, clip});
-    if (i % 100 === 0){
-      const per = (Date.now()-t0)/(i+1);
+    frames++;
+    let mult = 1;
+    if (WARP > 0){
+      const n = await page.$eval("#running", el => parseInt(el.textContent) || 0);
+      if (n < WARP) mult = 20;
+    }
+    simT += STEP * mult;
+    if (frames % 100 === 0){
+      const per = (Date.now()-t0)/frames;
       process.stdout.write(
-        `  ${i}/${N}  ${per.toFixed(0)} ms/frame  eta ${((N-i)*per/60000).toFixed(1)} min\n`);
+        `  ${frames} frames, day ${(100*simT/DAY).toFixed(0)}%  ${per.toFixed(0)} ms/frame\n`);
     }
   }
   await browser.close();

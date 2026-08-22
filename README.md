@@ -7,10 +7,18 @@ only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-Open `index.html` — it is self-contained, so a local double-click works as well
-as GitHub Pages. No server, no build step, no network calls except the webfont.
-Every push to `main` republishes the site via `.github/workflows/pages.yml`; the
-whole page is one 6.7 MB file, so the first load takes a moment on a slow link.
+The four networks — Germany, the USA, Greater Tokyo and Berlin — live in one
+app at `index.html`, switched by the pills in the top-left corner or by URL
+fragment: `#de`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`, `#us/nw`),
+`#tokyo`, `#berlin`. The old per-country pages redirect there. Each dataset is
+fetched when its network is first opened, so the app needs http(s) — GitHub
+Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
+Every day starts at midnight, and a network that sleeps overnight (Tokyo)
+fast-forwards 20× while fewer than 30 trains are moving, so nobody waits
+through three empty hours. City labels are placed by a collision pass at
+layout time: nothing may cover the clock, the on-canvas key or another label;
+major cities win, minor ones yield. Every push to `main` republishes the site
+via `.github/workflows/pages.yml`.
 
 ## What is on screen
 
