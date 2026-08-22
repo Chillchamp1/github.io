@@ -98,9 +98,18 @@ python3 build/build_geo_us.py us-states.json -o data/us-geo.json
 python3 build/bundle.py -d data/us-trains.json -g data/us-geo.json -p usa.html
 ```
 
-Basemap: lower-48 state polygons from PublicaMundi/MappingAPI (US Census
-geometry, public domain). Alaska, Hawaii and Puerto Rico are dropped — no
-feed in the bundle serves them, and Alaska alone would double the frame.
+The national frame leaves the busy corridors tiny, so the dock offers
+**region presets** — Northeast, Chicago, Bay Area, Pacific Northwest — that
+reframe the same animation; each carries its own water anchors for the clock
+and key, the legend counts only what is inside the frame, and `#chicago`-style
+URL fragments deep-link a region. A Los Angeles view is deliberately absent:
+without Metrolink (stale feed, see above) it would be misleadingly empty.
+
+Basemap: Census Bureau 1:10M state boundaries via topojson/us-atlas
+(`states-10m.json`, shoreline-clipped, public-domain data), decoded from
+TopoJSON by `build/build_geo_us.py` itself. Alaska, Hawaii and Puerto Rico
+are dropped — no feed in the bundle serves them, and Alaska alone would
+double the frame.
 
 ## The data
 
