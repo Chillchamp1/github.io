@@ -427,9 +427,9 @@ const NETWORKS = {
       bay: {label:"Bay Area",  core:{lon0:-123.20, lon1:-120.80, lat0:36.40, lat1:39.00},
             maxv:{lon0:-124.50, lon1:-119.60, lat0:35.60, lat1:39.80},
             clock:{lat:37.60, lon:-122.95}, key:{lat:36.75, lon:-122.75}},
-      nw:  {label:"Northwest", core:{lon0:-124.40, lon1:-121.00, lat0:43.80, lat1:48.90},
-            maxv:{lon0:-125.60, lon1:-119.80, lat0:43.00, lat1:49.60},
-            clock:{lat:47.30, lon:-124.05}, key:{lat:44.90, lon:-124.10}},
+      nyc: {label:"New York",  core:{lon0:-74.45, lon1:-73.35, lat0:40.55, lat1:41.10},
+            maxv:{lon0:-75.10, lon1:-72.60, lat0:40.30, lat1:41.45},
+            clock:{lat:40.63, lon:-73.55},  key:{lat:41.02, lon:-74.32}},
     },
     cities:[
       ["New York",40.7506,-73.9935,1],   ["Boston",42.3519,-71.0552,1],
@@ -650,43 +650,55 @@ const NETWORKS = {
     /* The Tube shuts overnight -- nearly four dead hours on a Wednesday. */
     ffwdBelow:25, ffwdBoost:5,
     classes:{
+      nr:   {label:"National Rail — 2021 timetable", key:["NR","2021"],
+             role:"ic",   size:0.42, secs:420, trail:4, ring:0.40},
       dlr:  {label:"DLR", key:["DLR",""],
-             role:"ice",  size:0.40, secs:200, trail:3, ring:0.40},
+             role:"ice",  size:0.36, secs:200, trail:3, ring:0.30},
       tube: {label:"Underground", key:["Tube","underground"],
-             role:"reg",  size:0.32, secs:150, trail:2, ring:0.10},
+             role:"reg",  size:0.30, secs:150, trail:2, ring:0.10},
       tram: {label:"Tramlink", key:["Tram",""],
-             role:"tram", size:0.26, secs:130, trail:2, ring:0.10},
+             role:"tram", size:0.24, secs:130, trail:2, ring:0.10},
     },
     views:{ london: {label:"London",
       core:{lon0:-0.56, lon1:0.28, lat0:51.28, lat1:51.71},
       maxv:{lon0:-0.85, lon1:0.60, lat0:51.14, lat1:51.84},
       clock:{lat:51.665, lon:0.185}, key:{lat:51.315, lon:-0.44}} },
+    /* Central London packs six termini into four kilometres, so only the
+       four biggest are majors; everything else yields to them and the
+       names are kept short. */
     cities:[
-      ["King's Cross",51.5308,-0.1238,1],  ["Waterloo",51.5031,-0.1132,1],
-      ["Oxford Circus",51.5152,-0.1418,1,1], ["Victoria",51.4952,-0.1441,1,1],
+      ["King's X",51.5308,-0.1238,1],      ["Waterloo",51.5031,-0.1132,1],
       ["Liverpool St",51.5178,-0.0823,1],  ["Paddington",51.5154,-0.1755,1,1],
-      ["Stratford",51.5416,-0.0042,1],     ["Canary Wharf",51.5051,-0.0209,0],
-      ["Heathrow",51.4713,-0.4524,1,1],    ["Wimbledon",51.4214,-0.2064,0,1],
+      ["Victoria",51.4952,-0.1441,0,1],    ["Stratford",51.5416,-0.0042,0],
+      ["Canary Wharf",51.5051,-0.0209,0],  ["Heathrow",51.4713,-0.4524,0,1],
+      ["Clapham Jn",51.4644,-0.1704,0,1],  ["Wimbledon",51.4214,-0.2064,0,1],
       ["Croydon",51.3762,-0.0982,0],       ["Walthamstow",51.5829,-0.0197,0],
-      ["Brixton",51.4627,-0.1145,0,1],     ["Woolwich",51.4917,0.0648,0],
+      ["Richmond",51.4633,-0.3013,0,1],    ["Woolwich",51.4917,0.0648,0],
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
-      d.weekday + " on the London Underground, DLR and Tramlink, from the " +
-      "published timetable for " + dateStr(d) + ".",
-    note: "The Tube, the DLR and Tramlink. National Rail services — the " +
-      "Overground, the Elizabeth line and the suburban operators — are not " +
-      "in any open feed; see the data notes.",
-    caveats: "This is the honest limit of British open data. The Department " +
-      "for Transport’s Bus Open Data Service is the only current open GTFS " +
-      "carrying rail at all, and what it carries for London is the " +
-      "Underground, the DLR and Tramlink — which is what you see. National " +
-      "Rail’s timetable, which would add the Overground, the Elizabeth line, " +
-      "Thameslink, Southern and the rest of the suburban network, is " +
-      "published through Rail Delivery Group channels that require " +
-      "registration, so roughly half of London’s rail journeys are missing " +
-      "from this map. The feed carries no route geometry for these " +
-      "operators, so trains run straight between stations rather than along " +
-      "the tunnels.",
+      d.weekday + " on London’s rails: the Underground, DLR and Tramlink for " +
+      dateStr(d) + ", with National Rail from a 2021 timetable.",
+    note: "The Tube, the DLR and Tramlink run on a current timetable. " +
+      "National Rail — Overground, Thameslink, Southeastern, Southern and " +
+      "the rest — comes from a 2021 snapshot, the newest openly published; " +
+      "see the data notes.",
+    caveats: "Two feeds and, unavoidably, two dates. The Underground, DLR " +
+      "and Tramlink come from the Department for Transport’s Bus Open Data " +
+      "Service, which despite the name is the only current open GTFS " +
+      "carrying British rail — that layer is a real Wednesday in August " +
+      "2026. National Rail is not in any current open feed: its timetable " +
+      "goes out through Rail Delivery Group channels that require " +
+      "registration, and the newest openly mirrored copy is an ATOC-derived " +
+      "snapshot whose calendar ends in July 2021. Leaving it out hid half of " +
+      "London’s rail journeys, so it is drawn here from its own valid " +
+      "Wednesday, 16 June 2021, against the current Underground. Read the " +
+      "orange trains as “this is where National Rail runs and roughly how " +
+      "often”, not as today’s departure board: frequencies are five years " +
+      "old and still carry some pandemic-era thinning. The Elizabeth line is " +
+      "absent because it opened in 2022, after that snapshot; its " +
+      "predecessor Crossrail and Heathrow Connect services are present. " +
+      "Neither feed publishes route geometry for these operators, so trains " +
+      "run straight between stations rather than along the tunnels.",
   },
 };
 const dateStr = d => new Date(d.date+"T12:00:00Z").toLocaleDateString(
@@ -1544,10 +1556,16 @@ function frame(now){
   lastFrame = now;
   if (playing && DATA){
     /* A network that sleeps overnight fast-forwards through the dead hours:
-       nobody should sit through three empty hours of Tokyo at 4x. */
+       nobody should sit through three empty hours of Tokyo at 4x. The
+       thinning-out shoulders still read as time passing, so they run at the
+       gentle boost; the stretch where the map is literally empty has
+       nothing to read and gets three times that. */
     const min = Math.floor(simSec/60) % 1440;
-    ffwd = !!(NET.ffwdBelow && OCC && OCC[min] < NET.ffwdBelow);
-    simSec += dt * minutesPerSecond * 60 * (ffwd ? (NET.ffwdBoost || 5) : 1);
+    const moving = OCC ? OCC[min] : 1;
+    ffwd = !!(NET.ffwdBelow && OCC && moving < NET.ffwdBelow);
+    const boost = !ffwd ? 1
+                : (NET.ffwdBoost || 5) * (moving === 0 ? 3 : 1);
+    simSec += dt * minutesPerSecond * 60 * boost;
     if (simSec >= DAY_SECONDS) simSec -= DAY_SECONDS;
   }
   if (DATA) draw();
