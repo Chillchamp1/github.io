@@ -617,7 +617,7 @@ const NETWORKS = {
     views:{ ch: {label:"Switzerland",
       core:{lon0:5.90, lon1:10.55, lat0:45.78, lat1:47.85},
       maxv:{lon0:4.90, lon1:11.60, lat0:45.20, lat1:48.40},
-      clock:{lat:47.52, lon:10.62}, key:{lat:46.02, lon:9.35}} },
+      clock:{lat:48.22, lon:9.55}, key:{lat:46.02, lon:9.35}} },
     cities:[
       ["Zürich",47.3782,8.5403,1],       ["Bern",46.9490,7.4396,1],
       ["Basel",47.5476,7.5896,1],        ["Genève",46.2102,6.1424,1,1],
@@ -984,7 +984,12 @@ function placeClock(){
   y = Math.max(hh+8, Math.min(H-hh-8, y));
   hdr.style.left = x + "px";
   hdr.style.top  = y + "px";
-  CLOCK_BOX = {x:x-hw, y:y-hh, w:hw*2, h:hh*2};
+  /* Labels are placed once, but the header keeps growing all day as the
+     running count gains digits -- 99 trains at dawn, 1,700 at five. Reserve
+     a cushion so a label parked beside the clock at midnight is not covered
+     by a wider number at rush hour. */
+  const PAD_X = 26, PAD_Y = 4;
+  CLOCK_BOX = {x:x-hw-PAD_X, y:y-hh-PAD_Y, w:hw*2+PAD_X*2, h:hh*2+PAD_Y*2};
 }
 
 function placeKey(){
@@ -1018,13 +1023,16 @@ function placeLabels(){
   const order = [...LABELS.filter(L=>L.major), ...(withMinors ? LABELS.filter(L=>!L.major) : [])];
   for (const L of order){
     const tw = ctx.measureText(L.label).width;
+    /* Four vertical slots, both sides: enough room for the termini that
+       crowd a city centre to find their own line. Nothing is force-placed
+       -- an unlabelled dot reads better than two names printed over each
+       other, which is what a portrait frame used to do to London. */
     const sides = L.flip ? [L.flip] : [1, -1];
-    let done = false, first = null;
-    for (const dy of [-6, 12]){
+    let done = false;
+    for (const dy of [-6, 12, -19, 25]){
       for (const side of sides){
         const x = side > 0 ? L.s.x + 6 : L.s.x - 6 - tw;
         const r = {x, y: L.s.y + dy - 11, w: tw, h: 13};
-        if (!first) first = {side, dy, r};
         if (!hits(r)){
           PLACED.push({...L, side, dy, r});
           taken.push(r);
@@ -1032,11 +1040,6 @@ function placeLabels(){
         }
       }
       if (done) break;
-    }
-    /* a major city is named even in a crowd; minors yield */
-    if (!done && L.major && first){
-      PLACED.push({...L, side:first.side, dy:first.dy, r:first.r});
-      taken.push(first.r);
     }
   }
 }
