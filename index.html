@@ -660,6 +660,59 @@ const NETWORKS = {
       "route geometry published in the feeds. Everything here is one time " +
       "zone, so unlike the national US map no clock shifting was needed.",
   },
+  fr: {
+    label:"France", pill:"FR", unit:"trains",
+    data:"data/fr-trains.json", geo:"data/fr-geo.json",
+    minorPxPerDeg:90,
+    /* French rail stops for a few hours; only the night trains cross it. */
+    ffwdBelow:25, ffwdBoost:5,
+    classes:{
+      tgv:       {label:"TGV / Ouigo / Lyria — high-speed", key:["TGV","high-speed"],
+                  role:"ice",   size:0.52, secs:600, trail:7, ring:1.00},
+      intercity: {label:"Intercités", key:["IC","intercity"],
+                  role:"ic",    size:0.46, secs:600, trail:6, ring:1.00},
+      regional:  {label:"TER — regional", key:["TER","regional"],
+                  role:"reg",   size:0.32, secs:380, trail:4, ring:0.14},
+      night:     {label:"Intercités de Nuit", key:["Nuit","night"],
+                  role:"night", size:0.48, secs:700, trail:7, ring:1.00},
+    },
+    views:{ fr: {label:"France",
+      core:{lon0:-5.10, lon1:8.30, lat0:42.30, lat1:51.15},
+      maxv:{lon0:-6.60, lon1:10.40, lat0:41.20, lat1:52.30},
+      clock:{lat:50.72, lon:1.30}, key:{lat:46.40, lon:-3.60}} },
+    cities:[
+      ["Paris",48.8767,2.3585,1],        ["Lyon",45.7602,4.8595,1],
+      ["Marseille",43.3027,5.3804,1],    ["Bordeaux",44.8262,-0.5561,1,1],
+      ["Toulouse",43.6114,1.4536,1],     ["Lille",50.6379,3.0713,1],
+      ["Nantes",47.2172,-1.5423,1,1],    ["Strasbourg",48.5850,7.7345,1],
+      ["Nice",43.7046,7.2620,0],         ["Rennes",48.1035,-1.6725,0,1],
+      ["Montpellier",43.6047,3.8802,0],  ["Dijon",47.3232,5.0273,0],
+      ["Tours",47.3894,0.6939,0],        ["Clermont",45.7658,3.1020,0],
+      ["Brest",48.3878,-4.4784,0,1],     ["Metz",49.1100,6.1770,0],
+      ["Limoges",45.8360,1.2670,0],      ["Genève",46.2102,6.1424,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on the French network — TER, TGV and Intercités, from " +
+      "SNCF's open timetables for " + dateStr(d) + ".",
+    note: "TER, TGV and Intercités — the whole country except its busiest " +
+      "corner: Paris looks far quieter than it is, because the Transilien " +
+      "suburban network has no usable open feed.",
+    caveats: "Read the date first: this is Wednesday 5 February 2025, not a " +
+      "recent day. SNCF publishes TER, TGV and Intercités as open GTFS, but " +
+      "its own servers and the French national access point are both " +
+      "unreachable from this build environment; the only copies within reach " +
+      "are Mobility Database mirrors carrying a January-to-April 2025 " +
+      "timetable, and the TGV mirror's window closes on 21 February. Rather " +
+      "than dress an old schedule up as today's, the map is built on a real " +
+      "Wednesday inside that window — one consistent day, honestly labelled. " +
+      "The bigger gap is Transilien: the Paris suburban network, the busiest " +
+      "in Europe, has only a 2019 mirror, far too old to draw, so it is left " +
+      "out entirely and Paris shows only its long-distance and TER traffic. " +
+      "Night trains are not labelled as such in the feed — the Intercités de " +
+      "Nuit run under plain line numbers like 770B — so they are identified " +
+      "by still being under way at two in the morning. No feed carries route " +
+      "geometry, so trains interpolate straight between stops.",
+  },
   ch: {
     label:"Switzerland", pill:"CH", unit:"trains",
     data:"data/ch-trains.json", geo:"data/ch-geo.json",

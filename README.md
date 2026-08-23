@@ -1,7 +1,7 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: nine networks, from a cross-border map of three countries
+open timetables: ten networks, from a cross-border map of three countries
 down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
@@ -9,10 +9,10 @@ every hour, so the trains are the only bright thing on it.
 
 The landing map is the combined one — Germany, the Benelux and Switzerland
 on a single timetable, where trains cross borders instead of stopping at
-them. The nine networks live in one
+them. The ten networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
+`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -251,6 +251,31 @@ stops. Basemap: Natural Earth 1:10M cantons, neighbouring country outlines
 and the big lakes — Swiss rail runs along the water and the map is
 unreadable without it.
 
+## The France page
+
+`#fr` is **9,834 trains on Wednesday 5 February 2025**: 9,094 TER, 645 TGV,
+87 Intercités and 8 Intercités de Nuit. The TGV star radiating out of Paris
+is the whole French network in one picture.
+
+Two things to know, and the page leads with both. **The date is old on
+purpose.** SNCF publishes TER, TGV and Intercités as open GTFS, but its own
+servers and `transport.data.gouv.fr` are unreachable from this build
+environment; the only copies within reach are Mobility Database mirrors
+carrying a January-to-April 2025 timetable, and the TGV mirror's window
+closes on 21 February. Rather than dress an old schedule up as current, the
+map is built on a real Wednesday inside that window — one consistent day,
+labelled as 2025 everywhere it appears.
+
+**Transilien is missing.** The Paris suburban network — the busiest in
+Europe — has only a 2019 mirror, far too old to draw, so Paris shows just
+its long-distance and TER traffic and looks far quieter than it is.
+
+Night trains took a small piece of detective work: the Intercités de Nuit
+are not labelled as night services and run under plain line numbers (770B
+is Paris Austerlitz to Nice), so `build/build_fr.py` identifies them by the
+hours they keep — still under way at two in the morning. That finds all
+eight and leaves the last suburban runs of the evening alone.
+
 ## The London page
 
 `#london` is **11,075 trains on Wednesday 26 August 2026**: the
@@ -419,6 +444,9 @@ datasets, credit the original publishers:
 | US timetables | Amtrak and twenty commuter operators, via the Mobility Database mirror | each operator's published feed terms |
 | New York timetables | MTA (subway, LIRR, Metro-North), NJ Transit | each operator's published feed terms |
 | Switzerland timetable | SKI+ / SBB, opentransportdata.swiss | open use, source must be named |
+| France timetable | SNCF open data (TER, TGV, Intercités), via the Mobility Database mirror | SNCF's open licence |
+| Cross-border high-speed | Eurostar (incl. former Thalys) | publisher's open-data terms |
+| Combined-map basemap, France basemap | [Natural Earth](https://www.naturalearthdata.com/) via world-atlas | public domain |
 | Tokyo timetable | [mini-tokyo-3d](https://github.com/nagix/mini-tokyo-3d) dataset, © Akihiko Kusanagi, derived from ODPT open data | MIT (dataset), ODPT terms upstream |
 | London Underground, DLR, Tramlink | Bus Open Data Service, Department for Transport | Open Government Licence v3.0 |
 | London National Rail | ATOC-derived snapshot via the Mobility Database mirror | original publisher's terms |
