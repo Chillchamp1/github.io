@@ -21,8 +21,13 @@ date has to sit inside that.
   regional   TER
   night      Intercités de Nuit
 
-Transilien is missing: its mirror is a 2019 snapshot, too old to draw, so
-the Paris suburban network -- the busiest in Europe -- is simply absent.
+Paris comes from a fourth feed. SNCF's own Transilien mirror is a 2019
+snapshot, too old to draw, but Ile-de-France Mobilites publishes the whole
+region and its mirror is current -- 31 May to 2 July 2026 -- so the RER and
+Transilien arrive on a 2026 Wednesday while the rest of the country is on
+its 2025 one. Two dated layers on one clock is a real compromise, and the
+page says so; an empty Paris was the bigger lie. Only heavy rail is taken
+from it: the Metro and the trams are a city network, not this map.
 """
 import argparse, json, os, sys, datetime
 
@@ -30,6 +35,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_gtfs import Feed, hhmmss
 
 CLASSES = ["tgv", "intercity", "regional", "night"]
+
+# Two different trains do not share an origin, a destination and a
+# departure minute. Wide enough to survive a timetable drifting between
+# the two dates, narrow enough not to swallow a real neighbour.
+DEDUP_SLACK = 5 * 60
 
 
 def classify(kind, route):
@@ -57,6 +67,9 @@ def main():
     ap.add_argument("--ter", required=True)
     ap.add_argument("--tgv", required=True)
     ap.add_argument("--ic", required=True)
+    ap.add_argument("--idf", help="Ile-de-France Mobilites feed (RER, "
+                                  "Transilien); it needs its own date")
+    ap.add_argument("--idf-date", help="service date for the Paris feed")
     ap.add_argument("-o", "--out", default="data/fr-trains.json")
     ap.add_argument("--note", default="")
     ap.add_argument("--bbox", default="-5.4,41.2,9.8,51.4")
@@ -66,18 +79,28 @@ def main():
     dow = ["monday","tuesday","wednesday","thursday","friday",
            "saturday","sunday"][d.weekday()]
 
+    sources = [("t:", args.ter, "regional", args.date, dow),
+               ("g:", args.tgv, "tgv", args.date, dow),
+               ("i:", args.ic, "intercity", args.date, dow)]
+    if args.idf:
+        if not args.idf_date:
+            sys.exit("--idf needs --idf-date: the Paris mirror is a 2026 feed")
+        pd = datetime.date(int(args.idf_date[:4]), int(args.idf_date[4:6]),
+                           int(args.idf_date[6:]))
+        sources.append(("p:", args.idf, "regional", args.idf_date,
+                        ["monday","tuesday","wednesday","thursday","friday",
+                         "saturday","sunday"][pd.weekday()]))
+
     stops, trips = {}, {}
-    for ns, path, kind in (("t:", args.ter, "regional"),
-                           ("g:", args.tgv, "tgv"),
-                           ("i:", args.ic, "intercity")):
+    for ns, path, kind, sdate, sdow in sources:
         feed = Feed(path)
         active = set()
         for r in feed.rows("calendar.txt"):
-            if r.get("start_date","") <= args.date <= r.get("end_date","") \
-               and r.get(dow) == "1":
+            if r.get("start_date","") <= sdate <= r.get("end_date","") \
+               and r.get(sdow) == "1":
                 active.add(r["service_id"])
         for r in feed.rows("calendar_dates.txt"):
-            if r.get("date") == args.date:
+            if r.get("date") == sdate:
                 (active.add if r.get("exception_type") == "1"
                  else active.discard)(r["service_id"])
 
@@ -105,7 +128,7 @@ def main():
                 if r.get("trip_short_name"):
                     label = f"{name} {r['trip_short_name']}".strip()
                 trips[ns + r["trip_id"]] = {
-                    "cls": cls, "name": label,
+                    "cls": cls, "name": label, "src": ns,
                     "head": (r.get("trip_headsign") or "").strip(), "st": []}
         print(f"  {kind}: {len(trips)-n0} trips, {len(active)} services")
 
@@ -137,7 +160,7 @@ def main():
             order.append(sid)
         return used[sid]
 
-    out_trips, counts = [], {c: 0 for c in CLASSES}
+    kept = []
     for t in trips.values():
         st = sorted(t["st"])
         if len(st) < 2:
@@ -145,6 +168,33 @@ def main():
         if not any(minlon <= stops[s][0] <= maxlon
                    and minlat <= stops[s][1] <= maxlat for _, s, _, _ in st):
             continue
+        kept.append((t, st))
+
+    # SNCF's national TER feed and the Paris one both carry the TER services
+    # that run into Ile-de-France, so the same train would be drawn twice.
+    # Line names are no help -- both call it "TER" -- but geography is: two
+    # different trains do not share an origin, a destination and a departure
+    # minute. Only ever matched between two feeds, never inside one.
+    cell = lambda sid: (round(stops[sid][0], 2), round(stops[sid][1], 2))
+    seen, merged, uniq = {}, 0, []
+    for t, st in kept:
+        key = (t["cls"], cell(st[0][1]), cell(st[-1][1]))
+        dep, hit = st[0][3], None
+        for dep0, at in seen.get(key, []):
+            if abs(dep0 - dep) <= DEDUP_SLACK and uniq[at][0]["src"] != t["src"]:
+                hit = at
+                break
+        if hit is not None:
+            merged += 1
+            if len(st) > len(uniq[hit][1]):
+                uniq[hit] = (t, st)
+            continue
+        seen.setdefault(key, []).append((dep, len(uniq)))
+        uniq.append((t, st))
+    print(f"cross-feed duplicates merged: {merged} -> {len(uniq)} trips")
+
+    out_trips, counts = [], {c: 0 for c in CLASSES}
+    for t, st in uniq:
         seq = [[idx(s), a // 60, dp // 60] for _, s, a, dp in st]
         for i in range(1, len(seq)):
             if seq[i][1] < seq[i-1][2]:

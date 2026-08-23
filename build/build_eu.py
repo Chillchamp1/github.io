@@ -9,15 +9,21 @@ The point of this map is the border. Each national page draws its own
 country and lets international trains leave the frame; here the frames are
 joined, so a Zurich-Hamburg EuroCity is one dot for its whole run.
 
-That only works because the four sources share a service date: DELFI is
-valid to 13 June 2026 and the Luxembourg feed from 6 May, so Wednesday
-10 June 2026 sits inside every window. No mixing of dates.
+That only works because the sources share a service date: DELFI is valid
+to 13 June 2026 and the Luxembourg feed from 6 May, so Wednesday 10 June
+2026 sits inside every window -- Ile-de-France Mobilites too, whose mirror
+runs 31 May to 2 July 2026. The one exception is SNCF's own TER, TGV and
+Intercites, whose only reachable mirror is a 2025 timetable; they ride
+along on their own date and the map says so.
 
-Cross-border trains appear in two feeds -- the same EuroCity is in DELFI
-and in the Swiss aggregate -- so long-distance services are deduplicated
-on (class, line name, first departure, origin), keeping the copy that
-carries more stops. Regional line names repeat across countries ("S1"
-runs in half of Europe), so only long-distance classes are ever merged.
+Trains appear in two feeds -- the same EuroCity is in DELFI and in the
+Swiss aggregate, and SKI+ carries some 3,700 French regional services that
+SNCF publishes as well -- so services are deduplicated across feeds. Long
+distance matches on line name, destination and roughly-when. Regional line
+names repeat across countries ("S1" runs in half of Europe) and cannot be
+matched that way, so regional matches on geography instead: two different
+trains do not share an origin, a destination and a departure minute. Only
+ever across feeds; what one publisher lists twice is its own business.
 
 Five classes, folded from the three national schemes:
   ice        ICE, TGV, Eurostar, EC/IC 101+102
@@ -79,6 +85,15 @@ def read_source(ns, path, kind, date, stops, trips):
                     or r.get("route_long_name") or "").strip()
         elif kind == "ch":
             cls, name = classify_ch(r)
+        elif kind == "idf":
+            # Ile-de-France Mobilites publishes the whole region: the RER,
+            # Transilien, the Metro, trams and two thousand bus routes.
+            # Only heavy rail belongs on a map of trains between cities --
+            # the same line the German feed draws by taking S-Bahn and
+            # leaving the U-Bahn out.
+            cls = "regional" if r.get("route_type") == "2" else None
+            name = (r.get("route_short_name")
+                    or r.get("route_long_name") or "").strip()
         elif kind.startswith("fr_"):
             # The French feeds are already split by service type, so which
             # file a route came from is its class. Night trains hide among
@@ -147,6 +162,12 @@ def read_source(ns, path, kind, date, stops, trips):
         dp = dp if dp is not None else a
         t["st"].append((int(r["stop_sequence"]), ns + r["stop_id"], a, dp))
     print(f"  {kind}: {added} trips from {os.path.basename(path)}")
+    if not added:
+        # A source that reads as empty is how a whole country goes missing
+        # without anyone noticing: a zip handed to a reader that only knew
+        # directories cost this map its German trains once already.
+        sys.exit(f"{path}: no active trips on {date} -- wrong date, wrong "
+                 f"file, or a reader that cannot see inside it")
     return feed
 
 
@@ -162,9 +183,14 @@ def main():
                     help="SNCF's three feeds; they carry a 2025 timetable "
                          "and so need their own date")
     ap.add_argument("--fr-date", help="service date for the French feeds")
+    ap.add_argument("--idf", help="Ile-de-France Mobilites feed (RER, "
+                                  "Transilien); current, so it uses <date>")
     ap.add_argument("-o", "--out", default="data/eu-trains.json")
     ap.add_argument("--note", default="")
-    ap.add_argument("--bbox", default="2.0,45.5,16.2,55.6")
+    # Matches the frame the page draws. A box tighter than the view is a
+    # quiet hole: at 2.0 east it kept Brittany, the Atlantic coast and the
+    # south-west out of a map that shows them.
+    ap.add_argument("--bbox", default="-5.4,41.0,16.2,55.6")
     ap.add_argument("--shape-tol", type=float, default=300.0,
                     help="German route geometry; the combined payload is the "
                          "landing page, so it is simplified harder than the "
@@ -187,6 +213,8 @@ def main():
         for ns, path, kind in zip(("f0:", "f1:", "f2:"), args.fr,
                                   ("fr_ter", "fr_tgv", "fr_ic")):
             read_source(ns, path, kind, args.fr_date, stops, trips)
+    if args.idf:
+        read_source("p:", args.idf, "idf", args.date, stops, trips)
     print(f"candidate trips: {len(trips)}, stops: {len(stops)}")
 
     kept = []
@@ -200,31 +228,39 @@ def main():
         kept.append((t, st))
     print(f"trips inside the frame: {len(kept)}")
 
-    # The same international train is published by both countries it runs
-    # through, and the two copies rarely agree exactly: departure minutes
-    # drift by a minute or two and one feed lists stops the other skips.
-    # Match on line, destination and roughly-when, then keep the fuller
-    # itinerary. Only long-distance is ever merged -- regional line numbers
-    # like "S1" repeat across borders and would collapse real trains.
-    SLACK = 20 * 60
+    # The same train is published by both countries it runs through, and the
+    # two copies rarely agree exactly: departure minutes drift by a minute or
+    # two and one feed lists stops the other skips. Long distance can be
+    # matched on the line name; regional cannot, because "S1" runs in half of
+    # Europe, so regional is matched on geography -- two different trains do
+    # not share an origin, a destination and a departure minute. Either way
+    # the fuller itinerary wins, and a match only counts between two
+    # different feeds: what one publisher lists twice is its own business.
+    LONG_SLACK, REG_SLACK = 20 * 60, 3 * 60
+    cell = lambda sid: (round(stops[sid][0], 2), round(stops[sid][1], 2))
+
+    def match_key(t, st):
+        if t["cls"] in LONG_DISTANCE:
+            return ("L", t["cls"], norm(t["name"]),
+                    norm(stops[st[-1][1]][2])), LONG_SLACK
+        return ("R", t["cls"], cell(st[0][1]), cell(st[-1][1])), REG_SLACK
+
     seen, merged, uniq = {}, 0, []
     for t, st in kept:
-        if t["cls"] in LONG_DISTANCE:
-            key = (t["cls"], norm(t["name"]), norm(stops[st[-1][1]][2]))
-            dep = st[0][3]
-            hit = None
-            for dep0, at in seen.get(key, []):
-                if abs(dep0 - dep) <= SLACK:
-                    hit = at
-                    break
-            if hit is not None:
-                merged += 1
-                if len(st) > len(uniq[hit][1]):
-                    uniq[hit] = (t, st)
-                continue
-            seen.setdefault(key, []).append((dep, len(uniq)))
+        key, slack = match_key(t, st)
+        dep, hit = st[0][3], None
+        for dep0, at in seen.get(key, []):
+            if abs(dep0 - dep) <= slack and uniq[at][0]["src"] != t["src"]:
+                hit = at
+                break
+        if hit is not None:
+            merged += 1
+            if len(st) > len(uniq[hit][1]):
+                uniq[hit] = (t, st)
+            continue
+        seen.setdefault(key, []).append((dep, len(uniq)))
         uniq.append((t, st))
-    print(f"cross-border duplicates merged: {merged} -> {len(uniq)} trips")
+    print(f"cross-feed duplicates merged: {merged} -> {len(uniq)} trips")
 
     tracks = {}
     if not args.no_shapes and args.shape_tol > 0:
