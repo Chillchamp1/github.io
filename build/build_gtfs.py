@@ -32,7 +32,12 @@ DROP_TYPES = {0, 1, 3, 4, 5, 6, 7, 11, 12}
 
 
 def read(path, name):
-    """Yield rows lazily -- stop_times.txt can run to gigabytes."""
+    """Yield rows lazily -- stop_times.txt can run to gigabytes. Takes a
+    feed as a directory or as a zip: a caller that hands over a zip and
+    silently reads nothing is a whole country quietly missing from a map."""
+    if path.endswith(".zip"):
+        yield from Feed(path).rows(name)
+        return
     fp = os.path.join(path, name)
     if not os.path.exists(fp):
         return

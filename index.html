@@ -357,15 +357,16 @@ const NETWORKS = {
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
       d.weekday + " across Germany, the Benelux, Switzerland and France — " +
-      "borders drawn, but not stopped at. " + dateStr(d) + " for all but " +
-      "the French layer, which is a 2025 timetable.",
+      "borders drawn, but not stopped at. " + dateStr(d) + ", except SNCF's " +
+      "TER, TGV and Intercités, which are a 2025 timetable.",
     note: "Five countries on one map, so a EuroCity from Zürich to Hamburg " +
       "is one dot for its whole run instead of stopping at the border. " +
-      "France is drawn from an older timetable than the rest — see the data " +
-      "notes.",
-    caveats: "Four sources merged on the one Wednesday they all cover: the " +
+      "SNCF's own trains are drawn from an older timetable than everything " +
+      "else, Paris included — see the data notes.",
+    caveats: "Sources merged on the one Wednesday they cover: the " +
       "German DELFI dataset, OVapi/NDOV with SNCB and the Luxembourg feed " +
-      "for the Benelux, the Swiss SKI+/SBB aggregate, and Eurostar's own " +
+      "for the Benelux, the Swiss SKI+/SBB aggregate, Île-de-France " +
+      "Mobilités for the RER and Transilien, and Eurostar's own " +
       "feed for the Paris and London legs. The shared date is what makes " +
       "the map honest — DELFI runs out on 13 June 2026 and Luxembourg's " +
       "feed starts on 6 May, so 10 June is the only window all four agree " +
@@ -375,13 +376,16 @@ const NETWORKS = {
       "their own Wednesday, 5 February 2025, beside everyone else's June " +
       "2026. Two weekday timetables a year apart differ in detail, not in " +
       "character — but if you are counting French trains rather than " +
-      "watching them, use the France map and read its notes. Transilien is " +
-      "missing there too, so Paris shows only its long-distance and TER " +
-      "traffic. International trains are published by both countries they run " +
-      "through, so long-distance services are deduplicated on line, " +
-      "departure minute and origin, keeping whichever copy carries more " +
-      "stops; regional names like “S1” repeat across borders and are never " +
-      "merged. Germany's trains follow the route geometry in its feed " +
+      "watching them, use the France map and read its notes. Paris is the " +
+      "exception to the exception: the RER and Transilien come from " +
+      "Île-de-France Mobilités, whose mirror does cover 10 June 2026, so the " +
+      "Paris region runs on the same day as Germany. Trains are published by " +
+      "both countries they run through — and SKI+ carries some 3,700 French " +
+      "regional services that SNCF publishes as well — so services are " +
+      "deduplicated across feeds: long distance on line, departure minute " +
+      "and destination; regional on geography, since “S1” runs in half of " +
+      "Europe and only the origin, the destination and the minute can tell " +
+      "two regional trains apart. Germany's trains follow the route geometry in its feed " +
       "(simplified harder here than on the Germany map, because this is the " +
       "landing page); Benelux and Swiss trains interpolate straight between " +
       "stops, since neither feed publishes geometry. France, Austria, " +
@@ -683,7 +687,7 @@ const NETWORKS = {
                   role:"ice",   size:0.52, secs:600, trail:7, ring:1.00},
       intercity: {label:"Intercités", key:["IC","intercity"],
                   role:"ic",    size:0.46, secs:600, trail:6, ring:1.00},
-      regional:  {label:"TER — regional", key:["TER","regional"],
+      regional:  {label:"TER, RER and Transilien", key:["TER","regional"],
                   role:"reg",   size:0.32, secs:380, trail:4, ring:0.14},
       night:     {label:"Intercités de Nuit", key:["Nuit","night"],
                   role:"night", size:0.48, secs:700, trail:7, ring:1.00},
@@ -704,11 +708,11 @@ const NETWORKS = {
       ["Limoges",45.8360,1.2670,0],      ["Genève",46.2102,6.1424,0],
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
-      d.weekday + " on the French network — TER, TGV and Intercités, from " +
-      "SNCF's open timetables for " + dateStr(d) + ".",
-    note: "TER, TGV and Intercités — the whole country except its busiest " +
-      "corner: Paris looks far quieter than it is, because the Transilien " +
-      "suburban network has no usable open feed.",
+      d.weekday + " on the French network — TER, TGV and Intercités on " +
+      dateStr(d) + ", the RER and Transilien on 10 June 2026.",
+    note: "TER, TGV and Intercités from SNCF, plus the RER and Transilien " +
+      "from Île-de-France Mobilités — which is a second, later timetable: " +
+      "read the caveats.",
     caveats: "Read the date first: this is Wednesday 5 February 2025, not a " +
       "recent day. SNCF publishes TER, TGV and Intercités as open GTFS, but " +
       "its own servers and the French national access point are both " +
@@ -717,9 +721,15 @@ const NETWORKS = {
       "timetable, and the TGV mirror's window closes on 21 February. Rather " +
       "than dress an old schedule up as today's, the map is built on a real " +
       "Wednesday inside that window — one consistent day, honestly labelled. " +
-      "The bigger gap is Transilien: the Paris suburban network, the busiest " +
-      "in Europe, has only a 2019 mirror, far too old to draw, so it is left " +
-      "out entirely and Paris shows only its long-distance and TER traffic. " +
+      "Paris is the compromise. SNCF's own Transilien mirror is a 2019 " +
+      "snapshot, far too old to draw, but Île-de-France Mobilités publishes " +
+      "the whole region and its mirror is current, so the RER and Transilien " +
+      "arrive here on Wednesday 10 June 2026 while the rest of the country " +
+      "is on its 2025 one — 5,162 trains, a third of everything on this map, " +
+      "running to a clock sixteen months apart from their neighbours. That " +
+      "is a real flaw, and it is still the better of the two: an empty Paris " +
+      "was a bigger lie than a labelled one. Only heavy rail is taken from " +
+      "that feed; the Métro and the trams are a city network, not this map. " +
       "Night trains are not labelled as such in the feed — the Intercités de " +
       "Nuit run under plain line numbers like 770B — so they are identified " +
       "by still being under way at two in the morning. No feed carries route " +

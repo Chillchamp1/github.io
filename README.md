@@ -105,7 +105,7 @@ midnight still stay in their own categories.
 ## The combined map
 
 `#eu` is the landing page and the only one where a border is just a line on
-the ground: **Germany, the Benelux, Switzerland and France**, 68,377 trains,
+the ground: **Germany, the Benelux, Switzerland and France**, 70,427 trains,
 from national feeds merged onto one map. A EuroCity from
 Zürich to Hamburg is one dot for its whole run instead of stopping where
 one country's data ends.
@@ -115,32 +115,39 @@ which is the whole point of the page.
 
 The shared date is what makes it honest. DELFI runs out on 13 June 2026 and
 the Luxembourg feed starts on 6 May, so **Wednesday 10 June 2026** is the
-one window all four sources agree on — no mixing of timetables from
-different weeks. `build/build_eu.py` folds the three national class schemes
-into five (high-speed, intercity, regional including S-Bahn, Swiss rack and
-panorama, night) and adds Eurostar's own feed for the Paris and London legs
-the national datasets do not carry.
+one window the sources agree on — Île-de-France Mobilités included, whose
+mirror runs 31 May to 2 July 2026. `build/build_eu.py` folds the national
+class schemes into five (high-speed, intercity, regional including S-Bahn
+and the RER, Swiss rack and panorama, night) and adds Eurostar's own feed
+for the Paris and London legs the national datasets do not carry.
 
-International trains are published by *both* countries they run through, so
-long-distance services are deduplicated: same class, same line name, same
-destination, departure within twenty minutes, keeping whichever copy lists
-more stops. The two copies rarely agree exactly — an ICE 43 to
-Hamburg-Altona appeared once with 20 stops and once with 19 — which is why
-the match is deliberately loose. Regional names repeat across borders ("S1"
-runs in half of Europe) and are never merged.
+Trains are published by *both* countries they run through — and SKI+ turns
+out to carry some 3,700 French regional services that SNCF publishes as well
+— so services are deduplicated across feeds, keeping whichever copy lists
+more stops. Long distance matches on class, line name, destination and a
+departure within twenty minutes; the two copies rarely agree exactly (an ICE
+43 to Hamburg-Altona appeared once with 20 stops and once with 19), which is
+why that match is deliberately loose. Regional cannot be matched that way,
+because "S1" runs in half of Europe, so it is matched on geography instead:
+two different trains do not share an origin, a destination and a departure
+minute. A match only ever counts between two different feeds — what one
+publisher lists twice is its own business. That merge finds 3,538
+duplicates, most of them French regional trains that were being drawn twice.
 
-France is the one date that could not be reconciled: the newest openly
-mirrored SNCF timetable is from early 2025 and has no overlap at all with
-the 2026 windows of the others, so its trains run on their own Wednesday
-beside everyone else's. Two weekday timetables a year apart differ in
-detail, not in character — but the page says so in the meta line, the
-legend and the data notes.
+SNCF's own trains are the one date that could not be reconciled: the newest
+openly mirrored TER, TGV and Intercités timetable is from early 2025 and has
+no overlap at all with the 2026 windows of the others, so those run on their
+own Wednesday beside everyone else's. Two weekday timetables a year apart
+differ in detail, not in character — but the page says so in the meta line,
+the legend and the data notes. Paris is the exception to the exception: the
+RER and Transilien come from Île-de-France Mobilités and *are* on 10 June
+2026.
 
-**It starts light.** The full map is 68,377 trains and 4.1 MB gzipped, most
+**It starts light.** The full map is 70,427 trains and 4.4 MB gzipped, most
 of it regional services. Waiting for all of that before the first frame is
 the wrong trade, so `build/split_layers.py` cuts the dataset in two: the
-long-distance spine — 7,012 trains, **381 kB** — paints immediately, and the
-61,365 regional services are fetched afterwards and merged in. Nothing is
+long-distance spine — 7,205 trains, **390 kB** — paints immediately, and the
+63,222 regional services are fetched afterwards and merged in. Nothing is
 dropped; the small trains simply arrive a moment later. First paint is
 eleven times lighter than it was.
 
@@ -266,9 +273,10 @@ unreadable without it.
 
 ## The France page
 
-`#fr` is **9,834 trains on Wednesday 5 February 2025**: 9,094 TER, 645 TGV,
-87 Intercités and 8 Intercités de Nuit. The TGV star radiating out of Paris
-is the whole French network in one picture.
+`#fr` is **14,996 trains**: 14,256 TER, RER and Transilien, 645 TGV, 87
+Intercités and 8 Intercités de Nuit. The TGV star radiating out of Paris is
+the whole French network in one picture, and the green knot at its centre is
+the RER.
 
 Two things to know, and the page leads with both. **The date is old on
 purpose.** SNCF publishes TER, TGV and Intercités as open GTFS, but its own
@@ -276,12 +284,19 @@ servers and `transport.data.gouv.fr` are unreachable from this build
 environment; the only copies within reach are Mobility Database mirrors
 carrying a January-to-April 2025 timetable, and the TGV mirror's window
 closes on 21 February. Rather than dress an old schedule up as current, the
-map is built on a real Wednesday inside that window — one consistent day,
-labelled as 2025 everywhere it appears.
+map is built on a real Wednesday inside that window — Wednesday 5 February
+2025, labelled as 2025 everywhere it appears.
 
-**Transilien is missing.** The Paris suburban network — the busiest in
-Europe — has only a 2019 mirror, far too old to draw, so Paris shows just
-its long-distance and TER traffic and looks far quieter than it is.
+**Paris runs on a different day.** SNCF's own Transilien mirror is a 2019
+snapshot, far too old to draw, and for a long time that meant the busiest
+suburban network in Europe was simply absent and Paris looked like a modest
+provincial city. Île-de-France Mobilités publishes the whole region and its
+mirror *is* current — 31 May to 2 July 2026 — so the RER and Transilien come
+from there, on Wednesday 10 June 2026. That is 5,162 trains, a third of the
+map, keeping a clock sixteen months away from their neighbours', which is a
+real flaw and still the better of the two: an empty Paris was the bigger
+lie. Only heavy rail is taken from that feed; the Métro and the trams are a
+city network, not this map.
 
 Night trains took a small piece of detective work: the Intercités de Nuit
 are not labelled as night services and run under plain line numbers (770B
@@ -488,6 +503,7 @@ datasets, credit the original publishers:
 | US timetables | Amtrak and twenty commuter operators, via the Mobility Database mirror | each operator's published feed terms |
 | New York timetables | MTA (subway, LIRR, Metro-North), NJ Transit | each operator's published feed terms |
 | Switzerland timetable | SKI+ / SBB, opentransportdata.swiss | open use, source must be named |
+| Paris region timetable | Île-de-France Mobilités | publisher's open-data terms |
 | France timetable | SNCF open data (TER, TGV, Intercités), via the Mobility Database mirror | SNCF's open licence |
 | Cross-border high-speed | Eurostar (incl. former Thalys) | publisher's open-data terms |
 | Combined-map basemap, France basemap | [Natural Earth](https://www.naturalearthdata.com/) via world-atlas | public domain |

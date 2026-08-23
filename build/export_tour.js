@@ -27,7 +27,6 @@
  * exposes for exactly this; synthesising wheel events could not place a
  * frame precisely enough to interpolate.
  */
-const {chromium} = require("playwright");
 const {execFileSync, spawnSync} = require("child_process");
 const fs = require("fs"), os = require("os"), path = require("path");
 
@@ -44,6 +43,8 @@ const OUT    = path.resolve(arg("out", "rail-tour.mp4"));
 const FRAMES = path.resolve(arg("frames",
                  path.join(os.tmpdir(), "rail-tour-frames")));
 const FRESH  = argv.includes("--fresh");
+/* Write the timeline out and stop, for build/tour_pace.py. */
+const TIMELINE = arg("timeline", null);
 
 /* The route. Each key is [video second, clock "HH:MM", lon, lat, span in
    degrees of longitude]. span 0 means the network's own full frame.
@@ -162,7 +163,22 @@ async function shoot(page, dir, from, to, label){
   if (done) process.stdout.write(`  ${label}: reused ${done} frames\n`);
 }
 
+if (TIMELINE){
+  const out = [];
+  for (let n = 0; n <= DUR*2; n++){
+    const t = n/2, c = at(t), d = at(t + 1);
+    out.push({t, sec: c.sec, lon: c.lon, lat: c.lat, span: c.span,
+              rate: d.sec - c.sec});
+  }
+  fs.writeFileSync(TIMELINE, JSON.stringify(out));
+  process.stdout.write(`${TIMELINE}: ${out.length} samples over ${DUR}s\n`);
+  process.exit(0);
+}
+
 (async () => {
+  /* Required here, not at the top: --timeline is a pure calculation and
+     should not need a browser installed to run. */
+  const {chromium} = require("playwright");
   const FF = ffmpeg();
   const base = path.join(FRAMES, "base"), over = path.join(FRAMES, "over");
   if (FRESH) fs.rmSync(FRAMES, {recursive:true, force:true});
