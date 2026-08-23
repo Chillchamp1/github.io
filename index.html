@@ -32,6 +32,9 @@
   #map{position:absolute;inset:0;width:100%;height:100%;display:block}
   /* The glow layer keeps a small backing store; the CSS stretch is the blur,
      and the compositor does the additive blend instead of a canvas blit. */
+  /* Two fingers belong to the map, one finger still scrolls the page down
+     to the legend and the controls. */
+  #map{touch-action:pan-y}
   #glow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
         mix-blend-mode:screen;mix-blend-mode:plus-lighter}
   #glow[hidden]{display:none}
@@ -264,6 +267,9 @@
       <button data-mps="4">1&times;</button>
       <button data-mps="8">2&times;</button>
       <button data-mps="16" aria-pressed="true">4&times;</button>
+    </div>
+    <div class="spd">
+      <button id="resetview" hidden title="Back to the whole network">Reset view</button>
     </div>
     <div class="spd" id="bloomctl" data-on="false" aria-label="Glow">
       <button id="bloom" aria-pressed="false">Glow</button>
@@ -726,6 +732,9 @@ let OCC=null;                        /* per-minute moving-train counts */
 
 let CORE=null, MAXV=null, CLOCK_AT=null, LEGEND_AT=null;
 let VIEW=null, FRAME_ASPECT=1;
+/* BASEVIEW is the frame the preset asked for; USERVIEW is where wheel and
+   pinch have moved it, kept as centre + span so it survives a resize. */
+let BASEVIEW=null, USERVIEW=null;
 
 const cache = new Map();             /* url -> parsed JSON */
 async function fetchJSON(url){
@@ -751,6 +760,10 @@ function setView(id){
   VIEWID = id;
   const v = NET.views[id];
   CORE = v.core; MAXV = v.maxv; CLOCK_AT = v.clock; LEGEND_AT = v.key;
+  /* A preset is a fresh start: whatever the wheel did to the last one does
+     not carry over. Playback speed follows the preset's extent, not the
+     live zoom, so going in for a closer look never changes the clock. */
+  USERVIEW = null;
   /* Starting bloom values follow the zoom: a city frame has bigger marks
      and takes a wider, brighter glow. Hand-tuned values stay put. */
   if (!bloomTouched){
@@ -761,6 +774,7 @@ function setView(id){
   minutesPerSecond = viewMps(v);
   document.querySelectorAll(".spd button[data-mps]").forEach(o =>
     o.setAttribute("aria-pressed", String(+o.dataset.mps === minutesPerSecond)));
+  updateZoomUI();
 }
 
 function applyData(data, geo){
@@ -896,6 +910,13 @@ function fitView(aspect){
 }
 const ux = lon => (lon-VIEW.lon0)/(VIEW.lon1-VIEW.lon0);
 const uy = lat => (VIEW.lat1-lat)/(VIEW.lat1-VIEW.lat0);
+/* The same projection against the preset frame. The clock and the key are
+   anchored with these so they hold their place while the map zooms under
+   them -- furniture belongs to the screen, not to the terrain. */
+const uxBase = lon => { const v = BASEVIEW || VIEW;
+  return (lon-v.lon0)/(v.lon1-v.lon0); };
+const uyBase = lat => { const v = BASEVIEW || VIEW;
+  return (v.lat1-lat)/(v.lat1-v.lat0); };
 
 const stage = document.getElementById("stage");
 const hdr = document.querySelector("header");
@@ -956,6 +977,22 @@ function resize(){
   OX = (W-w)/2;
   OY = PAD + (availH-h)*0.40;
 
+  /* The frame the preset asked for. Zooming moves VIEW inside this
+     rectangle; BASEVIEW stays put so the clock and key keep their place
+     and so "how far in are we" has an answer. */
+  BASEVIEW = {...VIEW};
+  if (USERVIEW) applyUserView();
+
+  reproject();
+  sizeProfile();
+  clockDirty = true;
+}
+
+/* Everything that turns the current VIEW into pixels. Cheap enough to run
+   on every wheel tick: the projection is affine, so it is one multiply-add
+   per coordinate. The canvas backing stores are deliberately not touched
+   here -- only resize() reallocates them. */
+function reproject(){
   for (const s of ST){ s.x = OX + ux(s.lon)*SX; s.y = OY + uy(s.lat)*SY; }
   if (SHAPES) for (const sh of SHAPES){
     const {lon, lat, px, py} = sh;
@@ -969,8 +1006,104 @@ function resize(){
   placeClock();
   placeKey();
   placeLabels();
-  sizeProfile();
-  clockDirty = true;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Zoom and pan. VIEW is the live window; USERVIEW remembers where the user
+   put it as centre + longitude span, so a container resize or an orientation
+   change keeps their frame instead of snapping back to the preset. */
+
+const MAX_ZOOM = 40;
+const zoomNow = () => !BASEVIEW ? 1
+  : (BASEVIEW.lon1-BASEVIEW.lon0) / (VIEW.lon1-VIEW.lon0);
+/* Inverse of ux/uy: which coordinate is under this pixel. */
+const lonAt = px => VIEW.lon0 + ((px-OX)/SX)*(VIEW.lon1-VIEW.lon0);
+const latAt = py => VIEW.lat1 - ((py-OY)/SY)*(VIEW.lat1-VIEW.lat0);
+
+function applyUserView(){
+  /* Latitude span follows from the frame's aspect, so the map never
+     stretches however the user got here. */
+  const {lonC, latC, spanLon} = USERVIEW;
+  const k = Math.cos(latC * Math.PI/180);
+  const spanLat = (spanLon * k) / (SX/SY);
+  VIEW = {lon0: lonC - spanLon/2, lon1: lonC + spanLon/2,
+          lat0: latC - spanLat/2, lat1: latC + spanLat/2};
+}
+
+function setUserView(lonC, latC, spanLon){
+  const baseSpan = BASEVIEW.lon1 - BASEVIEW.lon0;
+  spanLon = Math.min(baseSpan, Math.max(baseSpan/MAX_ZOOM, spanLon));
+  /* Keep the centre inside the preset frame: panning may look around the
+     network, not wander off into empty ocean. */
+  lonC = Math.min(BASEVIEW.lon1, Math.max(BASEVIEW.lon0, lonC));
+  latC = Math.min(BASEVIEW.lat1, Math.max(BASEVIEW.lat0, latC));
+  /* Pinching back out lands near the preset rather than exactly on it, so
+     anything within half a percent counts as "all the way out" and the
+     reset button retires itself. */
+  const back = spanLon > baseSpan*0.995 &&
+    Math.abs(lonC - (BASEVIEW.lon0+BASEVIEW.lon1)/2) < baseSpan*0.02 &&
+    Math.abs(latC - (BASEVIEW.lat0+BASEVIEW.lat1)/2) < baseSpan*0.02;
+  USERVIEW = back ? null : {lonC, latC, spanLon};
+  if (USERVIEW) applyUserView(); else VIEW = {...BASEVIEW};
+  reproject();
+  updateZoomUI();
+  /* The counts say how many trains are visible, so they have to be redone
+     when the view changes -- otherwise a paused map keeps the old number. */
+  lastMinute = -1;
+}
+
+/* Zoom about a pixel, keeping whatever is under it exactly there. */
+function zoomAt(px, py, factor){
+  if (!BASEVIEW) return;
+  const lon = lonAt(px), lat = latAt(py);
+  const baseSpan = BASEVIEW.lon1 - BASEVIEW.lon0;
+  const span = Math.min(baseSpan, Math.max(baseSpan/MAX_ZOOM,
+                                           (VIEW.lon1-VIEW.lon0) / factor));
+  const k = Math.cos(lat * Math.PI/180);
+  const spanLat = (span * k) / (SX/SY);
+  /* Solve for the centre that leaves (lon,lat) under (px,py). */
+  const fx = (px-OX)/SX, fy = (py-OY)/SY;
+  setUserView(lon - (fx - 0.5)*span, lat + (fy - 0.5)*spanLat, span);
+}
+
+/* Absolute pinch: put the coordinate that started under the midpoint back
+   under wherever the midpoint is now, at the span the spread asks for. */
+function pinchTo(now, start){
+  const baseSpan = BASEVIEW.lon1 - BASEVIEW.lon0;
+  const span = Math.min(baseSpan, Math.max(baseSpan/MAX_ZOOM,
+                                           start.span / (now.d / start.d)));
+  const k = Math.cos(start.lat * Math.PI/180);
+  const spanLat = (span * k) / (SX/SY);
+  const fx = (now.mx-OX)/SX, fy = (now.my-OY)/SY;
+  setUserView(start.lon - (fx - 0.5)*span, start.lat + (fy - 0.5)*spanLat, span);
+}
+
+function panByPixels(dx, dy){
+  if (!VIEW) return;
+  const dLon = (dx/SX) * (VIEW.lon1-VIEW.lon0);
+  const dLat = (dy/SY) * (VIEW.lat1-VIEW.lat0);
+  setUserView((VIEW.lon0+VIEW.lon1)/2 - dLon,
+              (VIEW.lat0+VIEW.lat1)/2 + dLat,
+              VIEW.lon1-VIEW.lon0);
+}
+
+function resetView(){
+  USERVIEW = null;
+  if (BASEVIEW){ VIEW = {...BASEVIEW}; reproject(); }
+  updateZoomUI();
+  lastMinute = -1;
+}
+
+function updateZoomUI(){
+  const b = document.getElementById("resetview");
+  if (!b) return;
+  b.hidden = !USERVIEW;
+  /* The factor doubles as a scale cue: it is the only thing on screen that
+     says how far in you are. */
+  if (USERVIEW){
+    const z = zoomNow();
+    b.textContent = "Reset " + (z < 9.95 ? z.toFixed(1) : Math.round(z)) + "×";
+  }
 }
 
 function placeClock(){
@@ -978,7 +1111,7 @@ function placeClock(){
   const hw = box.width/2 || 60, hh = box.height/2 || 24;
   /* On a portrait screen a wide network is a band across the middle with
      empty sky above -- put the clock there rather than on the map. */
-  let x = OX + ux(CLOCK_AT.lon)*SX, y = OY + uy(CLOCK_AT.lat)*SY;
+  let x = OX + uxBase(CLOCK_AT.lon)*SX, y = OY + uyBase(CLOCK_AT.lat)*SY;
   if (SY < H*0.55){ x = W/2; y = OY - hh - 12; }
   x = Math.max(hw+8, Math.min(W-hw-8, x));
   y = Math.max(hh+8, Math.min(H-hh-8, y));
@@ -1000,7 +1133,7 @@ function placeKey(){
   let textW = 0;
   for (const r of KEY_ROWS) textW = Math.max(textW, codeW + ctx.measureText(r.word).width);
   const boxW = PADX*2 + DOT*2 + 5 + textW, boxH = PADY*2 + ROW*KEY_ROWS.length;
-  let x = OX + ux(LEGEND_AT.lon)*SX, y = OY + uy(LEGEND_AT.lat)*SY;
+  let x = OX + uxBase(LEGEND_AT.lon)*SX, y = OY + uyBase(LEGEND_AT.lat)*SY;
   if (SY < H*0.55){ x = W/2 - boxW/2; y = OY + SY + 12; }
   x = Math.max(6, Math.min(W - boxW - 6, x));
   y = Math.max(6, Math.min(H - boxH - 6, y));
@@ -1053,22 +1186,26 @@ function renderBase(){
   g.addColorStop(1, css(pick("bgBot")));
   b.fillStyle = g;
   b.fillRect(0,0,W,H);
+  /* Map features are terrain, so they thicken as you go in -- a coastline
+     held at 1.1 px looks like thread at 20x. Damped, and capped, so the
+     country outline never turns into a border wall. */
+  const mz = Math.min(2.4, Math.sqrt(zoomNow()));
   if (pathLand){
     b.fillStyle = css(pick("land"));
     b.fill(pathLand, "evenodd");
     b.lineJoin = "round";
     b.strokeStyle = rgba(pick("landLine"), 0.9);
-    b.lineWidth = 0.8;
+    b.lineWidth = 0.8 * mz;
     b.stroke(pathStates);
     b.strokeStyle = rgba(pick("landEdge"), 0.85);
-    b.lineWidth = 1.1;
+    b.lineWidth = 1.1 * mz;
     b.stroke(pathLand);
   }
   const cSt = pick("station"), cHub = pick("hub");
   for (const s of ST){
     if (s.x < -30 || s.x > W+30 || s.y < -30 || s.y > H+30) continue;
     b.beginPath();
-    b.arc(s.x, s.y, s.hub ? 1.7 : 0.9, 0, 6.2832);
+    b.arc(s.x, s.y, (s.hub ? 1.7 : 0.9) * mz, 0, 6.2832);
     b.fillStyle = rgba(s.hub ? cHub : cSt, s.hub ? 0.85 : 0.5);
     b.fill();
   }
@@ -1532,6 +1669,88 @@ elScrub.addEventListener("input", () => { simSec = +elScrub.value; lastMinute = 
 window.addEventListener("keydown", e => {
   if (e.code === "Space" && e.target.tagName !== "INPUT"){ e.preventDefault(); playBtn.click(); }
 });
+
+/* ---------------------------------------------------------------------- */
+/* Wheel zooms about the cursor; a mouse drag pans. On touch the map only
+   answers to two fingers -- pinch to zoom, move them together to pan --
+   because one finger still has to scroll the page to the controls. */
+{
+  const pts = new Map();          /* live pointers, id -> {x, y, touch} */
+  let dragging = false, moved = 0, last = null, pinch = null;
+  const spanOf = () => {
+    const [a, b] = [...pts.values()];
+    return {d: Math.hypot(a.x-b.x, a.y-b.y),
+            mx: (a.x+b.x)/2, my: (a.y+b.y)/2};
+  };
+
+  cv.addEventListener("wheel", e => {
+    if (!BASEVIEW) return;
+    e.preventDefault();
+    const r = cv.getBoundingClientRect();
+    /* deltaMode 1 is lines, 2 is pages; normalise to something pixel-ish. */
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
+    zoomAt(e.clientX - r.left, e.clientY - r.top,
+           Math.exp(-e.deltaY * unit * 0.0011));
+  }, {passive:false});
+
+  cv.addEventListener("pointerdown", e => {
+    const r = cv.getBoundingClientRect();
+    pts.set(e.pointerId, {x:e.clientX-r.left, y:e.clientY-r.top,
+                          touch:e.pointerType !== "mouse"});
+    if (pts.size === 2){
+      const s = spanOf();
+      /* Remember the whole starting state, including which coordinate sat
+         under the midpoint -- that point stays pinned between the fingers. */
+      pinch = {d:s.d, mx:s.mx, my:s.my,
+               span: VIEW.lon1 - VIEW.lon0,
+               lon: lonAt(s.mx), lat: latAt(s.my)};
+      dragging = false;
+      cv.setPointerCapture(e.pointerId);
+    } else if (pts.size === 1 && e.pointerType === "mouse"){
+      dragging = true; moved = 0;
+      last = {x:e.clientX-r.left, y:e.clientY-r.top};
+      cv.setPointerCapture(e.pointerId);
+    }
+  });
+
+  cv.addEventListener("pointermove", e => {
+    const p = pts.get(e.pointerId);
+    if (!p) return;
+    const r = cv.getBoundingClientRect();
+    p.x = e.clientX - r.left; p.y = e.clientY - r.top;
+
+    if (pts.size === 2 && pinch){
+      e.preventDefault();
+      const now = spanOf();
+      /* Measured against where the fingers started, never step by step:
+         a browser fires one pointermove per finger, so an incremental
+         pinch applies its scaling twice per frame. */
+      if (pinch.d > 8 && now.d > 8) pinchTo(now, pinch);
+      return;
+    }
+    if (dragging && last){
+      moved += Math.abs(p.x-last.x) + Math.abs(p.y-last.y);
+      panByPixels(p.x - last.x, p.y - last.y);
+      last = {x:p.x, y:p.y};
+      if (moved > 4) elTip.setAttribute("data-on","false");
+    }
+  }, {passive:false});
+
+  const release = e => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (pts.size === 0){ dragging = false; last = null; }
+  };
+  cv.addEventListener("pointerup", release);
+  cv.addEventListener("pointercancel", release);
+  cv.addEventListener("dblclick", e => {
+    const r = cv.getBoundingClientRect();
+    zoomAt(e.clientX - r.left, e.clientY - r.top, 1.8);
+  });
+  document.getElementById("resetview").addEventListener("click", resetView);
+  /* Dragging must not leave a train's tooltip stranded mid-pan. */
+  cv.addEventListener("pointerleave", () => { if (dragging) moved = 99; });
+}
 
 cv.addEventListener("mousemove", e => {
   const r = cv.getBoundingClientRect();
