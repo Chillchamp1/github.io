@@ -335,9 +335,11 @@ const NETWORKS = {
     note: "Urban transit (S-Bahn, U-Bahn, tram, bus) is excluded.",
     caveats: "Coverage is the complete official DELFI dataset, every operator " +
       "in all sixteen states, and each trip was verified stop-by-stop against " +
-      "the raw feed. Known weaknesses: positions are interpolated in a " +
-      "straight line between timetabled stops, so trains cut corners between " +
-      "stations; a few international night trains are listed by two operators " +
+      "the raw feed. Trains follow the route geometry published in the feed " +
+      "(simplified to ~200 m), so they take the real line, not straight " +
+      "cuts between stations. Known weaknesses: position along the line is " +
+      "still interpolated between timetabled stops; a few international " +
+      "night trains are listed by two operators " +
       "(codeshares) and draw as one dot on top of another; and this is the " +
       "published schedule — no delays, no cancellations.",
   },
@@ -542,7 +544,9 @@ const NETWORKS = {
       "because BVG’s U-Bahn and tram calendars in this DELFI snapshot end on " +
       "30 April: a later Wednesday would show a Berlin with no U-Bahn at " +
       "all. 11 March is the latest ordinary Wednesday with every mode at " +
-      "full service, found by scanning each week. European Sleeper, " +
+      "full service, found by scanning each week. Trains follow the route " +
+      "geometry published in the feed, so the S-Bahn ring is round and trams " +
+      "turn street corners. European Sleeper, " +
       "Snälltåget and PKP night trains are absent from the source feed.",
   },
 };
@@ -564,7 +568,7 @@ let NET = NETWORKS[NETID];
 /* ====================================================================== */
 /* Per-network state, rebuilt by applyData() on every switch.              */
 let DATA=null, GEO=null, CLASSES=[], CLASS_META={}, KEY_ROWS=[];
-let ST=[], TRIPS=[], LABELS=[];
+let ST=[], TRIPS=[], LABELS=[], SHAPES=null;
 let RING_SCALE=[], DOT_SCALE=[];
 let EVN=0, EVT=null, EVS=null, EVC=null, STARTS_MIN=null, PEAK=[];
 let OCC=null;                        /* per-minute moving-train counts */
@@ -636,9 +640,34 @@ function applyData(data, geo){
     DATA.__secs = true;
   }
   TRIPS = DATA.trips.map(t => ({
-    c:t.c, name:t.n, head:t.h, s:t.s,
+    c:t.c, name:t.n, head:t.h, s:t.s, p:t.p || null,
     t0:t.s[0][1], t1:t.s[t.s.length-1][2],
   }));
+
+  /* Route geometry (DE and Berlin ship it): decode the delta-encoded
+     polylines once per dataset and keep them on the cached DATA object.
+     Trains with a "p" entry travel along these instead of straight lines. */
+  if (DATA.shapes && !DATA.__shapes){
+    DATA.__shapes = DATA.shapes.map(flat => {
+      const n = flat.length >> 1;
+      const lon = new Float64Array(n), lat = new Float64Array(n);
+      let x = 0, y = 0;
+      for (let i = 0; i < n; i++){
+        x += flat[2*i]; y += flat[2*i+1];
+        lon[i] = x/1e4; lat[i] = y/1e4;
+      }
+      const cum = new Float32Array(n);
+      const k = Math.cos(lat[0] * Math.PI/180);
+      let L = 0;
+      for (let i = 1; i < n; i++){
+        L += Math.hypot((lon[i]-lon[i-1])*k, lat[i]-lat[i-1]);
+        cum[i] = L;
+      }
+      if (L > 0) for (let i = 1; i < n; i++) cum[i] /= L;
+      return {lon, lat, cum, px:new Float32Array(n), py:new Float32Array(n)};
+    });
+  }
+  SHAPES = DATA.__shapes || null;
 
   LABELS = [];
   for (const [label, alat, alon, major, flip] of NET.cities){
@@ -777,6 +806,13 @@ function resize(){
   OY = PAD + (availH-h)*0.40;
 
   for (const s of ST){ s.x = OX + ux(s.lon)*SX; s.y = OY + uy(s.lat)*SY; }
+  if (SHAPES) for (const sh of SHAPES){
+    const {lon, lat, px, py} = sh;
+    for (let i = 0; i < lon.length; i++){
+      px[i] = OX + ux(lon[i])*SX;
+      py[i] = OY + uy(lat[i])*SY;
+    }
+  }
   buildBasemap();
   renderBase();
   placeClock();
@@ -943,15 +979,37 @@ function posAt(t, sec){
     if (s[mid][1] <= sec) lo = mid; else hi = mid-1;
   }
   const a = s[lo];
+  const P = t.p;
   if (lo === s.length-1 || sec <= a[2]){
+    if (P) return shapePoint(P[0], P[1][lo]);
     const st = ST[a[0]];
     return [st.x, st.y];
   }
   const b = s[lo+1];
   const span = b[1] - a[2];
   const f = span > 0 ? (sec - a[2]) / span : 0;
+  if (P){
+    const fr = P[1];
+    return shapePoint(P[0], fr[lo] + (fr[lo+1]-fr[lo])*f);
+  }
   const p = ST[a[0]], q = ST[b[0]];
   return [p.x + (q.x-p.x)*f, p.y + (q.y-p.y)*f];
+}
+
+/* Position along a decoded shape at fraction fm (per-mille of its length). */
+function shapePoint(si, fm){
+  const sh = SHAPES[si], cum = sh.cum, n = cum.length;
+  const f = fm / 1000;
+  let lo = 0, hi = n-1;
+  while (lo < hi){
+    const m = (lo+hi+1) >> 1;
+    if (cum[m] <= f) lo = m; else hi = m-1;
+  }
+  if (lo >= n-1) return [sh.px[n-1], sh.py[n-1]];
+  const span = cum[lo+1] - cum[lo];
+  const u = span > 0 ? (f - cum[lo]) / span : 0;
+  return [sh.px[lo] + (sh.px[lo+1]-sh.px[lo])*u,
+          sh.py[lo] + (sh.py[lo+1]-sh.py[lo])*u];
 }
 
 /* ====================================================================== */

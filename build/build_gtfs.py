@@ -38,6 +38,129 @@ def read(path, name):
         yield from csv.DictReader(f)
 
 
+# --------------------------------------------------------------------------
+# Route geometry. DELFI ships shapes.txt for essentially every trip, so the
+# trains can follow the published track geometry instead of straight lines
+# between stops. stop_times carries no shape_dist_traveled, so each stop is
+# projected onto its trip's polyline instead.
+
+def load_shapes(path, wanted):
+    """shape_id -> [(lon, lat), ...] ordered by point sequence, restricted to
+    `wanted` -- shapes.txt alone is a third of a gigabyte."""
+    pts = {}
+    for r in read(path, "shapes.txt"):
+        sid = r.get("shape_id")
+        if sid not in wanted:
+            continue
+        try:
+            pts.setdefault(sid, []).append((int(r["shape_pt_sequence"]),
+                                            float(r["shape_pt_lon"]),
+                                            float(r["shape_pt_lat"])))
+        except (ValueError, KeyError):
+            continue
+    return {sid: [(lon, lat) for _, lon, lat in sorted(v)]
+            for sid, v in pts.items() if len(v) >= 2}
+
+
+def simplify(pts, tol_m):
+    """Douglas-Peucker on an equirectangular projection, tolerance in
+    meters. A tolerance below the map's meters-per-pixel is invisible."""
+    if len(pts) < 3:
+        return pts
+    k = math.cos(math.radians(pts[len(pts) // 2][1]))
+    M = 111320.0
+    xs = [(lon * k * M, lat * M) for lon, lat in pts]
+    keep = [False] * len(pts)
+    keep[0] = keep[-1] = True
+    stack = [(0, len(pts) - 1)]
+    while stack:
+        i, j = stack.pop()
+        ax, ay = xs[i]
+        bx, by = xs[j]
+        dx, dy = bx - ax, by - ay
+        l2 = dx * dx + dy * dy
+        best, bd = -1, tol_m
+        for m in range(i + 1, j):
+            px, py = xs[m]
+            if l2 == 0:
+                d = math.hypot(px - ax, py - ay)
+            else:
+                t = ((px - ax) * dx + (py - ay) * dy) / l2
+                t = 0.0 if t < 0 else 1.0 if t > 1 else t
+                d = math.hypot(px - ax - t * dx, py - ay - t * dy)
+            if d > bd:
+                best, bd = m, d
+        if best >= 0:
+            keep[best] = True
+            stack.append((i, best))
+            stack.append((best, j))
+    return [p for p, kf in zip(pts, keep) if kf]
+
+
+def shape_track(pts):
+    """Scaled coordinates + cumulative lengths, ready for stop projection."""
+    k = math.cos(math.radians(pts[len(pts) // 2][1]))
+    xs = [(lon * k, lat) for lon, lat in pts]
+    cum = [0.0]
+    for i in range(1, len(xs)):
+        cum.append(cum[-1] + math.hypot(xs[i][0] - xs[i - 1][0],
+                                        xs[i][1] - xs[i - 1][1]))
+    return xs, cum, k
+
+
+def stop_fracs(track, stops_ll, max_off_deg=0.02):
+    """Per-mille position of each stop along the polyline. The search only
+    walks forward from the previous stop's segment, so a ring line that
+    passes the same spot twice lands each stop on the right lap. Returns
+    None when a stop sits further than ~2 km off the shape -- that means
+    the shape does not belong to this stop sequence."""
+    xs, cum, k = track
+    total = cum[-1]
+    if total <= 0:
+        return None
+    j0, out = 0, []
+    for lon, lat in stops_ll:
+        px, py = lon * k, lat
+        best_d2 = best_pos = None
+        best_j = j0
+        for j in range(j0, len(xs) - 1):
+            ax, ay = xs[j]
+            bx, by = xs[j + 1]
+            dx, dy = bx - ax, by - ay
+            l2 = dx * dx + dy * dy
+            t = 0.0 if l2 == 0 else ((px - ax) * dx + (py - ay) * dy) / l2
+            t = 0.0 if t < 0 else 1.0 if t > 1 else t
+            qx, qy = ax + t * dx, ay + t * dy
+            d2 = (px - qx) ** 2 + (py - qy) ** 2
+            if best_d2 is None or d2 < best_d2:
+                best_d2 = d2
+                best_pos = cum[j] + t * math.hypot(dx, dy)
+                best_j = j
+        if best_d2 is None or best_d2 > max_off_deg * max_off_deg:
+            return None
+        out.append(best_pos)
+        j0 = best_j
+    fr, prev = [], 0
+    for pos in out:
+        v = min(1000, round(1000 * pos / total))
+        if v < prev:
+            v = prev
+        prev = v
+        fr.append(v)
+    return fr
+
+
+def enc_shape(pts):
+    """Flat delta-encoded ints at 1e-4 degrees: first pair absolute."""
+    out, plon, plat = [], 0, 0
+    for lon, lat in pts:
+        il, ia = round(lon * 1e4), round(lat * 1e4)
+        out.append(il - plon)
+        out.append(ia - plat)
+        plon, plat = il, ia
+    return out
+
+
 NIGHT_NAME = re.compile(r"^(NJ|EN|DN|CNL)(?=[ \d]|$)")
 # DELFI names most NightJet and EuroNight runs by their long-distance line
 # number with an N suffix -- 12N Basel-Berlin, 91N Amsterdam-Wien -- and only
@@ -122,6 +245,9 @@ def main():
     ap.add_argument("--bbox", default="5.2,46.9,15.9,55.4",
                     help="minLon,minLat,maxLon,maxLat -- a trip is kept if it "
                          "calls at least once inside this box")
+    ap.add_argument("--shape-tol", type=float, default=200.0,
+                    help="shape simplification tolerance in meters; "
+                         "0 disables shapes entirely")
     args = ap.parse_args()
 
     minlon, minlat, maxlon, maxlat = (float(x) for x in args.bbox.split(","))
@@ -151,6 +277,7 @@ def main():
                 trips[ns + r["trip_id"]] = {
                     "cls": cls, "name": name,
                     "head": (r.get("trip_headsign") or "").strip(), "st": [],
+                    "shape": ns + r["shape_id"] if r.get("shape_id") else None,
                 }
                 feed_trips += 1
         print(f"  {src}: {feed_trips} active trips")
@@ -166,6 +293,21 @@ def main():
             arr = arr if arr is not None else dep
             dep = dep if dep is not None else arr
             t["st"].append((int(r["stop_sequence"]), ns + r["stop_id"], arr, dep))
+
+    # Route geometry: load only the shapes the kept trips reference, then
+    # simplify each once. Projection results are cached per (shape, stop
+    # sequence) -- DELFI runs dozens of trips over the same pattern.
+    tracks = {}
+    if args.shape_tol > 0:
+        for fi, src in enumerate(args.gtfs):
+            ns = f"{fi}:"
+            wanted = {t["shape"][len(ns):] for t in trips.values()
+                      if t["shape"] and t["shape"].startswith(ns)}
+            raw = load_shapes(src, wanted)
+            for sid, pts in raw.items():
+                simp = simplify(pts, args.shape_tol)
+                tracks[ns + sid] = (simp, shape_track(simp))
+        print(f"  shapes: {len(tracks)} loaded and simplified")
 
     # Assemble, keeping only trips that actually touch the bbox.
     used, order, coord_key = {}, [], {}
@@ -185,7 +327,9 @@ def main():
         return used[sid]
 
     classes = [c for c, _ in CLASSES]
+    out_shapes, shape_out_idx, frac_cache = [], {}, {}
     out_trips, counts = [], {c: 0 for c in classes}
+    matched = 0
     for t in trips.values():
         st = sorted(t["st"])
         if len(st) < 2:
@@ -194,6 +338,20 @@ def main():
                    for _, s, _, _ in st):
             continue
         seq = [[idx(s), a // 60, d // 60] for _, s, a, d in st]
+
+        path = None
+        if t["shape"] in tracks:
+            ck = (t["shape"], tuple(s for _, s, _, _ in st))
+            if ck not in frac_cache:
+                frac_cache[ck] = stop_fracs(tracks[t["shape"]][1],
+                                            [stops[s][:2] for _, s, _, _ in st])
+            fr = frac_cache[ck]
+            if fr is not None:
+                if t["shape"] not in shape_out_idx:
+                    shape_out_idx[t["shape"]] = len(out_shapes)
+                    out_shapes.append(enc_shape(tracks[t["shape"]][0]))
+                path = [shape_out_idx[t["shape"]], fr]
+                matched += 1
         # Times must be non-decreasing for interpolation to behave.
         for i in range(1, len(seq)):
             if seq[i][1] < seq[i - 1][2]:
@@ -206,8 +364,11 @@ def main():
         if name.isdigit() or (t["cls"] == "night" and NIGHT_LINE.match(name)):
             name = {"ice": "ICE ", "intercity": "IC ",
                     "night": "NJ "}.get(t["cls"], "") + name
-        out_trips.append({"c": classes.index(t["cls"]), "n": name,
-                          "h": t["head"], "s": seq})
+        rec = {"c": classes.index(t["cls"]), "n": name,
+               "h": t["head"], "s": seq}
+        if path:
+            rec["p"] = path
+        out_trips.append(rec)
         counts[t["cls"]] += 1
 
     stations = [[round(stops[s][0], 4), round(stops[s][1], 4), stops[s][2]]
@@ -230,12 +391,15 @@ def main():
         "stations": stations,
         "trips": out_trips,
     }
+    if out_shapes:
+        doc["shapes"] = out_shapes
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(doc, f, separators=(",", ":"), ensure_ascii=False)
 
     print(f"{args.out}: {len(out_trips)} trips, {len(stations)} stations, "
+          f"{len(out_shapes)} shapes ({matched} trips on tracks), "
           f"{os.path.getsize(args.out)/1e6:.2f} MB")
     for c in classes:
         print(f"  {c:<10} {counts[c]}")

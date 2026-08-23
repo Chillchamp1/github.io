@@ -198,12 +198,23 @@ https://storage.googleapis.com/mdb-latest/de-unknown-rursee-schifffahrt-kg-gtfs-
 borders, from [`isellsoap/deutschlandGeoJSON`](https://github.com/isellsoap/deutschlandGeoJSON)
 (Unlicense, public domain), reduced to three-decimal coordinates.
 
+On the Germany and Berlin maps the trains follow the **route geometry the
+feed itself publishes** (`shapes.txt`), not straight lines between stations:
+each kept shape is Douglas-Peucker-simplified (200 m nationally, 25 m for
+Berlin — both below the maps' meters-per-pixel), each stop is projected onto
+its trip's polyline, and the page interpolates along the line between the
+two stops' positions. No map-matching against OSM (pfaedle-style) is needed
+because DELFI ships shapes for essentially every trip. Shapes are stored
+delta-encoded and deduplicated; trips reference them by index plus per-stop
+per-mille fractions, so a network without shapes simply falls back to the
+straight-line path.
+
 ## Rebuilding
 
 ```sh
 curl -o delfi.zip "https://storage.googleapis.com/mdb-latest/de-unknown-rursee-schifffahrt-kg-gtfs-784.zip"
 unzip -d delfi delfi.zip agency.txt calendar.txt calendar_dates.txt \
-    feed_info.txt routes.txt stops.txt trips.txt stop_times.txt
+    feed_info.txt routes.txt stops.txt trips.txt stop_times.txt shapes.txt
 python3 build/build_gtfs.py delfi 20260513 -o data/trains.json \
     --note "All categories cover the whole country, from the official DELFI dataset (timetable of 13 May 2026)."
 python3 build/bundle.py          # inlines the JSON back into index.html

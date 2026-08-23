@@ -18,6 +18,9 @@ Germany page.
 """
 import argparse, csv, json, os, re, sys, datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_gtfs import load_shapes, simplify, shape_track, stop_fracs, enc_shape
+
 CLASSES = ["fern", "regio", "sbahn", "ubahn", "tram"]
 FERN  = re.compile(r"^(ICE|ECE|TGV|RJX?|IC|EC|D|NJ|EN|FLX)(?=[ \d]|$)")
 REGIO = re.compile(r"^(IRE|RE|RB|MEX|ODEG|NEB|HANS)(?=[ \d]|$)")
@@ -69,6 +72,9 @@ def main():
     ap.add_argument("-o", "--out", default="data/berlin-trains.json")
     ap.add_argument("--note", default="")
     ap.add_argument("--bbox", default="13.05,52.30,13.79,52.70")
+    ap.add_argument("--shape-tol", type=float, default=25.0,
+                    help="shape simplification tolerance in meters; city zoom "
+                         "sits near 70 m/px, so 25 m is invisible")
     args = ap.parse_args()
     minlon, minlat, maxlon, maxlat = (float(x) for x in args.bbox.split(","))
     d = datetime.date(int(args.date[:4]), int(args.date[4:6]), int(args.date[6:]))
@@ -101,7 +107,8 @@ def main():
         if r["service_id"] in active and r["route_id"] in routes:
             cls, name = routes[r["route_id"]]
             trips[r["trip_id"]] = {"cls": cls, "name": name,
-                                   "head": r.get("trip_headsign", ""), "st": []}
+                                   "head": r.get("trip_headsign", ""), "st": [],
+                                   "shape": r.get("shape_id") or None}
     print(f"candidate trips nationwide: {len(trips)}")
 
     for r in read(args.gtfs, "stop_times.txt"):
@@ -128,7 +135,9 @@ def main():
             order.append(sid)
         return used[sid]
 
-    out_trips, counts = [], {c: 0 for c in CLASSES}
+    # Only trips already known to touch the box need geometry -- shapes.txt
+    # is nationwide, so first find the kept trips, then load their shapes.
+    kept = []
     for t in trips.values():
         st = sorted(t["st"])
         if len(st) < 2:
@@ -136,12 +145,38 @@ def main():
         if not any(minlon <= stops[s][0] <= maxlon and minlat <= stops[s][1] <= maxlat
                    for _, s, _, _ in st):
             continue
+        kept.append((t, st))
+
+    tracks = {}
+    if args.shape_tol > 0:
+        wanted = {t["shape"] for t, _ in kept if t["shape"]}
+        for sid, pts in load_shapes(args.gtfs, wanted).items():
+            simp = simplify(pts, args.shape_tol)
+            tracks[sid] = (simp, shape_track(simp))
+        print(f"shapes: {len(tracks)} loaded and simplified")
+
+    out_shapes, shape_out_idx, frac_cache = [], {}, {}
+    out_trips, counts, matched = [], {c: 0 for c in CLASSES}, 0
+    for t, st in kept:
         seq = [[idx(s), a // 60, dp // 60] for _, s, a, dp in st]
         for i in range(1, len(seq)):
             if seq[i][1] < seq[i-1][2]: seq[i][1] = seq[i-1][2]
             if seq[i][2] < seq[i][1]:   seq[i][2] = seq[i][1]
-        out_trips.append({"c": CLASSES.index(t["cls"]), "n": t["name"],
-                          "h": t["head"], "s": seq})
+        rec = {"c": CLASSES.index(t["cls"]), "n": t["name"],
+               "h": t["head"], "s": seq}
+        if t["shape"] in tracks:
+            ck = (t["shape"], tuple(s for _, s, _, _ in st))
+            if ck not in frac_cache:
+                frac_cache[ck] = stop_fracs(tracks[t["shape"]][1],
+                                            [stops[s][:2] for _, s, _, _ in st])
+            fr = frac_cache[ck]
+            if fr is not None:
+                if t["shape"] not in shape_out_idx:
+                    shape_out_idx[t["shape"]] = len(out_shapes)
+                    out_shapes.append(enc_shape(tracks[t["shape"]][0]))
+                rec["p"] = [shape_out_idx[t["shape"]], fr]
+                matched += 1
+        out_trips.append(rec)
         counts[t["cls"]] += 1
 
     stations = [[round(stops[s][0], 4), round(stops[s][1], 4), stops[s][2]]
@@ -150,10 +185,13 @@ def main():
            "classes": CLASSES, "counts": counts,
            "source": "DELFI e.V.", "note": args.note,
            "stations": stations, "trips": out_trips}
+    if out_shapes:
+        doc["shapes"] = out_shapes
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(doc, f, separators=(",", ":"), ensure_ascii=False)
     print(f"{args.out}: {len(out_trips)} trips, {len(stations)} stations, "
+          f"{len(out_shapes)} shapes ({matched} trips on tracks), "
           f"{os.path.getsize(args.out)/1e6:.2f} MB")
     for c in CLASSES:
         print(f"  {c:6} {counts[c]}")
