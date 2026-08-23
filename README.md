@@ -357,13 +357,13 @@ an event stays visible for roughly two thirds of a second at any speed.
 
 ## Licensing
 
-**Code: public domain** ([the Unlicense](https://unlicense.org), see
-[`LICENSE`](LICENSE)). That covers `index.html`, the builders under `build/`
-and this documentation. Take it, change it, ship it, sell it — no credit
-required, no conditions at all. This is deliberately more open than MIT,
-which would have obliged you to carry a copyright notice around.
+**Code: MIT** — see [`LICENSE`](LICENSE). That covers `index.html`, the
+builders under `build/` and this documentation. Use it for anything,
+including commercially; fork it, change it, ship it. The single condition is
+that the copyright notice travels with it, which is the standard way of
+saying "credit where it came from".
 
-**Data: not public domain.** Everything under `data/` is derived from
+**Data: not MIT.** Everything under `data/` is derived from
 third-party open datasets that keep their own licences and attribution
 requirements. No licence of ours can relicense them, and several of them —
 DELFI, the Swiss national feed, the UK Bus Open Data Service, Ordnance
