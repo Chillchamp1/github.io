@@ -317,6 +317,66 @@ const DAY_SECONDS = 86400;
    cities get names. `views` holds one frame per region; only the US has
    more than one. */
 const NETWORKS = {
+  eu: {
+    label:"Germany · Benelux · Switzerland", pill:"Europe", unit:"trains",
+    data:"data/eu-trains.json", geo:"data/eu-geo.json",
+    minorPxPerDeg:120,
+    classes:{
+      ice:       {label:"ICE / TGV / Eurostar — high-speed", key:["ICE","high-speed"],
+                  role:"ice",   size:0.46, secs:600, trail:6, ring:1.00},
+      intercity: {label:"IC / EC / InterRegio", key:["IC","intercity"],
+                  role:"ic",    size:0.42, secs:560, trail:5, ring:0.70},
+      /* 52,000 regional services is most of the map's cost and, at a frame
+         1,300 km across, most of its texture: two trail segments read the
+         same as four and cost half. */
+      regional:  {label:"Regional & S-Bahn", key:["RE","regional"],
+                  role:"reg",   size:0.28, secs:260, trail:2, ring:0.08},
+      mountain:  {label:"Swiss rack railway / panorama", key:["Berg","rack · pano"],
+                  role:"mtn",   size:0.34, secs:420, trail:4, ring:0.40},
+      night:     {label:"Night train", key:["NJ","night"],
+                  role:"night", size:0.44, secs:600, trail:6, ring:1.00},
+    },
+    views:{ eu: {label:"Europe",
+      core:{lon0:2.40, lon1:15.40, lat0:45.60, lat1:55.30},
+      maxv:{lon0:0.60, lon1:18.40, lat0:44.20, lat1:56.40},
+      clock:{lat:55.02, lon:8.60}, key:{lat:47.00, lon:13.70}} },
+    cities:[
+      ["Berlin",52.5251,13.3694,1],      ["Hamburg",53.5528,10.0067,1],
+      ["München",48.1402,11.5600,1],     ["Köln",50.9430,6.9587,1,1],
+      ["Frankfurt",50.1071,8.6638,1],    ["Amsterdam",52.3789,4.9003,1,1],
+      ["Brussel",50.8360,4.3355,1,1],    ["Zürich",47.3782,8.5403,1],
+      ["Stuttgart",48.7838,9.1817,0],    ["Hannover",52.3766,9.7411,0],
+      ["Leipzig",51.3453,12.3814,0],     ["Dresden",51.0403,13.7323,0],
+      ["Nürnberg",49.4455,11.0821,0],    ["Bremen",53.0834,8.8137,0],
+      ["Basel",47.5476,7.5896,0],        ["Bern",46.9490,7.4396,0,1],
+      ["Genève",46.2102,6.1424,0,1],     ["Rotterdam",51.9249,4.4699,0,1],
+      ["Antwerpen",51.2172,4.4210,0,1],  ["Luxembourg",49.6000,6.1342,0],
+      ["Praha",50.0830,14.4356,0],       ["Wien",48.1851,16.3785,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " across Germany, the Benelux and Switzerland — one map, " +
+      "one timetable, " + dateStr(d) + ".",
+    note: "Four national feeds on a single service date, so a EuroCity from " +
+      "Zürich to Hamburg is one dot for its whole run instead of stopping " +
+      "at the border.",
+    caveats: "Four sources merged on the one Wednesday they all cover: the " +
+      "German DELFI dataset, OVapi/NDOV with SNCB and the Luxembourg feed " +
+      "for the Benelux, the Swiss SKI+/SBB aggregate, and Eurostar's own " +
+      "feed for the Paris and London legs. The shared date is what makes " +
+      "the map honest — DELFI runs out on 13 June 2026 and Luxembourg's " +
+      "feed starts on 6 May, so 10 June is the only window all four agree " +
+      "on. International trains are published by both countries they run " +
+      "through, so long-distance services are deduplicated on line, " +
+      "departure minute and origin, keeping whichever copy carries more " +
+      "stops; regional names like “S1” repeat across borders and are never " +
+      "merged. Germany's trains follow the route geometry in its feed " +
+      "(simplified harder here than on the Germany map, because this is the " +
+      "landing page); Benelux and Swiss trains interpolate straight between " +
+      "stops, since neither feed publishes geometry. France, Austria, " +
+      "Poland and Czechia are drawn as neighbours but carry no trains of " +
+      "their own — services from the four feeds run off the frame toward " +
+      "them. For the fullest version of any one country, use its own map.",
+  },
   de: {
     label:"Germany", pill:"DE", unit:"trains",
     data:"data/trains.json", geo:"data/germany.json",
@@ -717,7 +777,9 @@ function parseHash(){
   const [a, b] = h.split("/");
   if (NETWORKS[a]) return [a, NETWORKS[a].views[b] ? b : Object.keys(NETWORKS[a].views)[0]];
   if (NETWORKS.us.views[a]) return ["us", a];   /* legacy #chi etc. */
-  return ["de", "de"];
+  /* The combined map is the front door: it is the one that shows trains
+     crossing borders, which is the whole point of putting them together. */
+  return ["eu", "eu"];
 }
 let [NETID, VIEWID] = parseHash();
 let NET = NETWORKS[NETID];
@@ -1351,10 +1413,15 @@ function draw(){
         px = back[0]; py = back[1];
       }
 
-      g.beginPath();
-      g.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
-      g.fillStyle = rgba(col, 0.15);
-      g.fill();
+      /* The halo is a 15%-opacity disc; below about a pixel and a half it
+         is invisible, and on a map with fifty thousand regional services
+         those are thousands of arcs a frame spent on nothing. */
+      if (3.6*scale*DPR >= 1.5){
+        g.beginPath();
+        g.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
+        g.fillStyle = rgba(col, 0.15);
+        g.fill();
+      }
 
       const rDev = DOT_R*scale*DPR;
       if (rDev < 1.3){
