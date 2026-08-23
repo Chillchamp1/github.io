@@ -3,7 +3,7 @@
 
     node build/export_tour.js --timeline /tmp/tl.json
     python3 build/tour_pace.py /tmp/tl.json data/eu-trains.json \\
-            data/eu-trains-2.json [--alpha 0.5]
+            data/eu-trains-2.json --width 720 --height 1280 [--alpha 0.5]
 
 "Too slow" is a judgement about pixels, not about the clock. A wide shot and
 a close-up can run the same simulated minutes per second and look nothing
@@ -22,9 +22,7 @@ alone, 1 flattens it completely -- and the whole day is renormalised to fit
 so the film still starts at midnight and ends at 23:59. It prints the clock
 column to paste back into the KEYS table in export_tour.js.
 """
-import argparse, json, statistics
-
-W, H = 1920, 1080
+import argparse, json, math, statistics
 
 
 def load(paths):
@@ -53,11 +51,15 @@ def where(st, s, m):
     return None
 
 
-def measure(st, trips, k):
-    """Median pixel speed of the dots inside this frame."""
-    span = k["span"] or 24.8
+def measure(st, trips, k, W, H, full):
+    """Median pixel speed of the dots inside this frame. The latitude the
+    frame covers follows from its aspect and the projection, the same way
+    the page works it out, so a portrait cut is measured as a portrait cut
+    and not as a landscape one lying on its side."""
+    span = k["span"] or full
     sx = W / span
-    half_lon, half_lat = span / 2, (span * H / W) / 2
+    half_lon = span / 2
+    half_lat = span * math.cos(math.radians(k["lat"])) / (W / H) / 2
     m0, m1 = k["sec"] / 60.0, (k["sec"] + k["rate"]) / 60.0
     sp = []
     for t in trips:
@@ -82,6 +84,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("timeline")
     ap.add_argument("data", nargs="+")
+    ap.add_argument("--width", type=int, default=720)
+    ap.add_argument("--height", type=int, default=1280)
+    ap.add_argument("--full", type=float, default=20.5,
+                    help="the network's own frame width, for span-0 keys")
     ap.add_argument("--alpha", type=float, nargs="*", default=None,
                     help="0 measures only; 1 flattens the film to one speed. "
                          "Several values compare them; the last is printed "
@@ -98,7 +104,7 @@ def main():
     for k in tl:
         if k["rate"] <= 0:
             continue
-        px, n = measure(st, trips, k)
+        px, n = measure(st, trips, k, args.width, args.height, args.full)
         if px:
             rows.append((k, px, n))
 
@@ -106,7 +112,7 @@ def main():
     print(f"as it stands: median {min(px):.1f} to {max(px):.1f} px/s, "
           f"a {max(px)/min(px):.0f}x spread")
     for k, p, n in rows[::8]:
-        print(f"  {k['t']:>6.1f}s  {hm(k['sec'])}  span {k['span'] or 24.8:>6.2f}  "
+        print(f"  {k['t']:>6.1f}s  {hm(k['sec'])}  span {k['span'] or args.full:>6.2f}  "
               f"{k['rate']/60:>5.1f} min/s  {p:>6.1f} px/s  {n:>5} trains")
     if not args.alpha:
         return
@@ -137,7 +143,7 @@ def main():
         for i in range(0, len(rows), 8):
             k = rows[i][0]
             print(f"  {k['t']:>6.1f}s  {hm(at_t[round(k['t'],3)])}  "
-                  f"span {k['span'] or 24.8:>6.2f}  {rate[i]/60:>5.1f} min/s  "
+                  f"span {k['span'] or args.full:>6.2f}  {rate[i]/60:>5.1f} min/s  "
                   f"{newpx[i]:>6.1f} px/s")
         if args.keys:
             print("\nclock column for KEYS:")

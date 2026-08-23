@@ -2,7 +2,7 @@
 /* Render a guided tour of the combined map to MP4.
  *
  *   node build/export_tour.js [--url http://127.0.0.1:8931/index.html]
- *                             [--fps 30] [--width 1280] [--height 720]
+ *                             [--fps 30] [--width 720] [--height 1280]
  *                             [--scale 1.5] [--crf 20] [--out rail-tour.mp4]
  *
  * Unlike export_video.js, which holds one frame still for a whole day, this
@@ -35,8 +35,8 @@ const arg = (n, d) => { const i = argv.indexOf("--" + n);
                         return i === -1 ? d : argv[i + 1]; };
 const URL    = arg("url", "http://127.0.0.1:8931/index.html");
 const FPS    = Number(arg("fps", 30));
-const WIDTH  = Number(arg("width", 1280));
-const HEIGHT = Number(arg("height", 720));
+const WIDTH  = Number(arg("width", 720));
+const HEIGHT = Number(arg("height", 1280));
 const SCALE  = Number(arg("scale", 1.5));
 const CRF    = arg("crf", "20");
 const OUT    = path.resolve(arg("out", "rail-tour.mp4"));
@@ -49,42 +49,50 @@ const TIMELINE = arg("timeline", null);
 /* The route. Each key is [video second, clock "HH:MM", lon, lat, span in
    degrees of longitude]. span 0 means the network's own full frame.
 
+   Framed for a phone held upright, which changes the geography of the thing:
+   at 9:16 a given longitude span covers three times the latitude it does at
+   16:9, so the route lives on the north-south corridors where that helps --
+   Amsterdam down the Rhine to Zurich, and the French star, which is taller
+   than it is wide -- rather than on the east-west sweeps that suited the
+   landscape cut. The whole-frame beats stay whole: sea above and below
+   Europe is the price of showing all of it at once.
+
    The clock times are not hand-chosen. "Too slow" is a judgement about
    pixels, and a wide shot and a close-up running the same simulated minutes
    per second look nothing alike: at the whole-Europe frame a 200 km/h train
    crosses a handful of pixels a second, over Berlin an S-Bahn crosses fifty.
-   Left to itself this route ran from 6 to 237 px/s, a 39x spread, and the
-   wide shots read as a crawl. build/tour_pace.py measures the median pixel
-   speed of the dots along the route and solves for the clock that evens it
-   out; these times are its answer at alpha 0.6, which roughly doubles the
-   slowest stretches and leaves a 4x spread -- enough that a city still feels
-   busier than a continent, not so much that half the film stalls. Time is
-   still deliberately uneven, and it never stops; see CLOCK below. */
+   build/tour_pace.py measures the median pixel speed of the dots along the
+   route and solves for the clock that evens it out; these times are its
+   answer at alpha 0.6, for this frame. Time is still deliberately uneven,
+   and it never stops; see CLOCK below. */
 const KEYS = [
   [  0, "00:00",  4.9, 48.8, 0    ],   /* the whole picture, empty night   */
-  [  7, "03:05",  4.9, 48.8, 0    ],
-  [ 15, "05:12",  7.0, 50.0, 12.0 ],   /* leaning in as the day starts     */
-  [ 26, "06:46",  6.0, 51.45, 6.0 ],   /* Rhine-Ruhr and the Randstad      */
-  [ 38, "07:46",  5.6, 51.75, 4.4 ],   /* the densest corner of Europe --
-                                          far enough north that Amsterdam is
-                                          in it, which it never was before */
-  [ 44, "08:18",  6.7, 49.4,  7.5 ],   /* out over the empty Eifel         */
-  [ 50, "08:53",  8.2, 47.3,  3.6 ],   /* south to Switzerland             */
-  [ 56, "09:26",  5.6, 47.6,  9.0 ],   /* out again, over the Jura         */
-  [ 62, "10:03",  3.1, 47.9,  7.0 ],   /* west to the French star          */
-  [ 72, "12:01",  4.9, 48.8, 0    ],   /* back out to everything           */
-  [ 82, "15:32",  4.9, 48.8, 0    ],
-  [ 90, "17:07", 13.40, 52.52, 5.0],   /* the run at Berlin                */
-  [ 99, "17:42", 13.40, 52.52, 1.10],  /* city scale: the overlay begins   */
-  [110, "18:07", 13.40, 52.51, 0.62],  /* rush hour, closest in            */
-  [118, "18:29", 13.40, 52.52, 2.20],  /* pulling back out                 */
-  [126, "19:52",  4.9, 48.8, 0    ],   /* the evening, whole again         */
-  [136, "23:59",  4.9, 48.8, 0    ],
+  [  7, "03:04",  4.9, 48.8, 0    ],
+  [ 15, "05:18",  5.6, 51.0,  8.0 ],   /* down the spine as the day starts */
+  [ 26, "06:50",  5.7, 51.6,  4.6 ],   /* the Randstad and the Ruhr        */
+  [ 38, "07:50",  5.3, 51.4,  3.4 ],   /* the densest corner of Europe --
+                                          Amsterdam, Rotterdam, Antwerp,
+                                          Brussels and Koln in one frame  */
+  [ 44, "08:24",  6.6, 49.8,  7.0 ],   /* out over the empty Eifel         */
+  [ 50, "09:05",  8.1, 46.9,  3.8 ],   /* south to Switzerland             */
+  [ 56, "09:45",  6.0, 47.4,  7.5 ],   /* out again, over the Jura         */
+  [ 62, "10:35",  2.6, 46.9,  7.6 ],   /* the French star, top to bottom   */
+  [ 72, "13:03",  4.9, 48.8, 0    ],   /* back out to everything           */
+  [ 78, "15:55",  4.9, 48.8, 0    ],   /* the midday hold is short: at this
+                                          width the clock runs fast, and a
+                                          long one arrives at Berlin after
+                                          the evening peak has passed      */
+  [ 86, "17:38", 13.40, 52.52, 3.4],   /* the run at Berlin                */
+  [ 95, "18:03", 13.40, 52.52, 0.70],  /* city scale: the overlay begins   */
+  [106, "18:16", 13.40, 52.51, 0.52],  /* rush hour, closest in            */
+  [114, "18:30", 13.40, 52.52, 1.60],  /* pulling back out                 */
+  [122, "19:50",  4.9, 48.8, 0    ],   /* the evening, whole again         */
+  [132, "23:59",  4.9, 48.8, 0    ],
 ];
 /* Where the Berlin layer is wanted, and the longest cross-fade worth using.
    The window is trimmed at render time to the part of it the city's own
    frame can actually cover -- see the overlay pass. */
-const OVERLAY = {start: 96, end: 121, fade: 3.5};
+const OVERLAY = {start: 92, end: 117, fade: 3.5};
 
 const DUR = KEYS[KEYS.length - 1][0];
 const hhmm = s => { const [h, m] = s.split(":").map(Number); return h*3600 + m*60; };

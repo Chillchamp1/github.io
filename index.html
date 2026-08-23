@@ -338,7 +338,13 @@ const NETWORKS = {
     },
     views:{ eu: {label:"Europe",
       core:{lon0:-5.10, lon1:15.40, lat0:42.30, lat1:55.30},
-      maxv:{lon0:-7.00, lon1:18.40, lat0:41.00, lat1:56.60},
+      /* Room to grow north and south. The preset may only stretch as far as
+         maxv, and this region is wider than it is tall, so on a phone held
+         upright the old bounds left the map as a band across the middle
+         with a third of the screen empty above and below it. Sea and
+         unmapped land are a better use of that space than nothing: the map
+         itself is drawn larger. */
+      maxv:{lon0:-7.00, lon1:18.40, lat0:34.50, lat1:63.00},
       clock:{lat:54.90, lon:6.20}} },
     cities:[
       ["Berlin",52.5251,13.3694,1],      ["Hamburg",53.5528,10.0067,1],

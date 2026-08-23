@@ -404,18 +404,28 @@ draw. `--start HH:MM` picks the clock time the day opens on; omit it to start
 where the page does, at the quietest minute of the night. Needs playwright and
 ffmpeg (`pip install imageio-ffmpeg` supplies one).
 
-The landscape tour is a second exporter. Where `export_video.js` holds one
-frame still for a whole day, `export_tour.js` moves: a scripted camera flies
-over France, the Benelux, Switzerland and Germany while the clock runs,
-lingering on the morning hours when the network fills up, and closes in on
-Berlin -- where the city's own map, the S-Bahn, U-Bahn and trams the national
-feeds leave out, fades in over the top.
+The tour is a second exporter. Where `export_video.js` holds one frame still
+for a whole day, `export_tour.js` moves: a scripted camera flies over France,
+the Benelux, Switzerland and Germany while the clock runs, lingering on the
+morning hours when the network fills up, and closes in on Berlin -- where the
+city's own map, the S-Bahn, U-Bahn and trams the national feeds leave out,
+fades in over the top.
 
 ```sh
 python3 -m http.server 8000 &
 node build/export_tour.js --url http://localhost:8000/index.html \
      --out rail-tour.mp4
 ```
+
+It renders 1080x1920 -- a phone held upright -- and the route is framed for
+that. At 9:16 a given longitude span covers three times the latitude it does
+at 16:9, so the route follows the north-south corridors where that helps:
+Amsterdam down the Rhine to Zurich, and the French star, which is taller than
+it is wide. `#eu` also gained room to grow north and south in its `maxv`
+bounds; the preset may only stretch as far as that allows, and the old ones
+left the map as a band across the middle of an upright screen with a third of
+it empty. Pass `--width 1280 --height 720` for a landscape cut, but reframe
+the route with it -- the spans are chosen for the aspect.
 
 The route is the `KEYS` table at the top of the file: `[video second, clock
 time, longitude, latitude, span in degrees]`. The camera eases in and out of
@@ -431,13 +441,14 @@ judgement about pixels: a wide shot and a close-up can run the same
 simulated minutes per second and look nothing alike, because at the
 whole-Europe frame a 200 km/h train crosses a handful of pixels a second and
 over Berlin an S-Bahn crosses fifty. Left alone this route ran from 6 to 237
-px/s -- a 39x spread -- and the wide stretches read as a crawl.
+px/s -- a 39x spread -- and the wide stretches read as a crawl. (That was the
+landscape cut; the portrait route starts narrower, at 7 to 62.)
 
 ```sh
 node build/export_tour.js --timeline /tmp/tl.json
 python3 build/tour_pace.py /tmp/tl.json data/eu-trains.json \
-        data/eu-trains-2.json --alpha 0.6 --keys 0 7 15 26 38 44 50 56 62 \
-        72 82 90 99 110 118 126 136
+        data/eu-trains-2.json --width 1080 --height 1920 --full 20.5 \
+        --alpha 0.6 --keys 0 7 15 26 38 44 50 56 62 72 78 86 95 106 114 122 132
 ```
 
 `tour_pace.py` walks the same dataset the film draws, steps it by one video
@@ -447,8 +458,9 @@ so it can then solve for the clock that evens it out and print the column to
 paste back into `KEYS`. `--alpha 1` flattens the film to one constant speed,
 which turns out to be too much -- a constant speed spends so little clock
 over Berlin that the close-up drifts out of the evening peak entirely.
-**0.6** is what shipped: 10 to 88 px/s, an 8x spread, the slowest stretches
-nearly doubled and a city still visibly busier than a continent. The Berlin close-up is
+**0.6** is what shipped: on the portrait route, 11 to 26 px/s -- a 2x spread,
+the slowest stretches half again faster and a city still visibly busier than
+a continent. The Berlin close-up is
 rendered a second time against `#berlin` with the identical camera and clock
 and cross-faded on by ffmpeg, which is why the legend changes to the city's
 categories as it appears. The camera is driven through `window.railCam`, a
@@ -473,7 +485,7 @@ build/build_gtfs.py   GTFS feed(s) -> JSON, merged onto one service date
 build/build_geo.py    GeoJSON -> compact rings
 build/bundle.py       both JSON files -> inlined into index.html
 build/export_video.js index.html -> portrait MP4
-build/export_tour.js  index.html -> landscape flyover MP4
+build/export_tour.js  index.html -> portrait flyover MP4
 build/tour_pace.py    measures the flyover's on-screen train speed
 ```
 
