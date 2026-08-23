@@ -12,7 +12,9 @@ The feed must contain agency/routes/trips/stops/stop_times plus calendar.txt
 and/or calendar_dates.txt. Only rail is kept; buses and urban transit
 (S-Bahn, U-Bahn, tram) are dropped -- see CLASSES and DROP below.
 """
-import argparse, csv, json, os, sys, datetime, math, re
+import argparse, csv, io, json, os, sys, datetime, math, re, zipfile
+
+csv.field_size_limit(1 << 24)
 
 # Ordered: first pattern that matches a route's name wins.
 # (?=[ \d]|$) instead of \b: feeds write both "RE 2083" and "RE1", and a
@@ -36,6 +38,57 @@ def read(path, name):
         return
     with open(fp, encoding="utf-8-sig", newline="") as f:
         yield from csv.DictReader(f)
+
+
+class Feed:
+    """A GTFS feed held either as a directory or as a zip, streamed row by
+    row: the national aggregates run to gigabytes and must never be
+    unpacked or held in memory whole."""
+
+    def __init__(self, path):
+        self.path = path
+        self.zip = zipfile.ZipFile(path) if path.endswith(".zip") else None
+        self.names = set(self.zip.namelist()) if self.zip else set(
+            os.listdir(path))
+
+    def rows(self, name):
+        if name not in self.names:
+            return
+        if self.zip:
+            with self.zip.open(name) as f:
+                yield from csv.DictReader(io.TextIOWrapper(f, "utf-8-sig"))
+        else:
+            with open(os.path.join(self.path, name), encoding="utf-8-sig",
+                      newline="") as f:
+                yield from csv.DictReader(f)
+
+    def shapes_dir(self, tmpdir):
+        """load_shapes() wants a directory; give it one when we hold a zip."""
+        if not self.zip:
+            return self.path if "shapes.txt" in self.names else None
+        if "shapes.txt" not in self.names:
+            return None
+        os.makedirs(tmpdir, exist_ok=True)
+        out = os.path.join(tmpdir, "shapes.txt")
+        if not os.path.exists(out):
+            with self.zip.open("shapes.txt") as src, open(out, "wb") as dst:
+                while chunk := src.read(1 << 20):
+                    dst.write(chunk)
+        return tmpdir
+
+    def active_services(self, date):
+        d = datetime.date(int(date[:4]), int(date[4:6]), int(date[6:]))
+        dow = ["monday", "tuesday", "wednesday", "thursday", "friday",
+               "saturday", "sunday"][d.weekday()]
+        a = set()
+        for r in self.rows("calendar.txt"):
+            if r["start_date"] <= date <= r["end_date"] and r.get(dow) == "1":
+                a.add(r["service_id"])
+        for r in self.rows("calendar_dates.txt"):
+            if r.get("date") == date:
+                (a.add if r["exception_type"] == "1"
+                 else a.discard)(r["service_id"])
+        return a
 
 
 # --------------------------------------------------------------------------
