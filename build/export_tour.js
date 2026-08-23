@@ -64,8 +64,10 @@ const KEYS = [
   [  0, "00:00",  4.9, 48.8, 0    ],   /* the whole picture, empty night   */
   [  7, "03:05",  4.9, 48.8, 0    ],
   [ 15, "05:12",  7.0, 50.0, 12.0 ],   /* leaning in as the day starts     */
-  [ 26, "06:46",  6.4, 50.8,  6.0 ],   /* Rhine-Ruhr and the Randstad      */
-  [ 38, "07:46",  5.2, 51.6,  3.6 ],   /* the densest corner of Europe     */
+  [ 26, "06:46",  6.0, 51.45, 6.0 ],   /* Rhine-Ruhr and the Randstad      */
+  [ 38, "07:46",  5.6, 51.75, 4.4 ],   /* the densest corner of Europe --
+                                          far enough north that Amsterdam is
+                                          in it, which it never was before */
   [ 44, "08:18",  6.7, 49.4,  7.5 ],   /* out over the empty Eifel         */
   [ 50, "08:53",  8.2, 47.3,  3.6 ],   /* south to Switzerland             */
   [ 56, "09:26",  5.6, 47.6,  9.0 ],   /* out again, over the Jura         */
