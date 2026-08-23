@@ -322,24 +322,24 @@ const NETWORKS = {
     data:"data/eu-trains.json", geo:"data/eu-geo.json",
     minorPxPerDeg:120, borders:true,
     classes:{
-      ice:       {label:"ICE / TGV / Eurostar — high-speed", key:["ICE","high-speed"],
+      ice:       {label:"High-speed — ICE, TGV, Eurostar", cat:"high-speed",
                   role:"ice",   size:0.46, secs:600, trail:6, ring:1.00},
-      intercity: {label:"IC / EC / InterRegio", key:["IC","intercity"],
+      intercity: {label:"Intercity — IC, EC, InterRegio", cat:"intercity",
                   role:"ic",    size:0.42, secs:560, trail:5, ring:0.70},
       /* 52,000 regional services is most of the map's cost and, at a frame
          1,300 km across, most of its texture: two trail segments read the
          same as four and cost half. */
-      regional:  {label:"Regional & S-Bahn", key:["RE","regional"],
+      regional:  {label:"Regional — RE, RB, Sprinter, RER", cat:"regional",
                   role:"reg",   size:0.28, secs:260, trail:2, ring:0.08},
-      mountain:  {label:"Swiss rack railway / panorama", key:["Berg","rack · pano"],
+      mountain:  {label:"Rack railway and panorama", cat:"rack · panorama",
                   role:"mtn",   size:0.34, secs:420, trail:4, ring:0.40},
-      night:     {label:"Night train", key:["NJ","night"],
+      night:     {label:"Night train", cat:"night",
                   role:"night", size:0.44, secs:600, trail:6, ring:1.00},
     },
     views:{ eu: {label:"Europe",
       core:{lon0:-5.10, lon1:15.40, lat0:42.30, lat1:55.30},
       maxv:{lon0:-7.00, lon1:18.40, lat0:41.00, lat1:56.60},
-      clock:{lat:54.90, lon:6.20}, key:{lat:47.00, lon:13.90}} },
+      clock:{lat:54.90, lon:6.20}} },
     cities:[
       ["Berlin",52.5251,13.3694,1],      ["Hamburg",53.5528,10.0067,1],
       ["München",48.1402,11.5600,1],     ["Köln",50.9430,6.9587,1,1],
@@ -398,19 +398,19 @@ const NETWORKS = {
     data:"data/trains.json", geo:"data/germany.json",
     minorPxPerDeg:0,
     classes:{
-      ice:       {label:"ICE / TGV / RJ — high-speed", key:["ICE","high-speed"],
+      ice:       {label:"High-speed — ICE, TGV, RJ", cat:"high-speed",
                   role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
-      intercity: {label:"IC / EC — intercity",         key:["IC","intercity"],
+      intercity: {label:"Intercity — IC, EC",         cat:"intercity",
                   role:"ic",    size:0.50, secs:600, trail:6, ring:1.00},
-      regional:  {label:"RE / RB — regional",          key:["RE","regional"],
+      regional:  {label:"Regional — RE, RB",          cat:"regional",
                   role:"reg",   size:0.30, secs:350, trail:3, ring:0.10},
-      night:     {label:"NJ / EN — night",             key:["NJ","night"],
+      night:     {label:"Night train — NJ, EN",             cat:"night",
                   role:"night", size:0.43, secs:600, trail:6, ring:1.00},
     },
     views:{ de: {label:"Germany",
       core:{lon0:5.60, lon1:15.30, lat0:47.10, lat1:55.20},
       maxv:{lon0:3.00, lon1:19.20, lat0:45.20, lat1:56.30},
-      clock:{lat:54.80, lon:12.55}, key:{lat:49.90, lon:14.20}} },
+      clock:{lat:54.80, lon:12.55}} },
     cities:[
       ["Hamburg",53.5528,10.0064,1], ["Berlin",52.5251,13.3694,1],
       ["Bremen",53.0830,8.8139,1],   ["Hannover",52.3767,9.7410,1],
@@ -438,19 +438,19 @@ const NETWORKS = {
     data:"data/nl-trains.json", geo:"data/nl-geo.json",
     minorPxPerDeg:100,
     classes:{
-      ice:       {label:"ICE / Eurostar / IC direct", key:["Int'l","high-speed"],
+      ice:       {label:"High-speed — ICE, Eurostar, IC direct", cat:"high-speed",
                   role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
-      intercity: {label:"Intercity",                  key:["IC","intercity"],
+      intercity: {label:"Intercity",                  cat:"intercity",
                   role:"ic",    size:0.44, secs:500, trail:5, ring:0.50},
-      regional:  {label:"Sprinter / stoptrein",       key:["SPR","sprinter"],
+      regional:  {label:"Regional — Sprinter, stoptrein",       cat:"regional",
                   role:"reg",   size:0.32, secs:350, trail:3, ring:0.10},
-      night:     {label:"Nightjet / European Sleeper", key:["Night",""],
+      night:     {label:"Night train — Nightjet, European Sleeper", cat:"night",
                   role:"night", size:0.43, secs:600, trail:6, ring:1.00},
     },
     views:{ nl: {label:"Benelux",
       core:{lon0:2.45, lon1:7.30, lat0:49.42, lat1:53.55},
       maxv:{lon0:1.60, lon1:8.90, lat0:48.90, lat1:54.10},
-      clock:{lat:52.95, lon:3.95}, key:{lat:49.05, lon:4.50}} },
+      clock:{lat:52.95, lon:3.95}} },
     cities:[
       ["Amsterdam",52.3789,4.9003,1],  ["Rotterdam",51.9249,4.4690,1],
       ["Den Haag",52.0809,4.3240,1],   ["Utrecht",52.0894,5.1103,1],
@@ -487,31 +487,31 @@ const NETWORKS = {
     data:"data/us-trains.json", geo:"data/us-geo.json",
     minorPxPerDeg:20,
     classes:{
-      ice:       {label:"Acela — high-speed",             key:["Acela","high-speed"],
+      ice:       {label:"High-speed — Acela",             cat:"high-speed",
                   role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
-      intercity: {label:"Amtrak / Brightline — intercity", key:["Amtrak","intercity"],
+      intercity: {label:"Intercity — Amtrak, Brightline", cat:"intercity",
                   role:"ic",    size:0.50, secs:600, trail:6, ring:1.00},
-      regional:  {label:"Commuter rail",                  key:["Cmtr","commuter"],
+      regional:  {label:"Regional — commuter rail",                  cat:"regional",
                   role:"reg",   size:0.36, secs:350, trail:3, ring:0.10},
-      night:     {label:"Overnight long-distance",        key:["Ovnt","overnight"],
+      night:     {label:"Night train — overnight long-distance",        cat:"night",
                   role:"night", size:0.43, secs:600, trail:6, ring:1.00},
     },
     views:{
       us:  {label:"US",        core:{lon0:-124.90, lon1:-66.80, lat0:24.30, lat1:49.50},
             maxv:{lon0:-127.50, lon1:-64.50, lat0:23.00, lat1:51.00},
-            clock:{lat:32.60, lon:-71.50},  key:{lat:27.60, lon:-93.50}},
+            clock:{lat:32.60, lon:-71.50}},
       ne:  {label:"Northeast", core:{lon0:-77.90, lon1:-70.20, lat0:38.30, lat1:43.00},
             maxv:{lon0:-79.50, lon1:-68.50, lat0:37.20, lat1:44.20},
-            clock:{lat:39.30, lon:-71.60},  key:{lat:38.60, lon:-73.30}},
+            clock:{lat:39.30, lon:-71.60}},
       chi: {label:"Chicago",   core:{lon0:-89.60, lon1:-85.50, lat0:40.80, lat1:43.40},
             maxv:{lon0:-91.20, lon1:-84.00, lat0:39.80, lat1:44.40},
-            clock:{lat:42.90, lon:-86.90},  key:{lat:42.05, lon:-86.85}},
+            clock:{lat:42.90, lon:-86.90}},
       bay: {label:"Bay Area",  core:{lon0:-123.20, lon1:-120.80, lat0:36.40, lat1:39.00},
             maxv:{lon0:-124.50, lon1:-119.60, lat0:35.60, lat1:39.80},
-            clock:{lat:37.60, lon:-122.95}, key:{lat:36.75, lon:-122.75}},
+            clock:{lat:37.60, lon:-122.95}},
       nyc: {label:"New York",  core:{lon0:-74.45, lon1:-73.35, lat0:40.55, lat1:41.10},
             maxv:{lon0:-75.10, lon1:-72.60, lat0:40.30, lat1:41.45},
-            clock:{lat:40.63, lon:-73.55},  key:{lat:41.02, lon:-74.32}},
+            clock:{lat:40.63, lon:-73.55}},
     },
     cities:[
       ["New York",40.7506,-73.9935,1],   ["Boston",42.3519,-71.0552,1],
@@ -556,17 +556,17 @@ const NETWORKS = {
       /* Urban headways are short: a trail longer than the gap to the train
          behind melts the line into a solid streak, so the dense classes get
          trails well under one peak headway. */
-      ltdexp:  {label:"Limited express / liner", key:["Ltd Exp","liner"],
+      ltdexp:  {label:"Limited express / liner", cat:"limited express",
                 role:"ice",   size:0.50, secs:480, trail:5, ring:1.00},
-      express: {label:"Rapid / Express",         key:["Rapid","express"],
+      express: {label:"Rapid / Express",         cat:"express",
                 role:"ic",    size:0.40, secs:240, trail:3, ring:0.30},
-      local:   {label:"Local",                   key:["Local",""],
+      local:   {label:"Local",                   cat:"local",
                 role:"reg",   size:0.30, secs:140, trail:2, ring:0.10},
     },
     views:{ tokyo: {label:"Tokyo",
       core:{lon0:139.33, lon1:140.13, lat0:35.37, lat1:35.92},
       maxv:{lon0:138.75, lon1:140.80, lat0:35.02, lat1:36.15},
-      clock:{lat:35.45, lon:139.93}, key:{lat:35.42, lon:140.05}} },
+      clock:{lat:35.45, lon:139.93}} },
     cities:[
       ["Tokyo",35.6812,139.7671,1],     ["Shinjuku",35.6896,139.7003,1],
       ["Shibuya",35.6580,139.7016,1],   ["Ikebukuro",35.7295,139.7109,1],
@@ -598,23 +598,23 @@ const NETWORKS = {
     data:"data/berlin-trains.json", geo:"data/berlin-geo.json",
     minorPxPerDeg:900,
     classes:{
-      fern:  {label:"ICE / IC — long-distance", key:["Fern","long-dist"],
+      fern:  {label:"ICE / IC — long-distance", cat:"long-distance",
               role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
-      regio: {label:"RE / RB — regional",       key:["Regio","regional"],
+      regio: {label:"RE / RB — regional",       cat:"regional",
               role:"ic",    size:0.42, secs:450, trail:4, ring:0.40},
       /* U-Bahn and tram run every few minutes: keep their trails shorter
          than a headway or the lines melt into solid streaks. */
-      sbahn: {label:"S-Bahn",                   key:["S-Bahn",""],
+      sbahn: {label:"S-Bahn",                   cat:"S-Bahn",
               role:"reg",   size:0.34, secs:160, trail:2, ring:0.10},
-      ubahn: {label:"U-Bahn",                   key:["U-Bahn",""],
+      ubahn: {label:"U-Bahn",                   cat:"U-Bahn",
               role:"night", size:0.30, secs:110, trail:2, ring:0.10},
-      tram:  {label:"Tram",                     key:["Tram",""],
+      tram:  {label:"Tram",                     cat:"tram",
               role:"tram",  size:0.24, secs:100, trail:2, ring:0.05},
     },
     views:{ berlin: {label:"Berlin",
       core:{lon0:13.03, lon1:13.81, lat0:52.29, lat1:52.71},
       maxv:{lon0:12.80, lon1:14.04, lat0:52.16, lat1:52.84},
-      clock:{lat:52.665, lon:13.72}, key:{lat:52.33, lon:13.71}} },
+      clock:{lat:52.665, lon:13.72}} },
     cities:[
       ["Hbf",52.5251,13.3694,1],           ["Alex",52.5216,13.4114,1],
       ["Zoo",52.5072,13.3324,1],           ["Ostkreuz",52.5031,13.4693,0],
@@ -644,17 +644,17 @@ const NETWORKS = {
     data:"data/ny-trains.json", geo:"data/ny-geo.json",
     minorPxPerDeg:700,
     classes:{
-      commuter: {label:"LIRR / Metro-North / NJ Transit", key:["Cmtr","commuter"],
+      commuter: {label:"LIRR / Metro-North / NJ Transit", cat:"commuter rail",
                  role:"ic",   size:0.50, secs:600, trail:6, ring:1.00},
-      subway:   {label:"Subway", key:["Subway",""],
+      subway:   {label:"Subway", cat:"subway",
                  role:"reg",  size:0.32, secs:150, trail:2, ring:0.10},
-      light:    {label:"Light rail", key:["Light","rail"],
+      light:    {label:"Light rail", cat:"light rail",
                  role:"tram", size:0.26, secs:140, trail:2, ring:0.10},
     },
     views:{ ny: {label:"New York",
       core:{lon0:-74.42, lon1:-73.42, lat0:40.53, lat1:41.06},
       maxv:{lon0:-74.95, lon1:-72.90, lat0:40.40, lat1:41.18},
-      clock:{lat:40.60, lon:-73.62}, key:{lat:40.98, lon:-74.30}} },
+      clock:{lat:40.60, lon:-73.62}} },
     cities:[
       ["Grand Central",40.7527,-73.9772,1], ["Penn",40.7506,-73.9936,1,1],
       ["Atlantic Av",40.6844,-73.9777,0],   ["Jamaica",40.7003,-73.8087,1],
@@ -683,19 +683,19 @@ const NETWORKS = {
     /* French rail stops for a few hours; only the night trains cross it. */
     ffwdBelow:25, ffwdBoost:5,
     classes:{
-      tgv:       {label:"TGV / Ouigo / Lyria — high-speed", key:["TGV","high-speed"],
+      tgv:       {label:"High-speed — TGV, Ouigo, Lyria", cat:"high-speed",
                   role:"ice",   size:0.52, secs:600, trail:7, ring:1.00},
-      intercity: {label:"Intercités", key:["IC","intercity"],
+      intercity: {label:"Intercity — Intercités", cat:"intercity",
                   role:"ic",    size:0.46, secs:600, trail:6, ring:1.00},
-      regional:  {label:"TER, RER and Transilien", key:["TER","regional"],
+      regional:  {label:"Regional — TER, RER, Transilien", cat:"regional",
                   role:"reg",   size:0.32, secs:380, trail:4, ring:0.14},
-      night:     {label:"Intercités de Nuit", key:["Nuit","night"],
+      night:     {label:"Night train — Intercités de Nuit", cat:"night",
                   role:"night", size:0.48, secs:700, trail:7, ring:1.00},
     },
     views:{ fr: {label:"France",
       core:{lon0:-5.10, lon1:8.30, lat0:42.30, lat1:51.15},
       maxv:{lon0:-6.60, lon1:10.40, lat0:41.20, lat1:52.30},
-      clock:{lat:50.72, lon:1.30}, key:{lat:46.40, lon:-3.60}} },
+      clock:{lat:50.72, lon:1.30}} },
     cities:[
       ["Paris",48.8767,2.3585,1],        ["Lyon",45.7602,4.8595,1],
       ["Marseille",43.3027,5.3804,1],    ["Bordeaux",44.8262,-0.5561,1,1],
@@ -742,23 +742,23 @@ const NETWORKS = {
     /* Swiss trains stop for about three hours after one in the morning. */
     ffwdBelow:25, ffwdBoost:5,
     classes:{
-      ice:      {label:"IC / EC / TGV", key:["IC","EC · TGV"],
+      ice:      {label:"High-speed — IC, EC, TGV", cat:"high-speed",
                  role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
-      ir:       {label:"InterRegio", key:["IR","interregio"],
+      ir:       {label:"Interregional — InterRegio", cat:"interregional",
                  role:"ic",    size:0.44, secs:520, trail:5, ring:0.60},
-      regional: {label:"R / RE — regional", key:["R","regional"],
+      regional: {label:"Regional — R, RE", cat:"regional",
                  role:"reg",   size:0.30, secs:360, trail:4, ring:0.10},
-      sbahn:    {label:"S-Bahn", key:["S","S-Bahn"],
+      sbahn:    {label:"Suburban — S-Bahn", cat:"suburban",
                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
-      mountain: {label:"Rack railway / panorama", key:["Berg","rack · pano"],
+      mountain: {label:"Rack railway and panorama", cat:"rack · panorama",
                  role:"mtn",   size:0.38, secs:420, trail:4, ring:0.50},
-      night:    {label:"Night train", key:["NJ","night"],
+      night:    {label:"Night train", cat:"night",
                  role:"night", size:0.46, secs:600, trail:6, ring:1.00},
     },
     views:{ ch: {label:"Switzerland",
       core:{lon0:5.90, lon1:10.55, lat0:45.78, lat1:47.85},
       maxv:{lon0:4.90, lon1:11.60, lat0:45.20, lat1:48.40},
-      clock:{lat:48.22, lon:9.55}, key:{lat:46.02, lon:9.35}} },
+      clock:{lat:48.22, lon:9.55}} },
     cities:[
       ["Zürich",47.3782,8.5403,1],       ["Bern",46.9490,7.4396,1],
       ["Basel",47.5476,7.5896,1],        ["Genève",46.2102,6.1424,1,1],
@@ -791,19 +791,19 @@ const NETWORKS = {
     /* The Tube shuts overnight -- nearly four dead hours on a Wednesday. */
     ffwdBelow:25, ffwdBoost:5,
     classes:{
-      nr:   {label:"National Rail — 2021 timetable", key:["NR","2021"],
+      nr:   {label:"National Rail — 2021 timetable", cat:"national rail",
              role:"ic",   size:0.42, secs:420, trail:4, ring:0.40},
-      dlr:  {label:"DLR", key:["DLR",""],
+      dlr:  {label:"DLR", cat:"DLR",
              role:"ice",  size:0.36, secs:200, trail:3, ring:0.30},
-      tube: {label:"Underground", key:["Tube","underground"],
+      tube: {label:"Underground", cat:"underground",
              role:"reg",  size:0.30, secs:150, trail:2, ring:0.10},
-      tram: {label:"Tramlink", key:["Tram",""],
+      tram: {label:"Tramlink", cat:"tram",
              role:"tram", size:0.24, secs:130, trail:2, ring:0.10},
     },
     views:{ london: {label:"London",
       core:{lon0:-0.56, lon1:0.28, lat0:51.28, lat1:51.71},
       maxv:{lon0:-0.85, lon1:0.60, lat0:51.14, lat1:51.84},
-      clock:{lat:51.665, lon:0.185}, key:{lat:51.315, lon:-0.44}} },
+      clock:{lat:51.665, lon:0.185}} },
     /* Central London packs six termini into four kilometres, so only the
        four biggest are majors; everything else yields to them and the
        names are kept short. */
@@ -867,7 +867,7 @@ let RING_SCALE=[], DOT_SCALE=[];
 let EVN=0, EVT=null, EVS=null, EVC=null, STARTS_MIN=null, PEAK=[];
 let OCC=null;                        /* per-minute moving-train counts */
 
-let CORE=null, MAXV=null, CLOCK_AT=null, LEGEND_AT=null;
+let CORE=null, MAXV=null, CLOCK_AT=null;
 let VIEW=null, FRAME_ASPECT=1;
 /* BASEVIEW is the frame the preset asked for; USERVIEW is where wheel and
    pinch have moved it, kept as centre + span so it survives a resize. */
@@ -896,7 +896,7 @@ function viewMps(v){
 function setView(id){
   VIEWID = id;
   const v = NET.views[id];
-  CORE = v.core; MAXV = v.maxv; CLOCK_AT = v.clock; LEGEND_AT = v.key;
+  CORE = v.core; MAXV = v.maxv; CLOCK_AT = v.clock;
   /* A preset is a fresh start: whatever the wheel did to the last one does
      not carry over. Playback speed follows the preset's extent, not the
      live zoom, so going in for a closer look never changes the clock. */
@@ -918,10 +918,11 @@ function applyData(data, geo){
   DATA = data; GEO = geo;
   CLASS_META = NET.classes;
   CLASSES = DATA.classes;
-  KEY_ROWS = CLASSES.map(k => {
-    const [code, word] = (CLASS_META[k] || {}).key || [k, ""];
-    return {code, word};
-  });
+  /* One vocabulary across the maps: a high-speed train is a high-speed
+     train whether the operator calls it ICE, TGV or Eurostar, so the key
+     names the category and not the brand. City networks keep their own
+     words -- there is no cross-border name for a U-Bahn. */
+  KEY_ROWS = CLASSES.map(k => (CLASS_META[k] || {}).cat || k);
   RING_SCALE = CLASSES.map(k => (CLASS_META[k] || {}).ring ?? 1);
   DOT_SCALE  = CLASSES.map(k => (CLASS_META[k] || {}).size ?? 1);
 
@@ -1262,19 +1263,32 @@ function placeClock(){
   CLOCK_BOX = {x:x-hw-PAD_X, y:y-hh-PAD_Y, w:hw*2+PAD_X*2, h:hh*2+PAD_Y*2};
 }
 
+/* The key sits in the bottom-right corner and stays there. It used to be
+   anchored to a coordinate, which put it in a different place on every map
+   and moved it when you zoomed; a legend that wanders is one more thing to
+   look for. On a portrait screen the map is a band across the middle, so it
+   goes under the frame instead of over it. */
 function placeKey(){
-  const ROW = 14, PADX = 7, PADY = 6, DOT = 3;
+  const ROW = 14, PADX = 8, PADY = 6, DOT = 3;
   ctx.font = '500 10px "IBM Plex Mono",monospace';
-  let codeW = 0;
-  for (const r of KEY_ROWS) codeW = Math.max(codeW, ctx.measureText(r.code + "  ").width);
   let textW = 0;
-  for (const r of KEY_ROWS) textW = Math.max(textW, codeW + ctx.measureText(r.word).width);
-  const boxW = PADX*2 + DOT*2 + 5 + textW, boxH = PADY*2 + ROW*KEY_ROWS.length;
-  let x = OX + uxBase(LEGEND_AT.lon)*SX, y = OY + uyBase(LEGEND_AT.lat)*SY;
+  for (const r of KEY_ROWS) textW = Math.max(textW, ctx.measureText(r).width);
+  const boxW = PADX*2 + DOT*2 + 7 + textW, boxH = PADY*2 + ROW*KEY_ROWS.length;
+  /* Bottom-right of the window, lifted clear of whatever the play controls
+     occupy -- measured rather than guessed, because that panel changes
+     height with the day-profile strip. */
+  const M = 14;
+  const ctl = document.getElementById("controls");
+  const cb = ctl ? ctl.getBoundingClientRect() : null;
+  /* offsetParent is null for a fixed panel, so measure the rectangle and
+     ask whether it has a height instead of whether it is laid out. */
+  const floor = cb && cb.height > 0 && cb.top > 0 && cb.top < H ? cb.top : H;
+  let x = W - boxW - M;
+  let y = floor - boxH - M;
   if (SY < H*0.55){ x = W/2 - boxW/2; y = OY + SY + 12; }
   x = Math.max(6, Math.min(W - boxW - 6, x));
   y = Math.max(6, Math.min(H - boxH - 6, y));
-  KEY_BOX = {x, y, w:boxW, h:boxH, codeW, ROW, PADX, PADY, DOT};
+  KEY_BOX = {x, y, w:boxW, h:boxH, ROW, PADX, PADY, DOT};
 }
 
 /* City labels are placed once per layout, not per frame: majors first, then
@@ -1612,7 +1626,7 @@ function draw(){
 }
 
 function drawKey(hues, bgBot){
-  const {x, y, w, h, codeW, ROW, PADX, PADY, DOT} = KEY_BOX;
+  const {x, y, w, h, ROW, PADX, PADY, DOT} = KEY_BOX;
   ctx.font = '500 10px "IBM Plex Mono",monospace';
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, 5);
@@ -1629,9 +1643,7 @@ function drawKey(hues, bgBot){
     ctx.fillStyle = rgba(hues[i], 1);
     ctx.fill();
     ctx.fillStyle = rgba(pick("ink2"), 0.95);
-    ctx.fillText(r.code, x + PADX + DOT*2 + 5, cy);
-    ctx.fillStyle = rgba(pick("ink3"), 0.9);
-    ctx.fillText(r.word, x + PADX + DOT*2 + 5 + codeW, cy);
+    ctx.fillText(r, x + PADX + DOT*2 + 7, cy);
   });
 }
 

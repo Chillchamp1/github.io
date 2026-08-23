@@ -59,10 +59,18 @@ is already dense, and two left the map permanently speckled. The strip behind
 the scrubber counts the same starts across the day, in one ink because the
 categorical hues stay reserved for the trains.
 
-A compact key — swatch, code, one word — is drawn on the map itself, in the
-open ground below Saxony. It costs the frame nothing and means a screen
-recording carries its own legend; the panel below the map keeps the full
-labels, the live counts and the note.
+A compact key — a swatch and one word per category — is drawn on the map
+itself, pinned to the bottom-right corner above the play controls. It costs
+the frame nothing and means a screen recording carries its own legend; the
+panel below the map keeps the full labels, the live counts and the note.
+
+The words are the same on every map that has an equivalent: **high-speed,
+intercity, regional, night**. A high-speed train is a high-speed train
+whether the operator calls it ICE, TGV or Eurostar, and a legend that
+renames the same thing per country is a legend you have to re-read. Where
+there is no cross-border equivalent the network names its own — Berlin's
+S-Bahn, U-Bahn and tram, Tokyo's limited express, Switzerland's rack
+railways — which is why the key visibly changes when the city maps come up.
 
 The clock sits on the Baltic about 30 km off the Fischland-Darß coast, where
 the nearest station is far enough away that it never covers the network. Giving
@@ -182,8 +190,8 @@ python3 build/bundle.py -d data/us-trains.json -g data/us-geo.json -p usa.html
 
 The national frame leaves the busy corridors tiny, so the dock offers
 **region presets** — Northeast, Chicago, Bay Area, New York — that
-reframe the same animation; each carries its own water anchors for the clock
-and key, the legend counts only what is inside the frame, and `#chicago`-style
+reframe the same animation; each carries its own water anchor for the clock,
+the legend counts only what is inside the frame, and `#chicago`-style
 URL fragments deep-link a region. A Los Angeles view is deliberately absent:
 without Metrolink (stale feed, see above) it would be misleadingly empty.
 
