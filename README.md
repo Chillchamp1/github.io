@@ -11,15 +11,20 @@ The eight networks — Germany, the Benelux, the USA, Greater Tokyo, Berlin,
 New York, Switzerland and London — live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nw`), `#tokyo`, `#berlin`, `#ny`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
+`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
-Every day starts at midnight, and a network that sleeps overnight (Tokyo)
-fast-forwards gently (5×) while fewer than 60 trains are moving, so nobody waits
-through three empty hours. City labels are placed by a collision pass at
-layout time: nothing may cover the clock, the on-canvas key or another label;
-major cities win, minor ones yield. Every push to `main` republishes the site
+Every day starts at midnight, and a network that sleeps overnight — Tokyo,
+Switzerland, London — fast-forwards while few trains are moving: 5× through the
+thinning shoulders, three times that where the map is literally empty, so
+nobody waits through three dead hours. New York is the exception that proves
+it: its subway runs around the clock and never drops below 126 trains, so it
+plays in real time throughout. City labels are placed by a collision pass at
+layout time: each tries four vertical slots on either side of its dot, nothing
+may cover the clock, the on-canvas key or another label, and a label that finds
+no free slot is simply not drawn — two names printed over each other are worse
+than one missing. Every push to `main` republishes the site
 via `.github/workflows/pages.yml`.
 
 ## What is on screen
@@ -114,7 +119,7 @@ python3 build/bundle.py -d data/us-trains.json -g data/us-geo.json -p usa.html
 ```
 
 The national frame leaves the busy corridors tiny, so the dock offers
-**region presets** — Northeast, Chicago, Bay Area, Pacific Northwest — that
+**region presets** — Northeast, Chicago, Bay Area, New York — that
 reframe the same animation; each carries its own water anchors for the clock
 and key, the legend counts only what is inside the frame, and `#chicago`-style
 URL fragments deep-link a region. A Los Angeles view is deliberately absent:
@@ -349,3 +354,35 @@ profile is likewise drawn once per resize and blitted.
 Origin rings come from a time-sorted event index — one entry per service — so
 each frame binary-searches the live window instead of rescanning 27,757 trips. Ring lifetime scales with the playback multiplier, so
 an event stays visible for roughly two thirds of a second at any speed.
+
+## Licensing
+
+**Code: MIT** — see [`LICENSE`](LICENSE). That covers `index.html`, the
+builders under `build/` and this documentation: use, modify and redistribute
+freely, keep the copyright notice.
+
+**Data: not MIT.** Everything under `data/` is derived from third-party open
+datasets that keep their own licences and attribution requirements. The MIT
+licence above does not and cannot relicense them. If you reuse the datasets,
+credit the original publishers:
+
+| Data | Source | Terms |
+|---|---|---|
+| Germany, Berlin timetables | DELFI e.V. | CC-BY |
+| Benelux timetables | OVapi/NDOV (NL), SNCB/NMBS (BE), the Luxembourg national feed, European Sleeper | each publisher's open-data terms |
+| US timetables | Amtrak and twenty commuter operators, via the Mobility Database mirror | each operator's published feed terms |
+| New York timetables | MTA (subway, LIRR, Metro-North), NJ Transit | each operator's published feed terms |
+| Switzerland timetable | SKI+ / SBB, opentransportdata.swiss | open use, source must be named |
+| Tokyo timetable | [mini-tokyo-3d](https://github.com/nagix/mini-tokyo-3d) dataset, © Akihiko Kusanagi, derived from ODPT open data | MIT (dataset), ODPT terms upstream |
+| London Underground, DLR, Tramlink | Bus Open Data Service, Department for Transport | Open Government Licence v3.0 |
+| London National Rail | ATOC-derived snapshot via the Mobility Database mirror | original publisher's terms |
+| Germany, Berlin basemaps | [deutschlandGeoJSON](https://github.com/isellsoap/deutschlandGeoJSON) | Unlicense (public domain) |
+| Netherlands provinces | CBS via [cartomap](https://github.com/cartomap/nl) | CBS open data |
+| US and New York basemaps | [us-atlas](https://github.com/topojson/us-atlas) (ISC) from US Census geometry | public domain |
+| Switzerland, Benelux, Thames | [Natural Earth](https://www.naturalearthdata.com/) | public domain |
+| London boroughs | ONS and Ordnance Survey boundaries via [UK-GeoJSON](https://github.com/martinjc/UK-GeoJSON) | OS OpenData / OGL v3.0 — contains OS data © Crown copyright and database right |
+
+None of the datasets are redistributed in their original form: each is filtered
+to one service date, reduced to the fields the animation needs and re-encoded.
+Where a licence requires attribution, the app names the source on screen in the
+provenance line and in the "Data notes & gaps" panel of every network.
