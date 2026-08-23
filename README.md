@@ -1,17 +1,17 @@
-# A Wednesday on the German rail network
+# A day on the rails
 
-A 24-hour time-lapse of one real day of German rail traffic — every scheduled
-long-distance and regional train in the country, drawn from the official
-nationwide timetable. The map is dark at every hour, so the trains are the
-only bright thing on it.
+24-hour time-lapses of one real day of rail traffic, built from official
+open timetables: eight networks, from whole countries down to single
+cities. Every dot is a scheduled train. The map is dark at every hour, so
+the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-The five networks — Germany, the Netherlands, the USA, Greater Tokyo and
-Berlin — live in one
+The eight networks — Germany, the Benelux, the USA, Greater Tokyo, Berlin,
+New York, Switzerland and London — live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nw`), `#tokyo`, `#berlin`. Every network carries a "Data notes & gaps"
+`#us/nw`), `#tokyo`, `#berlin`, `#ny`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -173,6 +173,56 @@ windows. One time-scale rule covers every network: a city-scale frame
 cover pixels at a comparable rate whether the frame is Berlin or the US. Basemap: Natural Earth 1:10M country shapes
 (world-atlas) with CBS province lines inside the Netherlands. Metro, tram,
 bus and ferries excluded.
+
+## The New York page
+
+`#ny` is everything on rails around the harbour: **11,803 trains on
+Wednesday 26 August 2026** at 920 stations, from four current agency feeds
+— MTA's subway (Staten Island Railway included), the Long Island Rail
+Road, Metro-North and NJ Transit's rail and light rail. `build/build_ny.py`
+merges them onto one service date and follows each feed's `shapes.txt`, so
+every one of the 11,803 trains runs on its published route geometry. Two
+gaps, both stale feeds rather than choices: PATH's open GTFS expired on
+1 June 2026 and the JFK AirTrain's stopped in 2021. Unlike the national US
+map this one needs no clock shifting — it is all Eastern time. Basemap: US
+Census counties (us-atlas 1:10M, public domain), whose lines double as the
+coastline of Manhattan, Long Island and the Jersey shore.
+
+## The Switzerland page
+
+`#ch` is the whole country: **15,988 trains on Wednesday 26 August 2026**,
+from the official national aggregate published by SKI+ / SBB through
+opentransportdata.swiss — every operator in one file, so rail coverage is
+complete. Six classes: IC/EC/TGV, InterRegio, regional, S-Bahn, night, and
+a sixth the other maps have no use for — **rack railways and the panorama
+expresses** (Glacier Express, Bernina Express, Jungfrau, Pilatus, Rigi),
+drawn in violet, because half the point of Swiss rail is that it climbs.
+Trams, the Lausanne metro, funiculars, cable cars, boats and buses are left
+out, matching the German map's rule that a national map shows trains. The
+feed carries no route geometry, so trains interpolate straight between
+stops. Basemap: Natural Earth 1:10M cantons, neighbouring country outlines
+and the big lakes — Swiss rail runs along the water and the map is
+unreadable without it.
+
+## The London page
+
+`#london` is **11,075 trains on Wednesday 26 August 2026**: the
+Underground (8,785), the DLR (1,584) and Tramlink (706).
+
+This is the honest limit of British open data. The Department for
+Transport's [Bus Open Data Service](https://www.bus-data.dft.gov.uk/) is
+the only current open GTFS that carries British rail at all, and what it
+carries for London is those three operators — the aggregate is otherwise
+13,327 bus routes. National Rail's timetable, which would add the
+Overground, the Elizabeth line, Thameslink, Southern and the rest of the
+suburban network, is published through Rail Delivery Group channels that
+require registration, so roughly half of London's rail journeys are missing
+and the page says so in its data notes. The Mobility Database's TfL entry
+is a 2017 snapshot and was rejected for that reason. Operators are selected
+by name rather than by bounding box, so the Tyne and Wear Metro, Edinburgh
+Trams, Manchester Metrolink and the other British tramways in the same file
+stay out. Basemap: ONS local authority districts for the Greater London
+boroughs, plus the Thames from Natural Earth.
 
 ## The data
 

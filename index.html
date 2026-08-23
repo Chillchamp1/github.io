@@ -16,6 +16,7 @@
     --ink:#e9eff7; --ink-2:#a7b3c4; --ink-3:#78859a;
     --rule:rgba(39,51,63,0.7); --panel:rgba(13,20,30,0.82);
     --ice:#5aa9ff; --ic:#ff7a45; --reg:#35d69a; --night:#ffd93d; --tram:#ff8fd8;
+    --mtn:#b98cff;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -42,6 +43,9 @@
   #nets{
     position:fixed;z-index:6;left:14px;top:14px;
     display:flex;gap:4px;padding:4px;
+    /* Eight networks overflow a phone's width: let the row wrap rather than
+       run off the screen, and keep it clear of the map's right half. */
+    flex-wrap:wrap;max-width:calc(100vw - 40px);
   }
   #nets button{
     padding:4px 10px;font-size:0.72rem;border:1px solid transparent;
@@ -206,6 +210,8 @@
     #stage{position:relative;inset:auto;width:100%;height:100svh;height:100dvh}
     #meta,#figbtn{display:none}
     #nets,#regions{position:absolute}
+    #nets{max-width:calc(100vw - 28px)}
+    #nets button{padding:3px 8px;font-size:0.68rem}
     #dock{
       display:flex;flex-direction:column;gap:12px;
       padding:12px 12px 20px;
@@ -287,6 +293,8 @@ const PAL = {
   rule:"#27333f", panel:"#0d141e",
   station:"#2b3849", hub:"#46586f",
   ice:"#5aa9ff", ic:"#ff7a45", reg:"#35d69a", night:"#ffd93d", tram:"#ff8fd8",
+  /* Sixth hue, for Switzerland's rack railways and panorama expresses. */
+  mtn:"#b98cff",
 };
 const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
 const RGB = {};
@@ -548,6 +556,133 @@ const NETWORKS = {
       "geometry published in the feed, so the S-Bahn ring is round and trams " +
       "turn street corners. European Sleeper, " +
       "Snälltåget and PKP night trains are absent from the source feed.",
+  },
+  ny: {
+    label:"New York", pill:"NY", unit:"trains",
+    data:"data/ny-trains.json", geo:"data/ny-geo.json",
+    minorPxPerDeg:700,
+    classes:{
+      commuter: {label:"LIRR / Metro-North / NJ Transit", key:["Cmtr","commuter"],
+                 role:"ic",   size:0.50, secs:600, trail:6, ring:1.00},
+      subway:   {label:"Subway", key:["Subway",""],
+                 role:"reg",  size:0.32, secs:150, trail:2, ring:0.10},
+      light:    {label:"Light rail", key:["Light","rail"],
+                 role:"tram", size:0.26, secs:140, trail:2, ring:0.10},
+    },
+    views:{ ny: {label:"New York",
+      core:{lon0:-74.42, lon1:-73.42, lat0:40.53, lat1:41.06},
+      maxv:{lon0:-74.95, lon1:-72.90, lat0:40.40, lat1:41.18},
+      clock:{lat:40.60, lon:-73.62}, key:{lat:40.98, lon:-74.30}} },
+    cities:[
+      ["Grand Central",40.7527,-73.9772,1], ["Penn",40.7506,-73.9936,1,1],
+      ["Atlantic Av",40.6844,-73.9777,0],   ["Jamaica",40.7003,-73.8087,1],
+      ["Newark",40.7343,-74.1644,1,1],      ["Hoboken",40.7348,-74.0274,0,1],
+      ["Yankees",40.8296,-73.9262,0],       ["Flushing",40.7596,-73.8300,0],
+      ["Coney Island",40.5776,-73.9812,0],  ["Secaucus",40.7615,-74.0759,0,1],
+      ["Yonkers",40.9354,-73.8991,0],       ["Jersey City",40.7178,-74.0431,0,1],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on rails around New York, from the operators’ published " +
+      "timetables for " + dateStr(d) + ".",
+    note: "Subway, commuter rail and light rail together. Buses and ferries " +
+      "are excluded; so is PATH, whose open feed has expired.",
+    caveats: "Four current agency feeds: MTA’s subway (Staten Island Railway " +
+      "included), the Long Island Rail Road, Metro-North and NJ Transit. Two " +
+      "gaps, both because the published feed is stale rather than by choice: " +
+      "PATH’s open GTFS ran out on 1 June 2026, so the Hudson tubes are " +
+      "missing, and the JFK AirTrain feed stopped in 2021. Trains follow the " +
+      "route geometry published in the feeds. Everything here is one time " +
+      "zone, so unlike the national US map no clock shifting was needed.",
+  },
+  ch: {
+    label:"Switzerland", pill:"CH", unit:"trains",
+    data:"data/ch-trains.json", geo:"data/ch-geo.json",
+    minorPxPerDeg:130,
+    classes:{
+      ice:      {label:"IC / EC / TGV", key:["IC","EC · TGV"],
+                 role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
+      ir:       {label:"InterRegio", key:["IR","interregio"],
+                 role:"ic",    size:0.44, secs:520, trail:5, ring:0.60},
+      regional: {label:"R / RE — regional", key:["R","regional"],
+                 role:"reg",   size:0.30, secs:360, trail:4, ring:0.10},
+      sbahn:    {label:"S-Bahn", key:["S","S-Bahn"],
+                 role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+      mountain: {label:"Rack railway / panorama", key:["Berg","rack · pano"],
+                 role:"mtn",   size:0.38, secs:420, trail:4, ring:0.50},
+      night:    {label:"Night train", key:["NJ","night"],
+                 role:"night", size:0.46, secs:600, trail:6, ring:1.00},
+    },
+    views:{ ch: {label:"Switzerland",
+      core:{lon0:5.90, lon1:10.55, lat0:45.78, lat1:47.85},
+      maxv:{lon0:4.90, lon1:11.60, lat0:45.20, lat1:48.40},
+      clock:{lat:47.52, lon:10.62}, key:{lat:46.02, lon:9.35}} },
+    cities:[
+      ["Zürich",47.3782,8.5403,1],       ["Bern",46.9490,7.4396,1],
+      ["Basel",47.5476,7.5896,1],        ["Genève",46.2102,6.1424,1,1],
+      ["Lausanne",46.5169,6.6291,1,1],   ["Luzern",47.0502,8.3103,1],
+      ["St. Gallen",47.4231,9.3697,1],   ["Winterthur",47.5003,8.7241,0],
+      ["Lugano",46.0053,8.9470,1],       ["Chur",46.8531,9.5290,1],
+      ["Biel",47.1325,7.2432,0],         ["Olten",47.3519,7.9077,0],
+      ["Interlaken",46.6863,7.8632,0],   ["Zermatt",46.0237,7.7484,0,1],
+      ["Brig",46.3194,7.9881,0],         ["Neuchâtel",46.9964,6.9372,0,1],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on the Swiss network, from the national open timetable " +
+      "for " + dateStr(d) + ".",
+    note: "Every train in the country, rack railways and the panorama " +
+      "expresses included. Trams, the Lausanne metro, funiculars, cable cars, " +
+      "boats and buses are left out.",
+    caveats: "Source is the official Swiss national aggregate published by " +
+      "SKI+ / SBB through opentransportdata.swiss — every operator in the " +
+      "country in one file, so coverage is complete for rail. Two " +
+      "weaknesses: the feed carries no route geometry, so trains interpolate " +
+      "in a straight line between timetabled stops and cut corners through " +
+      "the Alps rather than following the tunnels; and this is the published " +
+      "schedule, without delays or cancellations. Cross-border trains are " +
+      "drawn leaving the frame toward Milan, Munich and Paris.",
+  },
+  london: {
+    label:"London", pill:"London", unit:"trains",
+    data:"data/london-trains.json", geo:"data/london-geo.json",
+    minorPxPerDeg:800,
+    classes:{
+      dlr:  {label:"DLR", key:["DLR",""],
+             role:"ice",  size:0.40, secs:200, trail:3, ring:0.40},
+      tube: {label:"Underground", key:["Tube","underground"],
+             role:"reg",  size:0.32, secs:150, trail:2, ring:0.10},
+      tram: {label:"Tramlink", key:["Tram",""],
+             role:"tram", size:0.26, secs:130, trail:2, ring:0.10},
+    },
+    views:{ london: {label:"London",
+      core:{lon0:-0.56, lon1:0.28, lat0:51.28, lat1:51.71},
+      maxv:{lon0:-0.85, lon1:0.60, lat0:51.14, lat1:51.84},
+      clock:{lat:51.665, lon:0.185}, key:{lat:51.315, lon:-0.44}} },
+    cities:[
+      ["King's Cross",51.5308,-0.1238,1],  ["Waterloo",51.5031,-0.1132,1],
+      ["Oxford Circus",51.5152,-0.1418,1,1], ["Victoria",51.4952,-0.1441,1,1],
+      ["Liverpool St",51.5178,-0.0823,1],  ["Paddington",51.5154,-0.1755,1,1],
+      ["Stratford",51.5416,-0.0042,1],     ["Canary Wharf",51.5051,-0.0209,0],
+      ["Heathrow",51.4713,-0.4524,1,1],    ["Wimbledon",51.4214,-0.2064,0,1],
+      ["Croydon",51.3762,-0.0982,0],       ["Walthamstow",51.5829,-0.0197,0],
+      ["Brixton",51.4627,-0.1145,0,1],     ["Woolwich",51.4917,0.0648,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on the London Underground, DLR and Tramlink, from the " +
+      "published timetable for " + dateStr(d) + ".",
+    note: "The Tube, the DLR and Tramlink. National Rail services — the " +
+      "Overground, the Elizabeth line and the suburban operators — are not " +
+      "in any open feed; see the data notes.",
+    caveats: "This is the honest limit of British open data. The Department " +
+      "for Transport’s Bus Open Data Service is the only current open GTFS " +
+      "carrying rail at all, and what it carries for London is the " +
+      "Underground, the DLR and Tramlink — which is what you see. National " +
+      "Rail’s timetable, which would add the Overground, the Elizabeth line, " +
+      "Thameslink, Southern and the rest of the suburban network, is " +
+      "published through Rail Delivery Group channels that require " +
+      "registration, so roughly half of London’s rail journeys are missing " +
+      "from this map. The feed carries no route geometry for these " +
+      "operators, so trains run straight between stations rather than along " +
+      "the tunnels.",
   },
 };
 const dateStr = d => new Date(d.date+"T12:00:00Z").toLocaleDateString(
@@ -1272,6 +1407,12 @@ function buildChrome(){
   holder.hidden = views.length < 2;
   if (holder.hidden) document.body.removeAttribute("data-regions");
   else document.body.setAttribute("data-regions", "");
+  /* The pill row wraps to two lines on a phone, so the region row cannot
+     sit at a fixed offset: park it under whatever height the pills took. */
+  if (!holder.hidden){
+    const nets = document.getElementById("nets");
+    holder.style.top = (nets.offsetTop + nets.offsetHeight + 4) + "px";
+  }
   for (const [id, v] of views){
     const b = document.createElement("button");
     b.textContent = v.label;
