@@ -318,9 +318,9 @@ const DAY_SECONDS = 86400;
    more than one. */
 const NETWORKS = {
   eu: {
-    label:"Germany · Benelux · Switzerland", pill:"Europe", unit:"trains",
+    label:"Western Europe", pill:"Europe", unit:"trains",
     data:"data/eu-trains.json", geo:"data/eu-geo.json",
-    minorPxPerDeg:120,
+    minorPxPerDeg:120, borders:true,
     classes:{
       ice:       {label:"ICE / TGV / Eurostar — high-speed", key:["ICE","high-speed"],
                   role:"ice",   size:0.46, secs:600, trail:6, ring:1.00},
@@ -337,35 +337,47 @@ const NETWORKS = {
                   role:"night", size:0.44, secs:600, trail:6, ring:1.00},
     },
     views:{ eu: {label:"Europe",
-      core:{lon0:2.40, lon1:15.40, lat0:45.60, lat1:55.30},
-      maxv:{lon0:0.60, lon1:18.40, lat0:44.20, lat1:56.40},
-      clock:{lat:55.02, lon:8.60}, key:{lat:47.00, lon:13.70}} },
+      core:{lon0:-5.10, lon1:15.40, lat0:42.30, lat1:55.30},
+      maxv:{lon0:-7.00, lon1:18.40, lat0:41.00, lat1:56.60},
+      clock:{lat:54.90, lon:6.20}, key:{lat:47.00, lon:13.90}} },
     cities:[
       ["Berlin",52.5251,13.3694,1],      ["Hamburg",53.5528,10.0067,1],
       ["München",48.1402,11.5600,1],     ["Köln",50.9430,6.9587,1,1],
       ["Frankfurt",50.1071,8.6638,1],    ["Amsterdam",52.3789,4.9003,1,1],
       ["Brussel",50.8360,4.3355,1,1],    ["Zürich",47.3782,8.5403,1],
-      ["Stuttgart",48.7838,9.1817,0],    ["Hannover",52.3766,9.7411,0],
-      ["Leipzig",51.3453,12.3814,0],     ["Dresden",51.0403,13.7323,0],
-      ["Nürnberg",49.4455,11.0821,0],    ["Bremen",53.0834,8.8137,0],
+      ["Paris",48.8767,2.3585,1,1],      ["Lyon",45.7602,4.8595,1,1],
+      ["Marseille",43.3027,5.3804,0],    ["Bordeaux",44.8262,-0.5561,0,1],
+      ["Toulouse",43.6114,1.4536,0],     ["Nantes",47.2172,-1.5423,0,1],
+      ["Strasbourg",48.5850,7.7345,0],   ["Stuttgart",48.7838,9.1817,0],
+      ["Hannover",52.3766,9.7411,0],     ["Leipzig",51.3453,12.3814,0],
+      ["Dresden",51.0403,13.7323,0],     ["Nürnberg",49.4455,11.0821,0],
       ["Basel",47.5476,7.5896,0],        ["Bern",46.9490,7.4396,0,1],
       ["Genève",46.2102,6.1424,0,1],     ["Rotterdam",51.9249,4.4699,0,1],
       ["Antwerpen",51.2172,4.4210,0,1],  ["Luxembourg",49.6000,6.1342,0],
-      ["Praha",50.0830,14.4356,0],       ["Wien",48.1851,16.3785,0],
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
-      d.weekday + " across Germany, the Benelux and Switzerland — one map, " +
-      "one timetable, " + dateStr(d) + ".",
-    note: "Four national feeds on a single service date, so a EuroCity from " +
-      "Zürich to Hamburg is one dot for its whole run instead of stopping " +
-      "at the border.",
+      d.weekday + " across Germany, the Benelux, Switzerland and France — " +
+      "borders drawn, but not stopped at. " + dateStr(d) + " for all but " +
+      "the French layer, which is a 2025 timetable.",
+    note: "Five countries on one map, so a EuroCity from Zürich to Hamburg " +
+      "is one dot for its whole run instead of stopping at the border. " +
+      "France is drawn from an older timetable than the rest — see the data " +
+      "notes.",
     caveats: "Four sources merged on the one Wednesday they all cover: the " +
       "German DELFI dataset, OVapi/NDOV with SNCB and the Luxembourg feed " +
       "for the Benelux, the Swiss SKI+/SBB aggregate, and Eurostar's own " +
       "feed for the Paris and London legs. The shared date is what makes " +
       "the map honest — DELFI runs out on 13 June 2026 and Luxembourg's " +
       "feed starts on 6 May, so 10 June is the only window all four agree " +
-      "on. International trains are published by both countries they run " +
+      "on. France is the one exception and cannot be otherwise: the newest " +
+      "openly mirrored SNCF timetable is from early 2025, with no overlap " +
+      "at all with the 2026 windows of the others, so its trains run on " +
+      "their own Wednesday, 5 February 2025, beside everyone else's June " +
+      "2026. Two weekday timetables a year apart differ in detail, not in " +
+      "character — but if you are counting French trains rather than " +
+      "watching them, use the France map and read its notes. Transilien is " +
+      "missing there too, so Paris shows only its long-distance and TER " +
+      "traffic. International trains are published by both countries they run " +
       "through, so long-distance services are deduplicated on line, " +
       "departure minute and origin, keeping whichever copy carries more " +
       "stops; regional names like “S1” repeat across borders and are never " +
@@ -663,7 +675,7 @@ const NETWORKS = {
   fr: {
     label:"France", pill:"FR", unit:"trains",
     data:"data/fr-trains.json", geo:"data/fr-geo.json",
-    minorPxPerDeg:90,
+    minorPxPerDeg:90, borders:true,
     /* French rail stops for a few hours; only the night trains cross it. */
     ffwdBelow:25, ffwdBoost:5,
     classes:{
@@ -1312,8 +1324,12 @@ function renderBase(){
     b.strokeStyle = rgba(pick("landLine"), 0.9);
     b.lineWidth = 0.8 * mz;
     b.stroke(pathStates);
-    b.strokeStyle = rgba(pick("landEdge"), 0.85);
-    b.lineWidth = 1.1 * mz;
+    /* On a map that spans several countries the national borders are worth
+       reading -- they are what the trains are crossing -- so the outline
+       layer gets a touch more ink there than on a single-country map. */
+    const multi = !!NET.borders;
+    b.strokeStyle = rgba(pick("landEdge"), multi ? 1 : 0.85);
+    b.lineWidth = (multi ? 1.5 : 1.1) * mz;
     b.stroke(pathLand);
   }
   const cSt = pick("station"), cHub = pick("hub");
@@ -1740,12 +1756,46 @@ async function switchNetwork(id, viewId){
     simSec = 0;                        /* every day starts at midnight */
     lastMinute = -1;
     resize();
+    if (data.defer) loadDeferred(id, data);
   } catch (e){
     document.getElementById("legend-note").textContent =
       "Could not load " + NET.data + " — " + e.message +
       ". This page fetches its data, so it needs http(s), not file://.";
   }
   loading.hidden = true;
+}
+
+/* The biggest map ships in two pieces: the long-distance spine paints at
+   once, the regional bulk -- twenty times the trains, most of the bytes --
+   follows and is merged in. Nothing is left out; the small trains simply
+   arrive a second later, which is the difference between a map that is
+   there and a map you wait for. */
+async function loadDeferred(id, core){
+  let extra;
+  try {
+    extra = await fetchJSON(NET.data.replace(/[^/]+$/, core.defer));
+  } catch (e){ return; }             /* the core map stands on its own */
+  if (NETID !== id || DATA !== core) return;
+
+  /* The second file's station and shape indices already continue where the
+     core's stop, so merging really is two concatenations -- offsetting them
+     here again would send every regional train off the end of the list. */
+  if (extra.shapes) core.shapes = (core.shapes || []).concat(extra.shapes);
+  core.stations = core.stations.concat(extra.stations);
+  /* applyData converted the core's times once and marked the object; these
+     rows have not been through that, so convert them here rather than
+     letting a second pass double the whole dataset. */
+  const toSec = core.__secs && extra.tunit === "min";
+  if (toSec) for (const t of extra.trips)
+    for (const s of t.s){ s[1] *= 60; s[2] *= 60; }
+  core.trips = core.trips.concat(extra.trips);
+  core.counts = Object.assign({}, core.countsAll || core.counts);
+  delete core.defer;
+  delete core.__shapes;              /* shape list grew; decode it again */
+
+  applyData(core, GEO);
+  resize();
+  lastMinute = -1;
 }
 
 window.addEventListener("hashchange", () => {

@@ -79,6 +79,16 @@ def read_source(ns, path, kind, date, stops, trips):
                     or r.get("route_long_name") or "").strip()
         elif kind == "ch":
             cls, name = classify_ch(r)
+        elif kind.startswith("fr_"):
+            # The French feeds are already split by service type, so which
+            # file a route came from is its class. Night trains hide among
+            # the Intercités under plain line numbers and are promoted later
+            # by the hours they keep.
+            cls = {"fr_ter": "regional", "fr_tgv": "ice",
+                   "fr_ic": "intercity"}[kind] if r.get("route_type") == "2" \
+                else None
+            name = (r.get("route_short_name")
+                    or r.get("route_long_name") or "").strip()
         else:
             cls, name = classify_es(r)
         if cls:
@@ -148,6 +158,10 @@ def main():
                     help="OVapi, SNCB, Luxembourg, European Sleeper")
     ap.add_argument("--ch", required=True, help="Swiss SKI+/SBB feed")
     ap.add_argument("--es", help="Eurostar international feed")
+    ap.add_argument("--fr", nargs=3, metavar=("TER", "TGV", "IC"),
+                    help="SNCF's three feeds; they carry a 2025 timetable "
+                         "and so need their own date")
+    ap.add_argument("--fr-date", help="service date for the French feeds")
     ap.add_argument("-o", "--out", default="data/eu-trains.json")
     ap.add_argument("--note", default="")
     ap.add_argument("--bbox", default="2.0,45.5,16.2,55.6")
@@ -167,6 +181,12 @@ def main():
     read_source("c:", args.ch, "ch", args.date, stops, trips)
     if args.es:
         read_source("e:", args.es, "es", args.date, stops, trips)
+    if args.fr:
+        if not args.fr_date:
+            sys.exit("--fr needs --fr-date: the SNCF mirrors are a 2025 feed")
+        for ns, path, kind in zip(("f0:", "f1:", "f2:"), args.fr,
+                                  ("fr_ter", "fr_tgv", "fr_ic")):
+            read_source(ns, path, kind, args.fr_date, stops, trips)
     print(f"candidate trips: {len(trips)}, stops: {len(stops)}")
 
     kept = []
@@ -240,7 +260,13 @@ def main():
                 seq[i][1] = seq[i-1][2]
             if seq[i][2] < seq[i][1]:
                 seq[i][2] = seq[i][1]
-        rec = {"c": CLASSES.index(t["cls"]), "n": t["name"],
+        cls = t["cls"]
+        # An Intercités still rolling at two in the morning is a night train,
+        # whatever its line number says.
+        if t["src"].startswith("fr_") and cls == "intercity" \
+           and st[0][3] <= 26*3600 <= st[-1][2]:
+            cls = "night"
+        rec = {"c": CLASSES.index(cls), "n": t["name"],
                "h": t["head"], "s": seq}
         if t["shape"] in tracks:
             ck = (t["shape"], tuple(s for _, s, _, _ in st))
@@ -263,7 +289,8 @@ def main():
     doc = {"tunit": "min", "date": d.isoformat(), "weekday": d.strftime("%A"),
            "classes": CLASSES, "counts": counts,
            "source": "DELFI e.V.; OVapi/NDOV, SNCB/NMBS, Luxembourg, European "
-                     "Sleeper; SKI+/SBB" + ("; Eurostar" if args.es else ""),
+                     "Sleeper; SKI+/SBB" + ("; Eurostar" if args.es else "")
+                     + ("; SNCF (TER, TGV, Intercités)" if args.fr else ""),
            "note": args.note, "stations": stations, "trips": out_trips}
     if out_shapes:
         doc["shapes"] = out_shapes
