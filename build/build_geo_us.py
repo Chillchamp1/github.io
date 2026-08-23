@@ -52,7 +52,9 @@ for g in topo["objects"]["states"]["geometries"]:
             lons = [p[0] for p in pts]; lats = [p[1] for p in pts]
             if max(lons)-min(lons) + max(lats)-min(lats) < 0.05:
                 continue                      # offshore islet
-            rings.append([[round(x, 3), round(y, 3)] for x, y in pts])
+            # Four decimals (~11 m), matching the other basemaps: at three
+            # the coastline visibly staircases once the map is zoomed in.
+            rings.append([[round(x, 4), round(y, 4)] for x, y in pts])
 
 doc = {"outline": rings, "states": rings}
 with open(args.out, "w") as f:

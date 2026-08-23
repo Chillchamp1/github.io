@@ -69,6 +69,17 @@ the nearest station is far enough away that it never covers the network. Giving
 it open water rather than a reserved band hands the whole stage to the map.
 
 Hover a train for its line and destination. Space bar toggles playback.
+**The map zooms**: mouse wheel or double-click on desktop, two fingers on a
+phone — one finger still scrolls the page down to the legend, so the map
+never traps the scroll. Drag with the mouse to pan; the button in the
+controls shows how far in you are and takes you back out. Because every
+coordinate is stored in lon/lat and re-projected, zooming reveals real
+detail rather than magnifying pixels: minor city labels appear as the scale
+passes each network's threshold, and the coastline and station dots thicken
+so the map does not turn to thread. The limit is the source data, not the
+renderer — the German feed's own route geometry is coarse enough that
+simplifying it to 50 m instead of 200 m costs only 10 kB, so past roughly
+20× the polylines, not the drawing, are what you see.
 The Glow button adds an optional bloom around the trains — off by default,
 with diameter (⌀) and intensity (☀) sliders; starting values follow the
 zoom, bigger for city frames than for national ones. The glow lives on a
