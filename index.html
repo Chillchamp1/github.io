@@ -1976,6 +1976,31 @@ function frame(now){
     rs.setProperty("--"+role, css(pick(role)));
 }
 
+/* A small, deliberate control surface for the video exporter: a scripted
+   camera needs to place the frame exactly, which pretending to be a mouse
+   cannot do. Nothing in the page uses it, and the page behaves identically
+   whether or not anything ever calls it. */
+window.railCam = {
+  ready: () => !!(DATA && BASEVIEW),
+  net: (id, viewId) => switchNetwork(id, viewId),
+  deferredLoaded: () => !!(DATA && !DATA.defer),
+  /* How wide this network's own frame is. A scripted camera needs it: no
+     network zooms out past its preset, so a span wider than this one is not
+     a frame the page will ever show. */
+  baseSpan: () => BASEVIEW ? BASEVIEW.lon1 - BASEVIEW.lon0 : 0,
+  /* Centre and width in degrees of longitude; span 0 means the preset.
+     This is the same path a pinch takes, so a scripted frame and a
+     hand-made one cannot drift apart. */
+  camera(lonC, latC, spanLon){
+    if (!BASEVIEW) return;
+    if (spanLon) setUserView(lonC, latC, spanLon); else resetView();
+  },
+  time(sec){ simSec = sec; lastMinute = -1; },
+  play(on){ playing = on; playBtn.setAttribute("aria-pressed", String(on));
+            playBtn.textContent = on ? "Pause" : "Play"; },
+  frame(){ draw(); },
+};
+
 new ResizeObserver(resize).observe(stage);
 new ResizeObserver(sizeProfile).observe(document.getElementById("profile"));
 switchNetwork(NETID, VIEWID);
