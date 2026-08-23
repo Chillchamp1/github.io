@@ -97,7 +97,9 @@ function ffmpeg(){
     let mult = 1;
     if (WARP > 0){
       const n = await page.$eval("#running", el => parseInt(el.textContent) || 0);
-      if (n < WARP) mult = 5;
+      /* Mirrors the page: gentle through the thinning shoulders, three times
+         that where the map is empty and there is nothing to watch. */
+      if (n < WARP) mult = n === 0 ? 15 : 5;
     }
     simT += STEP * mult;
     if (frames % 100 === 0){
