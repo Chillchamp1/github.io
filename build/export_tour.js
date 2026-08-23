@@ -47,7 +47,8 @@ const FRESH  = argv.includes("--fresh");
 
 /* The route. Each key is [video second, clock "HH:MM", lon, lat, span in
    degrees of longitude]. span 0 means the network's own full frame.
-   Time is deliberately uneven: five morning hours get half the film. */
+   Time is deliberately uneven -- five morning hours get half the film --
+   but it never stops; see CLOCK below. */
 const KEYS = [
   [  0, "00:00",  4.9, 48.8, 0    ],   /* the whole picture, empty night   */
   [  7, "03:00",  4.9, 48.8, 0    ],
@@ -78,13 +79,44 @@ const hhmm = s => { const [h, m] = s.split(":").map(Number); return h*3600 + m*6
 /* Ease so the camera never starts or stops with a jerk. */
 const ease = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2;
 
+/* The clock is its own channel and must not be eased. Easing is what makes
+   the camera read as a camera, but its slope is zero at every key, so an
+   eased clock stops the day dead seventeen times and starts it again --
+   time visibly stalling whenever the flight settles. A monotone cubic
+   (Fritsch-Carlson) through the same keys fixes that: the rate is
+   continuous, it never overshoots, and where the timetable only runs
+   forward it never reaches zero. The morning still gets half the film; the
+   clock simply keeps going while it does. */
+const CLOCK = (() => {
+  const x = KEYS.map(k => k[0]), y = KEYS.map(k => hhmm(k[1])), n = x.length;
+  const h = [], d = [];
+  for (let i = 0; i < n-1; i++){ h.push(x[i+1]-x[i]); d.push((y[i+1]-y[i])/h[i]); }
+  const m = new Array(n);
+  m[0] = d[0]; m[n-1] = d[n-2];
+  for (let i = 1; i < n-1; i++){
+    if (d[i-1]*d[i] <= 0){ m[i] = 0; continue; }
+    /* Weighted harmonic mean of the neighbouring rates: a short segment
+       cannot drag a long one's speed around. */
+    const w1 = 2*h[i] + h[i-1], w2 = h[i] + 2*h[i-1];
+    m[i] = (w1 + w2) / (w1/d[i-1] + w2/d[i]);
+  }
+  return tv => {
+    if (tv <= x[0]) return y[0];
+    if (tv >= x[n-1]) return y[n-1];
+    let i = 0; while (i < n-2 && tv >= x[i+1]) i++;
+    const t = (tv - x[i]) / h[i], t2 = t*t, t3 = t2*t;
+    return (2*t3 - 3*t2 + 1)*y[i] + (t3 - 2*t2 + t)*h[i]*m[i]
+         + (-2*t3 + 3*t2)*y[i+1] + (t3 - t2)*h[i]*m[i+1];
+  };
+})();
+
 function at(tv){
   let i = 0;
   while (i < KEYS.length - 2 && tv >= KEYS[i+1][0]) i++;
   const a = KEYS[i], b = KEYS[i+1];
   const raw = (tv - a[0]) / (b[0] - a[0]);
   const f = ease(Math.max(0, Math.min(1, raw)));
-  const sec = hhmm(a[1]) + (hhmm(b[1]) - hhmm(a[1])) * f;
+  const sec = CLOCK(tv);
   /* Zoom reads evenly only if it is interpolated multiplicatively; a
      "whole frame" key borrows its partner's span so the flight in and out
      stays smooth instead of snapping. */

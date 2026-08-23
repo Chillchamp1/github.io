@@ -395,9 +395,14 @@ node build/export_tour.js --url http://localhost:8000/index.html \
 ```
 
 The route is the `KEYS` table at the top of the file: `[video second, clock
-time, longitude, latitude, span in degrees]`, eased between keys, with the
-span interpolated multiplicatively so flying in reads as evenly as flying
-out. A span of `0` means the network's own full frame. The Berlin close-up is
+time, longitude, latitude, span in degrees]`. The camera eases in and out of
+every key, and its span is interpolated multiplicatively so flying in reads
+as evenly as flying out; a span of `0` means the network's own full frame.
+The clock is deliberately *not* eased -- an ease has zero slope at each key,
+so an eased clock would stop the day dead every time the flight settled. It
+runs on a monotone cubic through the same keys instead, which keeps the rate
+continuous without ever letting it reach zero: the morning still gets half
+the film, but time never stalls. The Berlin close-up is
 rendered a second time against `#berlin` with the identical camera and clock
 and cross-faded on by ffmpeg, which is why the legend changes to the city's
 categories as it appears. The camera is driven through `window.railCam`, a
