@@ -109,6 +109,9 @@ the ground: **Germany, the Benelux, Switzerland and France**, 68,377 trains,
 from national feeds merged onto one map. A EuroCity from
 Zürich to Hamburg is one dot for its whole run instead of stopping where
 one country's data ends.
+The national outlines are drawn a shade brighter than on the single-country
+maps -- enough to read where you are, not enough to argue with the trains,
+which is the whole point of the page.
 
 The shared date is what makes it honest. DELFI runs out on 13 June 2026 and
 the Luxembourg feed starts on 6 May, so **Wednesday 10 June 2026** is the
@@ -378,6 +381,31 @@ draw. `--start HH:MM` picks the clock time the day opens on; omit it to start
 where the page does, at the quietest minute of the night. Needs playwright and
 ffmpeg (`pip install imageio-ffmpeg` supplies one).
 
+The landscape tour is a second exporter. Where `export_video.js` holds one
+frame still for a whole day, `export_tour.js` moves: a scripted camera flies
+over France, the Benelux, Switzerland and Germany while the clock runs,
+lingering on the morning hours when the network fills up, and closes in on
+Berlin -- where the city's own map, the S-Bahn, U-Bahn and trams the national
+feeds leave out, fades in over the top.
+
+```sh
+python3 -m http.server 8000 &
+node build/export_tour.js --url http://localhost:8000/index.html \
+     --out rail-tour.mp4
+```
+
+The route is the `KEYS` table at the top of the file: `[video second, clock
+time, longitude, latitude, span in degrees]`, eased between keys, with the
+span interpolated multiplicatively so flying in reads as evenly as flying
+out. A span of `0` means the network's own full frame. The Berlin close-up is
+rendered a second time against `#berlin` with the identical camera and clock
+and cross-faded on by ffmpeg, which is why the legend changes to the city's
+categories as it appears. The camera is driven through `window.railCam`, a
+hook the page exposes for this: synthesised wheel events cannot place a frame
+precisely enough to interpolate.
+Frames are kept under `--frames` and reused if they are already there, so
+retouching one pass costs minutes rather than half an hour.
+
 The basemap only needs rebuilding if you change the geometry:
 
 ```sh
@@ -394,6 +422,7 @@ build/build_gtfs.py   GTFS feed(s) -> JSON, merged onto one service date
 build/build_geo.py    GeoJSON -> compact rings
 build/bundle.py       both JSON files -> inlined into index.html
 build/export_video.js index.html -> portrait MP4
+build/export_tour.js  index.html -> landscape flyover MP4
 ```
 
 ## Colour and rendering
