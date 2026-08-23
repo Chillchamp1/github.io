@@ -1,15 +1,14 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: ten networks, from a cross-border map of three countries
+open timetables: ten networks, from a cross-border map of five countries
 down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-The landing map is the combined one — Germany, the Benelux and Switzerland
-on a single timetable, where trains cross borders instead of stopping at
-them. The ten networks live in one
+The landing map is the combined one — Germany, the Benelux, Switzerland and
+France, where trains cross borders instead of stopping at them. The ten networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
 `#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
@@ -106,8 +105,8 @@ midnight still stay in their own categories.
 ## The combined map
 
 `#eu` is the landing page and the only one where a border is just a line on
-the ground: **Germany, the Benelux and Switzerland on one Wednesday**, from
-four national feeds merged onto a single service date. A EuroCity from
+the ground: **Germany, the Benelux, Switzerland and France**, 68,377 trains,
+from national feeds merged onto one map. A EuroCity from
 Zürich to Hamburg is one dot for its whole run instead of stopping where
 one country's data ends.
 
@@ -127,11 +126,22 @@ Hamburg-Altona appeared once with 20 stops and once with 19 — which is why
 the match is deliberately loose. Regional names repeat across borders ("S1"
 runs in half of Europe) and are never merged.
 
-It is the heaviest map here by some way: 58,000 trains, ~3,500 moving at
-once in the morning peak, 3.6 MB gzipped. That is the honest price of three
-countries at full detail — dropping the German route geometry would save
-only 0.28 MB of it. For the fullest version of any one country, its own map
-is still there.
+France is the one date that could not be reconciled: the newest openly
+mirrored SNCF timetable is from early 2025 and has no overlap at all with
+the 2026 windows of the others, so its trains run on their own Wednesday
+beside everyone else's. Two weekday timetables a year apart differ in
+detail, not in character — but the page says so in the meta line, the
+legend and the data notes.
+
+**It starts light.** The full map is 68,377 trains and 4.1 MB gzipped, most
+of it regional services. Waiting for all of that before the first frame is
+the wrong trade, so `build/split_layers.py` cuts the dataset in two: the
+long-distance spine — 7,012 trains, **381 kB** — paints immediately, and the
+61,365 regional services are fetched afterwards and merged in. Nothing is
+dropped; the small trains simply arrive a moment later. First paint is
+eleven times lighter than it was.
+
+For the fullest version of any one country, its own map is still there.
 
 ## The US page
 
