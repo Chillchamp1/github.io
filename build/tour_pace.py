@@ -82,8 +82,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("timeline")
     ap.add_argument("data", nargs="+")
-    ap.add_argument("--alpha", type=float,
-                    help="0 measures only; 1 flattens the film to one speed")
+    ap.add_argument("--alpha", type=float, nargs="*", default=None,
+                    help="0 measures only; 1 flattens the film to one speed. "
+                         "Several values compare them; the last is printed "
+                         "as a clock column.")
     ap.add_argument("--keys", type=float, nargs="*", default=[],
                     help="video seconds to print a proposed clock time for")
     args = ap.parse_args()
@@ -106,36 +108,43 @@ def main():
     for k, p, n in rows[::8]:
         print(f"  {k['t']:>6.1f}s  {hm(k['sec'])}  span {k['span'] or 24.8:>6.2f}  "
               f"{k['rate']/60:>5.1f} min/s  {p:>6.1f} px/s  {n:>5} trains")
-    if args.alpha is None:
+    if not args.alpha:
         return
 
     # Apparent speed is linear in the clock rate, so this is the rate that
     # would hit `target` exactly, damped by alpha and renormalised so the
     # film still covers one whole day.
     dt = rows[1][0]["t"] - rows[0][0]["t"]
-    w = [k["rate"] / p ** args.alpha for k, p, _ in rows]
     day = 24 * 3600 - 60
-    scale = day / sum(x * dt for x in w)
-    rate = [x * scale for x in w]
-    newpx = [rows[i][1] * rate[i] / rows[i][0]["rate"] for i in range(len(rows))]
-    print(f"\nat alpha {args.alpha}: median {min(newpx):.1f} to {max(newpx):.1f} "
-          f"px/s, a {max(newpx)/min(newpx):.0f}x spread")
-
-    clock, at_t = 0.0, {}
-    for i, (k, _, _) in enumerate(rows):
-        at_t[round(k["t"], 3)] = clock
-        clock += rate[i] * dt
-    for k, p, n in rows[::8]:
-        i = rows.index((k, p, n))
-        print(f"  {k['t']:>6.1f}s  {hm(at_t[round(k['t'],3)])}  "
-              f"span {k['span'] or 24.8:>6.2f}  {rate[i]/60:>5.1f} min/s  "
-              f"{newpx[i]:>6.1f} px/s")
-    if args.keys:
-        print("\nclock column for KEYS:")
-        for t in args.keys:
-            near = min(at_t, key=lambda x: abs(x - t))
-            print(f'  [{t:>3.0f}, "{hm(at_t[near])}", ...]')
-        print(f'  film ends at {hm(clock)}')
+    for alpha in args.alpha:
+        w = [k["rate"] / p ** alpha for k, p, _ in rows]
+        scale = day / sum(x * dt for x in w)
+        rate = [x * scale for x in w]
+        newpx = [rows[i][1] * rate[i] / rows[i][0]["rate"]
+                 for i in range(len(rows))]
+        clock, at_t = 0.0, {}
+        for i, (k, _, _) in enumerate(rows):
+            at_t[round(k["t"], 3)] = clock
+            clock += rate[i] * dt
+        print(f"\nalpha {alpha}: median {min(newpx):.1f} to {max(newpx):.1f} "
+              f"px/s, a {max(newpx)/min(newpx):.0f}x spread")
+        if alpha != args.alpha[-1]:
+            for t in args.keys:
+                near = min(at_t, key=lambda x: abs(x - t))
+                print(f"    {t:>5.0f}s -> {hm(at_t[near])}", end="")
+            print()
+            continue
+        for i in range(0, len(rows), 8):
+            k = rows[i][0]
+            print(f"  {k['t']:>6.1f}s  {hm(at_t[round(k['t'],3)])}  "
+                  f"span {k['span'] or 24.8:>6.2f}  {rate[i]/60:>5.1f} min/s  "
+                  f"{newpx[i]:>6.1f} px/s")
+        if args.keys:
+            print("\nclock column for KEYS:")
+            for t in args.keys:
+                near = min(at_t, key=lambda x: abs(x - t))
+                print(f'  [{t:>3.0f}, "{hm(at_t[near])}", ...]')
+            print(f"  film ends at {hm(clock)}")
 
 
 if __name__ == "__main__":
