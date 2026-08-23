@@ -1,16 +1,17 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: eight networks, from whole countries down to single
-cities. Every dot is a scheduled train. The map is dark at every hour, so
-the trains are the only bright thing on it.
+open timetables: nine networks, from a cross-border map of three countries
+down to single cities. Every dot is a scheduled train. The map is dark at
+every hour, so the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-The eight networks — Germany, the Benelux, the USA, Greater Tokyo, Berlin,
-New York, Switzerland and London — live in one
+The landing map is the combined one — Germany, the Benelux and Switzerland
+on a single timetable, where trains cross borders instead of stopping at
+them. The nine networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
-fragment: `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
+fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
 `#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
@@ -101,6 +102,36 @@ found 13 of the 54 and left the other 41 drawn as orange intercity trains. The
 builder now reads any N-suffixed line as a night service, scoped to route_type
 102, where every one of them is. Ordinary ICE/IC services finishing after
 midnight still stay in their own categories.
+
+## The combined map
+
+`#eu` is the landing page and the only one where a border is just a line on
+the ground: **Germany, the Benelux and Switzerland on one Wednesday**, from
+four national feeds merged onto a single service date. A EuroCity from
+Zürich to Hamburg is one dot for its whole run instead of stopping where
+one country's data ends.
+
+The shared date is what makes it honest. DELFI runs out on 13 June 2026 and
+the Luxembourg feed starts on 6 May, so **Wednesday 10 June 2026** is the
+one window all four sources agree on — no mixing of timetables from
+different weeks. `build/build_eu.py` folds the three national class schemes
+into five (high-speed, intercity, regional including S-Bahn, Swiss rack and
+panorama, night) and adds Eurostar's own feed for the Paris and London legs
+the national datasets do not carry.
+
+International trains are published by *both* countries they run through, so
+long-distance services are deduplicated: same class, same line name, same
+destination, departure within twenty minutes, keeping whichever copy lists
+more stops. The two copies rarely agree exactly — an ICE 43 to
+Hamburg-Altona appeared once with 20 stops and once with 19 — which is why
+the match is deliberately loose. Regional names repeat across borders ("S1"
+runs in half of Europe) and are never merged.
+
+It is the heaviest map here by some way: 58,000 trains, ~3,500 moving at
+once in the morning peak, 3.6 MB gzipped. That is the honest price of three
+countries at full detail — dropping the German route geometry would save
+only 0.28 MB of it. For the fullest version of any one country, its own map
+is still there.
 
 ## The US page
 
