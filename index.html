@@ -598,6 +598,8 @@ const NETWORKS = {
     label:"Switzerland", pill:"CH", unit:"trains",
     data:"data/ch-trains.json", geo:"data/ch-geo.json",
     minorPxPerDeg:130,
+    /* Swiss trains stop for about three hours after one in the morning. */
+    ffwdBelow:25, ffwdBoost:5,
     classes:{
       ice:      {label:"IC / EC / TGV", key:["IC","EC · TGV"],
                  role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
@@ -645,6 +647,8 @@ const NETWORKS = {
     label:"London", pill:"London", unit:"trains",
     data:"data/london-trains.json", geo:"data/london-geo.json",
     minorPxPerDeg:800,
+    /* The Tube shuts overnight -- nearly four dead hours on a Wednesday. */
+    ffwdBelow:25, ffwdBoost:5,
     classes:{
       dlr:  {label:"DLR", key:["DLR",""],
              role:"ice",  size:0.40, secs:200, trail:3, ring:0.40},
