@@ -48,25 +48,35 @@ const TIMELINE = arg("timeline", null);
 
 /* The route. Each key is [video second, clock "HH:MM", lon, lat, span in
    degrees of longitude]. span 0 means the network's own full frame.
-   Time is deliberately uneven -- five morning hours get half the film --
-   but it never stops; see CLOCK below. */
+
+   The clock times are not hand-chosen. "Too slow" is a judgement about
+   pixels, and a wide shot and a close-up running the same simulated minutes
+   per second look nothing alike: at the whole-Europe frame a 200 km/h train
+   crosses a handful of pixels a second, over Berlin an S-Bahn crosses fifty.
+   Left to itself this route ran from 6 to 237 px/s, a 39x spread, and the
+   wide shots read as a crawl. build/tour_pace.py measures the median pixel
+   speed of the dots along the route and solves for the clock that evens it
+   out; these times are its answer at alpha 0.6, which roughly doubles the
+   slowest stretches and leaves a 4x spread -- enough that a city still feels
+   busier than a continent, not so much that half the film stalls. Time is
+   still deliberately uneven, and it never stops; see CLOCK below. */
 const KEYS = [
   [  0, "00:00",  4.9, 48.8, 0    ],   /* the whole picture, empty night   */
-  [  7, "03:00",  4.9, 48.8, 0    ],
-  [ 15, "05:00",  7.0, 50.0, 12.0 ],   /* leaning in as the day starts     */
-  [ 26, "06:15",  6.4, 50.8,  6.0 ],   /* Rhine-Ruhr and the Randstad      */
-  [ 38, "07:15",  5.2, 51.6,  3.6 ],   /* the densest corner of Europe     */
-  [ 44, "07:45",  6.7, 49.4,  7.5 ],   /* out over the empty Eifel         */
-  [ 50, "08:15",  8.2, 47.3,  3.6 ],   /* south to Switzerland             */
-  [ 56, "08:40",  5.6, 47.6,  9.0 ],   /* out again, over the Jura         */
-  [ 62, "09:00",  3.1, 47.9,  7.0 ],   /* west to the French star          */
-  [ 72, "10:30",  4.9, 48.8, 0    ],   /* back out to everything           */
-  [ 82, "13:00",  4.9, 48.8, 0    ],
-  [ 90, "14:30", 13.40, 52.52, 5.0],   /* the run at Berlin                */
-  [ 99, "15:40", 13.40, 52.52, 1.10],  /* city scale: the overlay begins   */
-  [110, "17:10", 13.40, 52.51, 0.62],  /* rush hour, closest in            */
-  [118, "18:10", 13.40, 52.52, 2.20],  /* pulling back out                 */
-  [126, "20:00",  4.9, 48.8, 0    ],   /* the evening, whole again         */
+  [  7, "03:05",  4.9, 48.8, 0    ],
+  [ 15, "05:12",  7.0, 50.0, 12.0 ],   /* leaning in as the day starts     */
+  [ 26, "06:46",  6.4, 50.8,  6.0 ],   /* Rhine-Ruhr and the Randstad      */
+  [ 38, "07:46",  5.2, 51.6,  3.6 ],   /* the densest corner of Europe     */
+  [ 44, "08:18",  6.7, 49.4,  7.5 ],   /* out over the empty Eifel         */
+  [ 50, "08:53",  8.2, 47.3,  3.6 ],   /* south to Switzerland             */
+  [ 56, "09:26",  5.6, 47.6,  9.0 ],   /* out again, over the Jura         */
+  [ 62, "10:03",  3.1, 47.9,  7.0 ],   /* west to the French star          */
+  [ 72, "12:01",  4.9, 48.8, 0    ],   /* back out to everything           */
+  [ 82, "15:32",  4.9, 48.8, 0    ],
+  [ 90, "17:07", 13.40, 52.52, 5.0],   /* the run at Berlin                */
+  [ 99, "17:42", 13.40, 52.52, 1.10],  /* city scale: the overlay begins   */
+  [110, "18:07", 13.40, 52.51, 0.62],  /* rush hour, closest in            */
+  [118, "18:29", 13.40, 52.52, 2.20],  /* pulling back out                 */
+  [126, "19:52",  4.9, 48.8, 0    ],   /* the evening, whole again         */
   [136, "23:59",  4.9, 48.8, 0    ],
 ];
 /* Where the Berlin layer is wanted, and the longest cross-fade worth using.

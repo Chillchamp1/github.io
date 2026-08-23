@@ -1342,12 +1342,21 @@ function renderBase(){
     b.lineWidth = (multi ? 1.5 : 1.1) * mz;
     b.stroke(pathLand);
   }
+  /* Stations are the substrate, not the subject, so they are sized against
+     the trains rather than against the map. They used to grow with the
+     basemap ink, which is right for a coastline and wrong here: train dots
+     are a fixed size on purpose, so by full zoom a country halt outweighed
+     the ICE passing through it. Now they are a fraction of the largest dot
+     the network draws, and a little more opaque to make up for the size. */
+  const rBig  = DOT_R * Math.max(...DOT_SCALE);
+  const rHub  = Math.min(1.7 * mz, rBig * 0.75);
+  const rStop = Math.min(0.9 * mz, rBig * 0.42);
   const cSt = pick("station"), cHub = pick("hub");
   for (const s of ST){
     if (s.x < -30 || s.x > W+30 || s.y < -30 || s.y > H+30) continue;
     b.beginPath();
-    b.arc(s.x, s.y, (s.hub ? 1.7 : 0.9) * mz, 0, 6.2832);
-    b.fillStyle = rgba(s.hub ? cHub : cSt, s.hub ? 0.85 : 0.5);
+    b.arc(s.x, s.y, s.hub ? rHub : rStop, 0, 6.2832);
+    b.fillStyle = rgba(s.hub ? cHub : cSt, s.hub ? 0.95 : 0.62);
     b.fill();
   }
   baseReady = true;

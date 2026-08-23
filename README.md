@@ -416,8 +416,31 @@ as evenly as flying out; a span of `0` means the network's own full frame.
 The clock is deliberately *not* eased -- an ease has zero slope at each key,
 so an eased clock would stop the day dead every time the flight settled. It
 runs on a monotone cubic through the same keys instead, which keeps the rate
-continuous without ever letting it reach zero: the morning still gets half
-the film, but time never stalls. The Berlin close-up is
+continuous without ever letting it reach zero: time never stalls.
+
+The clock times themselves are measured, not chosen. "Too slow" is a
+judgement about pixels: a wide shot and a close-up can run the same
+simulated minutes per second and look nothing alike, because at the
+whole-Europe frame a 200 km/h train crosses a handful of pixels a second and
+over Berlin an S-Bahn crosses fifty. Left alone this route ran from 6 to 237
+px/s -- a 39x spread -- and the wide stretches read as a crawl.
+
+```sh
+node build/export_tour.js --timeline /tmp/tl.json
+python3 build/tour_pace.py /tmp/tl.json data/eu-trains.json \
+        data/eu-trains-2.json --alpha 0.6 --keys 0 7 15 26 38 44 50 56 62 \
+        72 82 90 99 110 118 126 136
+```
+
+`tour_pace.py` walks the same dataset the film draws, steps it by one video
+second at each point along the route, and reports the median pixel speed of
+the dots inside the frame. Apparent speed is proportional to the clock rate,
+so it can then solve for the clock that evens it out and print the column to
+paste back into `KEYS`. `--alpha 1` flattens the film to one constant speed,
+which turns out to be too much -- a constant speed spends so little clock
+over Berlin that the close-up drifts out of the evening peak entirely.
+**0.6** is what shipped: 10 to 88 px/s, an 8x spread, the slowest stretches
+nearly doubled and a city still visibly busier than a continent. The Berlin close-up is
 rendered a second time against `#berlin` with the identical camera and clock
 and cross-faded on by ffmpeg, which is why the legend changes to the city's
 categories as it appears. The camera is driven through `window.railCam`, a
@@ -443,6 +466,7 @@ build/build_geo.py    GeoJSON -> compact rings
 build/bundle.py       both JSON files -> inlined into index.html
 build/export_video.js index.html -> portrait MP4
 build/export_tour.js  index.html -> landscape flyover MP4
+build/tour_pace.py    measures the flyover's on-screen train speed
 ```
 
 ## Colour and rendering
