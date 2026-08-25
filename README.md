@@ -332,6 +332,49 @@ Trams, Manchester Metrolink and the other British tramways in the same file
 stay out. Basemap: ONS local authority districts for the Greater London
 boroughs, plus the Thames from Natural Earth.
 
+## Rail against air (`vs.html`)
+
+`vs.html` puts Germany's trains and Germany's flights next to each other on
+one screen: the same frame, the same projection, the same city labels, the
+same clock, two panes. The only difference between them is what is moving.
+It is linked from under the legend in the main app, and it is the answer to
+the question the two projects raise as soon as they exist side by side —
+how much rail traffic is there, really, next to all the flying?
+
+At 08:30 on a weekday morning it is **1,635 trains against 261 aircraft**,
+and the aircraft are not all inside the frame.
+
+Three deliberate choices make the comparison mean something:
+
+- **Trails are eight simulated minutes on both maps.** The rail app tunes
+  the trail window per category, because an S-Bahn and an ICE want different
+  lengths; here that would destroy the only measurement the page makes. One
+  window everywhere means the streak behind a jet is four to five times the
+  streak behind an ICE *because that is the speed difference*, and nothing
+  else.
+- **The stationary network is drawn on both.** 7,552 stations against 205
+  airports, visible at 04:00 when almost nothing is moving. That contrast
+  is half the story and it does not depend on the animation at all.
+- **The departure profile shows both days, each normalised to its own
+  peak.** Twelve times as many trains start in a day as flights; on one axis
+  the air series would be a flat line. What is comparable there is the
+  *shape* of the two days, not their height — the ratio is in the live
+  counts.
+
+**The two days are not the same day**, and the page says so in its notes.
+The trains are Wednesday 13 May 2026 from the DELFI timetable; the flights
+are Wednesday 15 January 2020 from OpenSky radar records, because there is
+no open flight schedule for any date and the openly mirrored radar only
+covers early 2020. Both are ordinary mid-week days. Making them the same
+date is not possible with open data, so the page states the gap rather than
+hiding it.
+
+The flight data and its basemap are copied into `data/planes.json` and
+`data/planes-geo.json` from the
+[sibling air project](https://github.com/Chillchamp1/Planes) — 0.76 MB
+together, small enough that a copy beats a runtime dependency on another
+repository's deploy.
+
 ## The data
 
 `data/trains.json` is built from the **official DELFI e.V. GTFS dataset**
@@ -487,6 +530,9 @@ build/bundle.py       both JSON files -> inlined into index.html
 build/export_video.js index.html -> portrait MP4
 build/export_tour.js  index.html -> portrait flyover MP4
 build/tour_pace.py    measures the flyover's on-screen train speed
+vs.html               rail and air side by side on one frame and one clock
+data/planes.json      flight list copied from the sibling air project
+data/planes-geo.json  its basemap (Germany filled, Europe as thin lines)
 ```
 
 ## Colour and rendering
