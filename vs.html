@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rail vs air — one day over Germany</title>
+<meta name="description" content="Germany's trains and Germany's flights over the same 24 hours, on the same map, at the same scale.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Same night palette as the rail and air maps this page puts next to each
+     other, so a reader arriving from either recognises what they are
+     looking at. */
+  :root{
+    --bg-bot:#0a1018;
+    --ink:#e9eff7; --ink-2:#a7b3c4; --ink-3:#78859a;
+    --rule:rgba(39,51,63,0.7); --panel:rgba(13,20,30,0.82);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg-bot);color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-weight:300;overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  .panel{background:var(--panel);border:1px solid var(--rule);border-radius:9px;
+         backdrop-filter:blur(7px)}
+  button{font:inherit;background:none;color:inherit;border:1px solid var(--rule);
+         border-radius:6px;cursor:pointer;padding:5px 11px}
+  button[aria-pressed="true"]{border-color:var(--ink-3);color:var(--ink)}
+  a{color:var(--ink-2)}
+
+  /* ---- the two maps ---------------------------------------------------- */
+  /* Both panes get exactly the same frame, the same basemap and the same
+     city labels. The only difference between them is what is moving, which
+     is the entire point: a dot in one pane and a dot in the other are in
+     the same place, at the same minute, at the same scale. */
+  #stage{position:fixed;left:0;right:0;top:0;bottom:0;display:flex}
+  .pane{position:relative;flex:1 1 0;min-width:0;overflow:hidden}
+  .pane + .pane{border-left:1px solid var(--rule)}
+  .pane canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+  /* Each pane's furniture lives in its own outer top corner -- the left
+     pane's on the left, the right pane's mirrored to the right. The middle
+     of the screen belongs to the clock, and the bottom to the controls the
+     two maps share. */
+  .ptitle{position:absolute;left:14px;top:14px;z-index:3;pointer-events:none}
+  .ptitle b{display:block;font-weight:500;font-size:0.78rem;letter-spacing:0.17em;
+            text-transform:uppercase;color:var(--ink)}
+  .ptitle span{display:block;font-size:0.72rem;color:var(--ink-3);margin-top:2px}
+  .ptitle em{font-style:normal;color:var(--ink-2)}
+  .live{position:absolute;left:14px;top:60px;z-index:3;pointer-events:none;
+        font-family:"IBM Plex Mono",monospace;font-size:1.05rem;color:var(--ink)}
+  .live span{color:var(--ink-3);font-size:0.74rem}
+
+  .pkey{position:absolute;left:14px;top:94px;z-index:3;padding:8px 11px;
+        font-size:0.72rem;min-width:158px}
+  .pkey .lg{display:flex;align-items:center;gap:8px;padding:2px 0}
+  .pkey .sw{width:8px;height:8px;border-radius:50%;flex:none}
+  .pkey .nm{flex:1 1 auto;color:var(--ink-2)}
+  .pkey .n{font-family:"IBM Plex Mono",monospace;font-size:0.74rem;
+           color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+  #pane-air .ptitle, #pane-air .live{left:auto;right:14px;text-align:right}
+  #pane-air .pkey{left:auto;right:14px}
+  #pane-air .pkey .lg{flex-direction:row-reverse}
+  #pane-air .pkey .nm{text-align:right}
+
+  /* ---- shared furniture ------------------------------------------------ */
+  header{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:8;
+         text-align:center;pointer-events:none}
+  #clock{font-family:"IBM Plex Mono",monospace;font-weight:300;font-size:2.4rem;
+         line-height:1;letter-spacing:0.02em;
+         text-shadow:0 2px 22px rgba(0,0,0,0.85)}
+  #sub{font-family:"IBM Plex Mono",monospace;font-size:0.7rem;color:var(--ink-3);
+       margin-top:5px;letter-spacing:0.06em}
+
+  #controls{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
+            z-index:8;display:flex;align-items:center;gap:12px;padding:9px 11px}
+  #profile{position:relative;width:min(46vw,540px);height:42px}
+  #profcv{position:absolute;inset:0;width:100%;height:100%}
+  #scrub{position:absolute;inset:0;width:100%;height:100%;margin:0;
+         -webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
+  #scrub::-webkit-slider-thumb{-webkit-appearance:none;width:3px;height:42px;
+         background:var(--ink);border:none;border-radius:1px}
+  #scrub::-moz-range-thumb{width:3px;height:42px;background:var(--ink);
+         border:none;border-radius:1px}
+  .spd{display:flex;gap:4px}
+  .spd button{padding:4px 8px;font-size:0.74rem}
+
+  #notes{position:fixed;left:14px;bottom:14px;z-index:7;max-width:min(34vw,340px);
+         font-size:0.7rem;color:var(--ink-3);line-height:1.5}
+  #notes summary{cursor:pointer;color:var(--ink-2);list-style:none}
+  #notes summary::-webkit-details-marker{display:none}
+  #notes summary::before{content:"\25B8\00a0";display:inline-block;
+         transition:transform 0.15s}
+  #notes[open] summary::before{transform:rotate(90deg)}
+  #notes div{margin-top:8px;padding:9px 11px}
+  #notes p + p{margin-top:7px}
+
+  #loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;
+           background:var(--bg-bot);color:var(--ink-3);font-size:0.85rem;
+           font-family:"IBM Plex Mono",monospace}
+  #loading[hidden]{display:none}
+
+  /* On a phone the two maps stack instead of squeezing Germany into a
+     180-pixel column. Everything else collapses the same way it does on
+     the sibling maps: nothing sits on the country except the clock. */
+  @media (max-width:820px){
+    #stage{flex-direction:column}
+    .pane + .pane{border-left:none;border-top:1px solid var(--rule)}
+    /* Stacked, the top of the screen is the first map's corner, not spare
+       room -- so the clock moves out of the centre and takes the opposite
+       corner, and the strapline goes away entirely. */
+    header{left:auto;right:10px;top:8px;transform:none;text-align:right}
+    #clock{font-size:1.5rem}
+    #sub{display:none}
+    /* Stacked panes are short, so the per-category counts become one flat
+       line at the foot of each map instead of a block that eats it. */
+    .ptitle{left:10px;top:8px}
+    .ptitle b{font-size:0.62rem}
+    .ptitle span{font-size:0.6rem}
+    .live{left:10px;top:42px;font-size:0.82rem}
+    .live span{font-size:0.6rem}
+    .pkey, #pane-air .pkey{left:10px;right:10px;top:auto;bottom:8px;
+          min-width:0;padding:4px 8px;font-size:0.6rem;
+          display:flex;gap:10px;justify-content:space-between}
+    #pane-air .ptitle, #pane-air .live{left:10px;right:auto;text-align:left}
+    #pane-air .pkey .lg{flex-direction:row}
+    .pkey .nm{display:none}
+    .pkey .lg{gap:5px;padding:0}
+    .pkey .sw{width:6px;height:6px}
+    .pkey .n{font-size:0.6rem}
+    /* The bottom pane's strip has to clear the shared controls. */
+    #pane-air .pkey{bottom:62px}
+    #notes{display:none}
+    #controls{left:10px;right:10px;bottom:10px;transform:none;gap:8px;padding:6px 8px}
+    #profile{flex:1 1 auto;width:auto;height:34px}
+    #scrub::-webkit-slider-thumb{height:34px}
+    #scrub::-moz-range-thumb{height:34px}
+    #controls button{padding:4px 8px;font-size:0.72rem}
+    .spd button{padding:4px 6px;font-size:0.68rem}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <section class="pane" id="pane-rail">
+    <canvas></canvas>
+    <div class="ptitle"><b>Rail</b><span><em>27,757 trains</em> · Wed 13 May 2026</span></div>
+    <div class="live">—<span> running</span></div>
+    <div class="pkey panel"></div>
+  </section>
+  <section class="pane" id="pane-air">
+    <canvas></canvas>
+    <div class="ptitle"><b>Air</b><span><em>2,312 flights</em> · Wed 15 Jan 2020</span></div>
+    <div class="live">—<span> airborne</span></div>
+    <div class="pkey panel"></div>
+  </section>
+</div>
+
+<header>
+  <div id="clock">--:--</div>
+  <div id="sub">ONE WEDNESDAY, THE SAME MAP, THE SAME HOUR</div>
+</header>
+
+<div id="controls" class="panel">
+  <button id="play" aria-pressed="true">Pause</button>
+  <div id="profile">
+    <canvas id="profcv"></canvas>
+    <input id="scrub" type="range" min="0" max="86399" step="60" value="0"
+           aria-label="Time of day. The strip behind shows departures per quarter hour on both maps.">
+  </div>
+  <div class="spd" role="group" aria-label="Playback speed">
+    <button data-mps="4">1&times;</button>
+    <button data-mps="8">2&times;</button>
+    <button data-mps="16" aria-pressed="true">4&times;</button>
+  </div>
+</div>
+
+<details id="notes">
+  <summary>What you are comparing</summary>
+  <div class="panel">
+    <p><strong>The two days are not the same day.</strong> The trains are
+    Wednesday 13 May 2026, from the official DELFI timetable. The flights are
+    Wednesday 15 January 2020, from OpenSky radar records — there is no open
+    flight schedule for any date, and the openly mirrored radar only covers
+    early 2020. Both are ordinary mid-week days; neither is the other's date.</p>
+    <p><strong>Trails are eight simulated minutes on both maps</strong>, so
+    their lengths are directly comparable — the streak behind a jet is four
+    to five times the streak behind an ICE because that is the speed
+    difference. Same frame, same projection, same clock.</p>
+    <p>Trains follow the route geometry in the feed; flights are drawn
+    great-circle-straight between airports, which is all the radar flight
+    list carries. Rail counts scheduled long-distance and regional services
+    and excludes urban transit; air counts every flight that touched a German
+    airport, so a plane leaving the frame is still airborne and still
+    counted.</p>
+    <p><a href="./#de">The rail map</a> ·
+       <a href="https://chillchamp1.github.io/Planes/">the air map</a></p>
+  </div>
+</details>
+
+<div id="loading">Loading two timetables</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ====================================================================== */
+const PAL = {
+  bgTop:"#05080e", bgBot:"#0a1018",
+  land:"#121a26", landLine:"#1d2735", landEdge:"#35435a",
+  ink:"#e9eff7", ink2:"#a7b3c4", ink3:"#78859a",
+  station:"#2b3849", hub:"#46586f",
+  ice:"#5aa9ff", ic:"#ff7a45", reg:"#35d69a", night:"#ffd93d",
+};
+const hex2rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16),
+                      parseInt(h.slice(5,7),16)];
+const RGB = {}; for (const k in PAL) RGB[k] = hex2rgb(PAL[k]);
+const pick = r => RGB[r];
+const css  = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+const rgba = (c,a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+const DAY = 86400;
+
+/* One trail window for both maps. On the rail map alone the window is set
+   per category, because an S-Bahn and an ICE want different lengths; here
+   that would destroy the only measurement this page makes. Eight minutes
+   everywhere means a streak is speed and nothing else. */
+const TRAIL_SEC = 8 * 60, TRAIL_STEPS = 6;
+const DOT_R = 1.7;
+
+/* The frame, shared by both panes: centred on Germany's own centre point,
+   Europe hinted at the edges. A tall pane caps the latitude span and
+   narrows instead of stretching north; it never narrows past MINW, which is
+   the country plus a margin. */
+const CORE = {lon0:2.0, lon1:19.0, lat0:44.8, lat1:57.6};
+const MAX_LAT = 17.0;
+const MINW = 11.7;
+
+/* Labels are drawn identically on both maps -- they belong to the frame,
+   not to the traffic. Majors are the German cities the rail map names;
+   the minors are there because on the air map they are where the aircraft
+   are going. */
+const CITIES = [
+  ["Hamburg",53.553,10.006,1], ["Berlin",52.525,13.369,1],
+  ["Bremen",53.083,8.814,0],   ["Hannover",52.377,9.741,0],
+  ["Düsseldorf",51.220,6.793,1], ["Köln",50.943,6.959,0],
+  ["Leipzig",51.346,12.381,0], ["Dresden",51.040,13.732,0],
+  ["Frankfurt",50.107,8.664,1], ["Nürnberg",49.446,11.083,0],
+  ["Stuttgart",48.784,9.182,1], ["München",48.140,11.560,1],
+  ["Amsterdam",52.379,4.900,0], ["Brussels",50.847,4.353,0],
+  ["Paris",48.857,2.352,0], ["London",51.507,-0.128,0],
+  ["Zürich",47.377,8.540,0], ["Wien",48.209,16.373,0],
+  ["Praha",50.088,14.421,0], ["København",55.676,12.568,0],
+  ["Warszawa",52.230,21.012,0], ["Milano",45.464,9.190,0],
+];
+
+/* ====================================================================== */
+/* What each side is. Roles, not literal colours: short-range green,
+   backbone blue, and the category still going at four in the morning
+   gold -- the same reading on both maps. */
+const SIDES = [
+  {id:"pane-rail", file:"data/trains.json", verb:"running",
+   classes:{
+     ice:       {label:"High-speed", role:"ice",   size:0.50},
+     intercity: {label:"Intercity",  role:"ic",    size:0.50},
+     regional:  {label:"Regional",   role:"reg",   size:0.30},
+     night:     {label:"Night train",role:"night", size:0.43},
+   }},
+  {id:"pane-air", file:"data/planes.json", verb:"airborne",
+   classes:{
+     domestic:  {label:"Domestic",   role:"reg",   size:0.30},
+     european:  {label:"European",   role:"ice",   size:0.39},
+     longhaul:  {label:"Long-haul",  role:"night", size:0.48},
+   }},
+];
+
+let GEO = null, VIEW = {...CORE}, W = 0, H = 0, DPR = 1;
+const ux = lon => (lon - VIEW.lon0) / (VIEW.lon1 - VIEW.lon0);
+const uy = lat => (VIEW.lat1 - lat) / (VIEW.lat1 - VIEW.lat0);
+
+/* ====================================================================== */
+function prepare(side, d){
+  side.data = d;
+  /* Times arrive in whole minutes. */
+  if (d.tunit === "min" && !d.__secs){
+    for (const t of d.trips) for (const st of t.s){ st[1] *= 60; st[2] *= 60; }
+    d.__secs = true;
+  }
+  side.CLASSES = d.classes;
+  side.META = side.CLASSES.map(k => side.classes[k] || {label:k, role:"reg", size:0.4});
+  side.ST = d.stations.map(s => ({lon:s[0], lat:s[1], name:s[2], calls:0, x:0, y:0}));
+  side.TRIPS = d.trips.map(t => ({
+    c:t.c, name:t.n, head:t.h || "", s:t.s, p:t.p || null,
+    t0:t.s[0][1], t1:t.s[t.s.length-1][2],
+  }));
+  for (const t of side.TRIPS) for (const st of t.s) side.ST[st[0]].calls++;
+
+  /* Route geometry: the rail feed ships delta-encoded polylines, the radar
+     flight list has none. Decoded once. */
+  if (d.shapes && !d.__shapes){
+    d.__shapes = d.shapes.map(flat => {
+      const n = flat.length >> 1;
+      const lon = new Float64Array(n), lat = new Float64Array(n);
+      let x = 0, y = 0;
+      for (let i = 0; i < n; i++){
+        x += flat[2*i]; y += flat[2*i+1];
+        lon[i] = x/1e4; lat[i] = y/1e4;
+      }
+      const cum = new Float32Array(n);
+      const k = Math.cos(lat[0] * Math.PI/180);
+      let L = 0;
+      for (let i = 1; i < n; i++){
+        L += Math.hypot((lon[i]-lon[i-1])*k, lat[i]-lat[i-1]);
+        cum[i] = L;
+      }
+      if (L > 0) for (let i = 1; i < n; i++) cum[i] /= L;
+      return {lon, lat, cum, px:new Float32Array(n), py:new Float32Array(n)};
+    });
+  }
+  side.SHAPES = d.__shapes || null;
+
+  /* Three tiers of station or airport dot, by how much traffic the place
+     actually saw -- the substrate the moving things sit on. */
+  const calls = side.ST.map(s => s.calls).filter(c => c > 0).sort((a,b) => b-a);
+  const cut2 = calls[Math.min(calls.length-1, Math.floor(calls.length*0.02))] || 1;
+  const cut1 = calls[Math.min(calls.length-1, Math.floor(calls.length*0.15))] || 1;
+  for (const s of side.ST)
+    s.tier = s.calls >= Math.max(cut2, 4) ? 2 : s.calls >= cut1 ? 1 : 0;
+
+  /* Departures per quarter hour, for the strip behind the scrubber. */
+  side.prof = new Int32Array(96);
+  side.events = side.TRIPS
+    .map(t => [t.s[0][2] % DAY, t.s[0][0], t.c])
+    .sort((a,b) => a[0]-b[0]);
+  for (const e of side.events) side.prof[Math.floor(e[0]/900) % 96]++;
+
+  side.live = side.el.querySelector(".live");
+  side.key  = side.el.querySelector(".pkey");
+  side.key.innerHTML = side.CLASSES.map((k,i) =>
+    `<div class="lg"><span class="sw" style="background:${css(pick(side.META[i].role))}"></span>` +
+    `<span class="nm">${side.META[i].label}</span><span class="n" data-c="${i}">0</span></div>`
+  ).join("");
+  side.keyN = [...side.key.querySelectorAll(".n")];
+}
+
+/* ====================================================================== */
+function fit(){
+  const k = Math.cos(((CORE.lat0+CORE.lat1)/2) * Math.PI/180);
+  const aspect = W/H;
+  const lonC = (CORE.lon0+CORE.lon1)/2, latC = (CORE.lat0+CORE.lat1)/2;
+  let dlon = CORE.lon1-CORE.lon0, dlat = CORE.lat1-CORE.lat0;
+  if (aspect > dlon*k/dlat){
+    dlon = aspect*dlat/k;
+  } else {
+    dlat = dlon*k/aspect;
+    if (dlat > MAX_LAT){
+      dlat = MAX_LAT;
+      dlon = Math.max(MINW, dlat*aspect/k);
+      dlat = dlon*k/aspect;
+    }
+  }
+  VIEW = {lon0:lonC-dlon/2, lon1:lonC+dlon/2,
+          lat0:latC-dlat/2, lat1:latC+dlat/2};
+}
+
+function resize(){
+  const first = SIDES[0].el;
+  W = first.clientWidth; H = first.clientHeight;
+  if (!W || !H) return;
+  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  fit();
+  placeLabels();
+  for (const side of SIDES){
+    const cv = side.cv;
+    cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+    side.ctx.setTransform(DPR,0,0,DPR,0,0);
+    for (const s of side.ST){ s.x = ux(s.lon)*W; s.y = uy(s.lat)*H; }
+    if (side.SHAPES) for (const sh of side.SHAPES)
+      for (let i = 0; i < sh.cum.length; i++){
+        sh.px[i] = ux(sh.lon[i])*W; sh.py[i] = uy(sh.lat[i])*H;
+      }
+    side.base = document.createElement("canvas");
+    side.base.width = cv.width; side.base.height = cv.height;
+    side.baseCtx = side.base.getContext("2d");
+    side.baseCtx.setTransform(DPR,0,0,DPR,0,0);
+    buildBasemap(side);
+    renderBase(side);
+  }
+  sizeProfile();
+}
+
+/* Labels are placed once for the frame and reused by both panes, so the two
+   maps carry exactly the same names in exactly the same places. */
+let PLACED = [];
+function placeLabels(){
+  PLACED = [];
+  const boxes = [];
+  const measure = document.createElement("canvas").getContext("2d");
+  const cands = CITIES.slice().sort((a,b) => b[3]-a[3]);
+  for (const [label, lat, lon, major] of cands){
+    const x = ux(lon)*W, y = uy(lat)*H;
+    if (x < 6 || x > W-6 || y < 46 || y > H-56) continue;
+    measure.font = `400 ${major?11:10}px "IBM Plex Sans",system-ui,sans-serif`;
+    const tw = measure.measureText(label).width;
+    let done = false;
+    for (const [dx, align] of [[7,"left"], [-7,"right"]]){
+      const tx = x + dx;
+      const bx = align === "left" ? tx : tx - tw;
+      const box = [bx-2, y-7, bx+tw+2, y+7];
+      if (bx < 2 || bx+tw > W-2) continue;
+      if (boxes.some(o => box[0] < o[2] && box[2] > o[0] &&
+                          box[1] < o[3] && box[3] > o[1])) continue;
+      boxes.push(box);
+      PLACED.push({label, major, tx, ty:y, align, dx:x, dy:y});
+      done = true; break;
+    }
+    if (!done) continue;
+  }
+}
+
+function buildBasemap(side){
+  const ring = (path, r) => {
+    path.moveTo(ux(r[0][0])*W, uy(r[0][1])*H);
+    for (let i = 1; i < r.length; i++) path.lineTo(ux(r[i][0])*W, uy(r[i][1])*H);
+    path.closePath();
+  };
+  side.pathLand = new Path2D();
+  for (const r of GEO.outline) ring(side.pathLand, r);
+  side.pathStates = new Path2D();
+  for (const r of GEO.states) ring(side.pathStates, r);
+}
+
+function renderBase(side){
+  const b = side.baseCtx;
+  b.clearRect(0,0,W,H);
+  const g = b.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, css(pick("bgTop")));
+  g.addColorStop(1, css(pick("bgBot")));
+  b.fillStyle = g; b.fillRect(0,0,W,H);
+  b.fillStyle = css(pick("land"));
+  b.fill(side.pathLand, "evenodd");
+  b.lineJoin = "round";
+  b.strokeStyle = rgba(pick("landLine"), 0.75); b.lineWidth = 0.7;
+  b.stroke(side.pathStates);
+  b.strokeStyle = rgba(pick("landEdge"), 0.9); b.lineWidth = 1.0;
+  b.stroke(side.pathLand);
+
+  /* The network itself, standing still: every station on one map, every
+     airport on the other. This is half the comparison -- 7,552 dots against
+     205 -- and it is visible at 04:00 when almost nothing is moving. */
+  const rBig = DOT_R * Math.max(...side.META.map(m => m.size));
+  const cSt = pick("station"), cHub = pick("hub");
+  for (const s of side.ST){
+    if (!s.calls || s.x < -20 || s.x > W+20 || s.y < -20 || s.y > H+20) continue;
+    const r = s.tier === 2 ? rBig*1.05 : s.tier === 1 ? rBig*0.7 : rBig*0.48;
+    b.beginPath();
+    b.arc(s.x, s.y, r, 0, 6.2832);
+    b.fillStyle = rgba(s.tier === 2 ? cHub : cSt,
+                       s.tier === 2 ? 0.95 : s.tier === 1 ? 0.7 : 0.5);
+    b.fill();
+  }
+  for (const L of PLACED){
+    b.beginPath();
+    b.arc(L.dx, L.dy, 1.3, 0, 6.2832);
+    b.fillStyle = rgba(pick("ink3"), 0.55); b.fill();
+    b.font = `400 ${L.major?11:10}px "IBM Plex Sans",system-ui,sans-serif`;
+    b.textAlign = L.align; b.textBaseline = "middle";
+    b.fillStyle = rgba(pick(L.major?"ink2":"ink3"), L.major?0.95:0.7);
+    b.fillText(L.label, L.tx, L.ty);
+  }
+}
+
+/* ====================================================================== */
+function posAt(side, t, sec){
+  const s = t.s;
+  if (sec < t.t0 || sec > t.t1) return null;
+  let lo = 0, hi = s.length-1;
+  while (lo < hi){
+    const mid = (lo+hi+1) >> 1;
+    if (s[mid][1] <= sec) lo = mid; else hi = mid-1;
+  }
+  const a = s[lo], P = t.p;
+  if (lo === s.length-1 || sec <= a[2]){
+    if (P) return shapePoint(side, P[0], P[1][lo]);
+    const st = side.ST[a[0]];
+    return [st.x, st.y];
+  }
+  const b = s[lo+1];
+  const span = b[1] - a[2];
+  const f = span > 0 ? (sec - a[2]) / span : 0;
+  if (P){
+    const fr = P[1];
+    return shapePoint(side, P[0], fr[lo] + (fr[lo+1]-fr[lo])*f);
+  }
+  const p = side.ST[a[0]], q = side.ST[b[0]];
+  return [p.x + (q.x-p.x)*f, p.y + (q.y-p.y)*f];
+}
+
+function shapePoint(side, si, fm){
+  const sh = side.SHAPES[si], cum = sh.cum, n = cum.length;
+  const f = fm / 1000;
+  let lo = 0, hi = n-1;
+  while (lo < hi){
+    const m = (lo+hi+1) >> 1;
+    if (cum[m] <= f) lo = m; else hi = m-1;
+  }
+  if (lo >= n-1) return [sh.px[n-1], sh.py[n-1]];
+  const span = cum[lo+1] - cum[lo];
+  const u = span > 0 ? (f - cum[lo]) / span : 0;
+  return [sh.px[lo] + (sh.px[lo+1]-sh.px[lo])*u,
+          sh.py[lo] + (sh.py[lo+1]-sh.py[lo])*u];
+}
+
+/* ====================================================================== */
+let simSec = 0, minutesPerSecond = 16, playing = true;
+let lastFrame = performance.now();
+const pulseSpan = () => Math.max(180, Math.min(960, minutesPerSecond*60*0.65));
+
+function drawSide(side){
+  const g = side.ctx;
+  g.drawImage(side.base, 0, 0, W, H);
+  const counts = new Int32Array(side.CLASSES.length);
+
+  for (const t of side.TRIPS){
+    const meta = side.META[t.c];
+    for (const off of (t.t1 > DAY ? [0, DAY] : [0])){
+      const sec = simSec + off;
+      const head = posAt(side, t, sec);
+      if (!head) continue;
+      counts[t.c]++;
+      if (head[0] < -60 || head[0] > W+60 || head[1] < -60 || head[1] > H+60) continue;
+
+      const col = pick(meta.role), scale = meta.size;
+      let px = head[0], py = head[1];
+      for (let k = 1; k <= TRAIL_STEPS; k++){
+        const back = posAt(side, t, sec - (TRAIL_SEC/TRAIL_STEPS)*k);
+        if (!back) break;
+        const a = (1 - k/TRAIL_STEPS) * 0.55;
+        if (a <= 0.02) break;
+        g.beginPath();
+        g.moveTo(px, py); g.lineTo(back[0], back[1]);
+        g.strokeStyle = rgba(col, a);
+        g.lineWidth = Math.max(1/DPR, 2.4 * scale * (1 - k/(TRAIL_STEPS+3)));
+        g.lineCap = "round"; g.stroke();
+        px = back[0]; py = back[1];
+      }
+      if (3.6*scale*DPR >= 1.5){
+        g.beginPath(); g.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
+        g.fillStyle = rgba(col, 0.15); g.fill();
+      }
+      const rDev = DOT_R*scale*DPR;
+      if (rDev < 1.3){
+        const side_px = Math.max(1, Math.round(rDev*2));
+        g.fillStyle = rgba(col, 1);
+        g.fillRect(Math.round(head[0]*DPR - side_px/2)/DPR,
+                   Math.round(head[1]*DPR - side_px/2)/DPR,
+                   side_px/DPR, side_px/DPR);
+      } else {
+        g.beginPath(); g.arc(head[0], head[1], DOT_R*scale, 0, 6.2832);
+        g.fillStyle = rgba(col, 0.98); g.fill();
+      }
+    }
+  }
+
+  /* A ring opens where a service begins. The events are sorted by start
+     time, so only the window that is currently open gets walked -- a linear
+     scan of all 27,757 rail departures every frame would cost more than the
+     trains themselves. */
+  {
+    const span = pulseSpan();
+    const ev = side.events;
+    const lower = (sec) => {
+      let lo = 0, hi = ev.length;
+      while (lo < hi){ const m = (lo+hi) >> 1;
+        if (ev[m][0] < sec) lo = m+1; else hi = m; }
+      return lo;
+    };
+    const from = simSec - span;
+    const idx = [];
+    for (let i = lower(from < 0 ? 0 : from); i < ev.length && ev[i][0] <= simSec; i++)
+      idx.push(i);
+    if (from < 0) for (let i = lower(DAY + from); i < ev.length; i++) idx.push(i);
+    for (const i of idx){
+      const [t0, si, ci] = ev[i];
+      let age = simSec - t0;
+      if (age < 0) age += DAY;
+      if (age >= span) continue;
+      const st = side.ST[si];
+      if (st.x < -20 || st.x > W+20 || st.y < -20 || st.y > H+20) continue;
+      const f = age/span;
+      const m = side.META[ci];
+      g.beginPath();
+      g.arc(st.x, st.y, DOT_R*m.size + 1.1 + f*7, 0, 6.2832);
+      g.strokeStyle = rgba(pick(m.role), (1-f) * 0.5);
+      g.lineWidth = Math.max(1/DPR, 1.2);
+      g.stroke();
+    }
+  }
+
+  let total = 0;
+  for (let i = 0; i < counts.length; i++){
+    total += counts[i];
+    if (side.keyN[i].__v !== counts[i]){
+      side.keyN[i].__v = counts[i];
+      side.keyN[i].textContent = counts[i].toLocaleString("en");
+    }
+  }
+  if (side.__total !== total){
+    side.__total = total;
+    side.live.firstChild.nodeValue = total.toLocaleString("en");
+  }
+}
+
+/* ====================================================================== */
+const clockEl = document.getElementById("clock");
+let lastMinute = -1;
+function drawClock(){
+  const m = Math.floor(simSec/60);
+  if (m === lastMinute) return;
+  lastMinute = m;
+  clockEl.textContent =
+    String(Math.floor(m/60) % 24).padStart(2,"0") + ":" +
+    String(m % 60).padStart(2,"0");
+  scrub.value = simSec;
+}
+
+const profcv = document.getElementById("profcv");
+const profctx = profcv.getContext("2d");
+function sizeProfile(){
+  const r = profcv.getBoundingClientRect();
+  if (!r.width) return;
+  profcv.width = Math.round(r.width*DPR);
+  profcv.height = Math.round(r.height*DPR);
+  profctx.setTransform(DPR,0,0,DPR,0,0);
+  drawProfile(r.width, r.height);
+}
+/* Both series, each normalised to its own peak -- 12 times as many trains
+   start in a day as flights, and drawing them on one axis would leave the
+   air series a flat line. The shape of the two days is the point here, not
+   their ratio; the ratio is in the live counts. */
+function drawProfile(w, h){
+  profctx.clearRect(0,0,w,h);
+  const bw = w/96;
+  SIDES.forEach((side, si) => {
+    const max = Math.max(...side.prof) || 1;
+    profctx.fillStyle = rgba(pick(si === 0 ? "reg" : "ice"), si === 0 ? 0.3 : 0.42);
+    for (let i = 0; i < 96; i++){
+      const bh = (side.prof[i]/max) * (h-6);
+      if (si === 0) profctx.fillRect(i*bw, h-bh, Math.max(1, bw-0.6), bh);
+      else profctx.fillRect(i*bw + bw*0.35, h-bh, Math.max(1, bw*0.45), bh);
+    }
+  });
+}
+
+/* ====================================================================== */
+const scrub = document.getElementById("scrub");
+const playBtn = document.getElementById("play");
+
+scrub.addEventListener("input", () => {
+  simSec = +scrub.value;
+  lastMinute = -1;
+});
+playBtn.addEventListener("click", () => {
+  playing = !playing;
+  playBtn.textContent = playing ? "Pause" : "Play";
+  playBtn.setAttribute("aria-pressed", playing ? "true" : "false");
+});
+for (const b of document.querySelectorAll(".spd button[data-mps]")){
+  b.addEventListener("click", () => {
+    minutesPerSecond = +b.dataset.mps;
+    for (const o of document.querySelectorAll(".spd button[data-mps]"))
+      o.setAttribute("aria-pressed", o === b ? "true" : "false");
+  });
+}
+addEventListener("keydown", e => {
+  if (e.key === " "){ e.preventDefault(); playBtn.click(); }
+});
+
+function frame(now){
+  const dt = Math.min(0.25, (now - lastFrame)/1000);
+  lastFrame = now;
+  if (playing){
+    simSec += dt * minutesPerSecond * 60;
+    if (simSec >= DAY) simSec -= DAY;
+  }
+  drawClock();
+  for (const side of SIDES) drawSide(side);
+  requestAnimationFrame(frame);
+}
+
+/* ====================================================================== */
+const j = u => fetch(u).then(r => {
+  if (!r.ok) throw new Error(u + ": HTTP " + r.status);
+  return r.json();
+});
+
+for (const side of SIDES){
+  side.el = document.getElementById(side.id);
+  side.cv = side.el.querySelector("canvas");
+  side.ctx = side.cv.getContext("2d");
+}
+
+Promise.all([j("data/planes-geo.json"), ...SIDES.map(s => j(s.file))])
+  .then(([geo, ...datasets]) => {
+    GEO = geo;
+    SIDES.forEach((side, i) => prepare(side, datasets[i]));
+    /* The counts in the two titles come from the files, not from a number
+       typed into the HTML, so they cannot drift when a feed is rebuilt. */
+    SIDES.forEach(side => {
+      const n = side.TRIPS.length.toLocaleString("en");
+      const em = side.el.querySelector(".ptitle em");
+      em.textContent = n + (side.id === "pane-rail" ? " trains" : " flights");
+      side.el.querySelector(".ptitle span").lastChild.nodeValue =
+        " · " + side.data.weekday.slice(0,3) + " " + dateStr(side.data.date);
+    });
+    document.getElementById("loading").hidden = true;
+    resize();
+    addEventListener("resize", resize);
+    requestAnimationFrame(frame);
+  })
+  .catch(e => {
+    document.getElementById("loading").textContent =
+      "Could not load the data — " + e.message +
+      ". This page fetches its data, so it needs http(s), not file://.";
+  });
+
+function dateStr(iso){
+  const [y,m,d] = iso.split("-").map(Number);
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun",
+               "Jul","Aug","Sep","Oct","Nov","Dec"];
+  return d + " " + MON[m-1] + " " + y;
+}
+})();
+</script>
+</body>
+</html>

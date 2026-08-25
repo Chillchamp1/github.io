@@ -116,6 +116,14 @@
     margin-top:9px;padding-top:8px;border-top:1px solid var(--rule);
     font-size:0.66rem;line-height:1.45;color:var(--ink-3);
   }
+  /* One link out of the app, under the legend note rather than among the
+     network pills: the comparison is not another network, it is a
+     different question. */
+  #vslink{
+    display:inline-block;margin-top:8px;font-size:0.66rem;color:var(--ink-3);
+    text-decoration:none;border-bottom:1px solid var(--rule);
+  }
+  #vslink:hover{color:var(--ink-2)}
 
   #controls{
     position:fixed;z-index:3;right:20px;bottom:20px;padding:11px 14px;
@@ -254,6 +262,7 @@
     <h2>Train category</h2>
     <div id="legend-rows"></div>
     <footer id="legend-note"></footer>
+    <a id="vslink" href="vs.html">Rail against air traffic, same map &#8594;</a>
   </div>
   <aside id="figures" class="panel" aria-label="Trains by category"></aside>
   <div id="controls" class="panel">
