@@ -336,20 +336,28 @@ const NETWORKS = {
        rather than as Italy's missing feed. */
     freeCities:true,
     classes:{
+      /* Smaller marks than any single-country map. Nine countries in one
+         frame is four times the traffic of the old landing map in the same
+         pixels, and at that density the dot size that reads as one train
+         over Germany reads as a smear over the Ruhr, the Randstad and
+         Katowice at once. Regional goes to 0.20 deliberately: below
+         3.6*size*DPR = 1.5 the halo disc stops being drawn at all, which is
+         where most of the green mass came from. */
       ice:       {label:"High-speed — ICE, TGV, AVE", cat:"high-speed",
-                  role:"ice",   size:0.46, secs:600, trail:6, ring:1.00},
+                  role:"ice",   size:0.36, secs:600, trail:6, ring:0.55},
       intercity: {label:"Intercity — IC, EC, InterRegio", cat:"intercity",
-                  role:"ic",    size:0.42, secs:560, trail:5, ring:0.70},
+                  role:"ic",    size:0.33, secs:560, trail:5, ring:0.40},
       /* 83,000 regional services are most of the map's cost and, at a frame
          2,600 km across, most of its texture: two trail segments read the
          same as four and cost half. */
       regional:  {label:"Regional — RE, RB, Cercanías", cat:"regional",
-                  role:"reg",   size:0.28, secs:260, trail:2, ring:0.08},
+                  role:"reg",   size:0.20, secs:260, trail:2, ring:0.05},
       mountain:  {label:"Rack, panorama and narrow gauge", cat:"rack · narrow",
-                  role:"mtn",   size:0.34, secs:420, trail:4, ring:0.40},
+                  role:"mtn",   size:0.26, secs:420, trail:4, ring:0.22},
       night:     {label:"Night train", cat:"night",
-                  role:"night", size:0.44, secs:600, trail:6, ring:1.00},
+                  role:"night", size:0.34, secs:600, trail:6, ring:0.55},
     },
+    ringGrow:4.5, ringAlpha:0.30, ringWidth:1.0,
     /* One dataset, six framings. The whole continent is the front door; the
        presets are there because at 23 pixels per degree a Danish local
        train is a speck, and reading one country properly should not require
@@ -1889,6 +1897,13 @@ function draw(){
   /* origin rings */
   {
     const span = pulseSpan();
+    /* How loud a departure is. Defaults are what the country maps have
+       always drawn; the European map turns them down, because ninety-two
+       thousand services on one frame means a ring opening somewhere every
+       few pixels and the map stops being about the trains. */
+    const ringGrow  = NET.ringGrow  ?? 7;
+    const ringAlpha = NET.ringAlpha ?? 0.5;
+    const ringWidth = Math.max(1/DPR, NET.ringWidth ?? 1.2);
     const from = simSec - span;
     let i = evLower(from < 0 ? 0 : from);
     const visit = (idx) => {
@@ -1899,11 +1914,11 @@ function draw(){
       const st = ST[EVS[idx]];
       if (st.x < -20 || st.x > W+20 || st.y < -20 || st.y > H+20) return;
       const cls = EVC[idx];
-      const r = DOT_R*DOT_SCALE[cls] + 1.1 + f * 7 * RING_SCALE[cls];
+      const r = DOT_R*DOT_SCALE[cls] + 1.1 + f * ringGrow * RING_SCALE[cls];
       g.beginPath();
       g.arc(st.x, st.y, r, 0, 6.2832);
-      g.strokeStyle = rgba(hues[cls], (1-f) * 0.5);
-      g.lineWidth = Math.max(1/DPR, 1.2);
+      g.strokeStyle = rgba(hues[cls], (1-f) * ringAlpha);
+      g.lineWidth = ringWidth;
       g.stroke();
     };
     for (; i < EVN && EVT[i] <= simSec; i++) visit(i);
