@@ -799,6 +799,113 @@ const NETWORKS = {
       "schedule, without delays or cancellations. Cross-border trains are " +
       "drawn leaving the frame toward Milan, Munich and Paris.",
   },
+  pl: {
+    label:"Poland", pill:"PL", unit:"trains",
+    data:"data/pl-trains.json", geo:"data/pl-geo.json",
+    /* Pixels per degree is set by the frame's *latitude* span against the
+       viewport height, not by how wide the screen is: Poland's 6 degrees
+       of latitude in a 754-pixel band comes to 77, where Switzerland's 2
+       come to 249. The 120 the other country maps use would hide every
+       minor city here, and none of them would come back at any window
+       size. */
+    minorPxPerDeg:70,
+    classes:{
+      express:   {label:"Express — EIP Pendolino, EIC", cat:"high-speed",
+                  role:"ice",   size:0.50, secs:600, trail:6, ring:1.00},
+      intercity: {label:"Intercity — IC, EC, TLK",      cat:"intercity",
+                  role:"ic",    size:0.46, secs:560, trail:5, ring:0.70},
+      regional:  {label:"Regional — Os, R, RE",         cat:"regional",
+                  role:"reg",   size:0.30, secs:350, trail:3, ring:0.10},
+      sbahn:     {label:"Suburban — SKM",               cat:"suburban",
+                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+      night:     {label:"Night train — EuroNight",      cat:"night",
+                  role:"night", size:0.46, secs:600, trail:6, ring:1.00},
+    },
+    views:{ pl: {label:"Poland",
+      core:{lon0:13.90, lon1:24.30, lat0:48.90, lat1:54.95},
+      maxv:{lon0:11.40, lon1:27.20, lat0:47.40, lat1:56.20},
+      clock:{lat:54.55, lon:20.60}} },
+    cities:[
+      ["Warszawa",52.2288,21.0033,1],  ["Kraków",50.0678,19.9475,1],
+      ["Łódź",51.7690,19.4740,1],      ["Wrocław",51.0989,17.0367,1],
+      ["Poznań",52.4022,16.9126,1],    ["Gdańsk",54.3556,18.6440,1],
+      ["Gdynia",54.5175,18.5405,0],    ["Szczecin",53.4325,14.5561,1],
+      ["Bydgoszcz",53.1355,18.0126,0], ["Toruń",53.0113,18.6097,0],
+      ["Lublin",51.2333,22.5686,1],    ["Katowice",50.2576,19.0166,1],
+      ["Białystok",53.1352,23.1355,0], ["Rzeszów",50.0424,21.9944,0],
+      ["Olsztyn",53.7739,20.4875,0],   ["Częstochowa",50.8083,19.1266,0],
+      ["Kielce",50.8712,20.6323,0],    ["Opole",50.6539,17.9287,0],
+      ["Zielona Góra",51.9384,15.5044,0], ["Koszalin",54.1943,16.1717,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on the Polish network — thirteen operators in one file, " +
+      "from the national train register for " + dateStr(d) + ".",
+    note: "Rail replacement buses (ZKA) are excluded, the way SEV is on the " +
+      "German map.",
+    caveats: "Coverage is national and complete for rail: PKP PLK, the " +
+      "infrastructure manager, publishes the register of every train it " +
+      "signals, and this feed merges it with each operator's own timetable — " +
+      "PKP Intercity, PolRegio, all six voivodeship railways, Arriva, the " +
+      "Łódź agglomeration line, both SKM suburban operators and the two " +
+      "Czech open-access carriers. Category comes from PLK's own " +
+      "plk_category_code per trip rather than from the line name, which in " +
+      "Poland would misread badly: Koleje Śląskie brands its regional lines " +
+      "S1, S4 and S5 exactly like a suburban railway. 99.7% of trains follow " +
+      "the published route geometry rather than straight lines. Two " +
+      "weaknesses: the feed is a 30-day rolling window and the copy " +
+      "reachable from here was mirrored on 4 June 2026, so the newest " +
+      "ordinary Wednesday available is the one shown, not today's; and this " +
+      "is the published schedule, without delays or cancellations.",
+  },
+  dk: {
+    label:"Denmark", pill:"DK", unit:"trains",
+    data:"data/dk-trains.json", geo:"data/dk-geo.json",
+    minorPxPerDeg:110,
+    /* Between two and half past four the country has a dozen trains moving. */
+    ffwdBelow:25, ffwdBoost:4,
+    classes:{
+      intercity: {label:"Intercity — IC, Lyn, EC", cat:"intercity",
+                  role:"ic",    size:0.48, secs:600, trail:6, ring:1.00},
+      regional:  {label:"Regional — RE and the local railways", cat:"regional",
+                  role:"reg",   size:0.30, secs:360, trail:4, ring:0.10},
+      sbahn:     {label:"S-tog — Copenhagen", cat:"suburban",
+                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+      night:     {label:"Night train — Snälltåget", cat:"night",
+                  role:"night", size:0.46, secs:600, trail:6, ring:1.00},
+    },
+    views:{ dk: {label:"Denmark",
+      core:{lon0:7.90, lon1:13.40, lat0:54.50, lat1:57.85},
+      maxv:{lon0:6.10, lon1:16.60, lat0:53.30, lat1:58.70},
+      clock:{lat:57.60, lon:12.60}} },
+    cities:[
+      ["København",55.6727,12.5652,1],  ["Aarhus",56.1500,10.2040,1],
+      ["Odense",55.4038,10.3861,1],     ["Aalborg",57.0433,9.9169,1],
+      ["Esbjerg",55.4661,8.4592,1],     ["Roskilde",55.6392,12.0866,0],
+      ["Kolding",55.4906,9.4757,0],     ["Vejle",55.7096,9.5350,0],
+      ["Horsens",55.8612,9.8455,0],     ["Randers",56.4610,10.0367,0],
+      ["Fredericia",55.5580,9.7570,0],  ["Herning",56.1400,8.9740,0],
+      ["Silkeborg",56.1690,9.5450,0],   ["Helsingør",56.0300,12.6010,0],
+      ["Næstved",55.2300,11.7600,0],    ["Slagelse",55.4100,11.3550,0],
+      ["Struer",56.4930,8.5930,0],      ["Malmö",55.6090,13.0000,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on the Danish network, from the national Rejseplanen " +
+      "timetable for " + dateStr(d) + ".",
+    note: "The Copenhagen metro and the Aarhus, Odense and Hovedstaden light " +
+      "rail are excluded; the S-tog is not.",
+    caveats: "Source is Rejseplanen, Denmark's single national journey " +
+      "planner, which publishes every operator in the country in one file — " +
+      "so rail coverage is complete: DSB, GoCollective across Jutland, the " +
+      "eleven Lokaltog private railways on Zealand, Midttrafik and NT, the " +
+      "Öresundståg that Skånetrafiken runs across the bridge, Snälltåget's " +
+      "night trains and the Copenhagen S-tog. Every single train follows " +
+      "the published route geometry. Two things to know: the feed lumps " +
+      "thirteen thousand GoCollective trips under one route numbered " +
+      "\"030\", which is not a line anyone travels on, so those are labelled " +
+      "by operator instead; and this is the published schedule, without " +
+      "delays or cancellations. Through services to Hamburg, Berlin, " +
+      "Stockholm and Innsbruck are drawn leaving the frame.",
+  },
   london: {
     label:"London", pill:"London", unit:"trains",
     data:"data/london-trains.json", geo:"data/london-geo.json",
