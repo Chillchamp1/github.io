@@ -7,8 +7,9 @@ every hour, so the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-The landing map is the combined one — Germany, the Benelux, Switzerland and
-France, where trains cross borders instead of stopping at them. The fourteen networks live in one
+The landing map is the combined one — nine countries from Portugal to
+Poland on one Wednesday, where trains cross borders instead of stopping at
+them, with buttons to reframe it on any one of them. The fourteen networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
 `#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#iberia`, `#it`, `#london`. Every network carries a "Data notes & gaps"
@@ -113,51 +114,95 @@ midnight still stay in their own categories.
 ## The combined map
 
 `#eu` is the landing page and the only one where a border is just a line on
-the ground: **Germany, the Benelux, Switzerland and France**, 70,427 trains,
-from national feeds merged onto one map. A EuroCity from
-Zürich to Hamburg is one dot for its whole run instead of stopping where
-one country's data ends.
-The national outlines are drawn a shade brighter than on the single-country
-maps -- enough to read where you are, not enough to argue with the trains,
-which is the whole point of the page.
+the ground: **nine countries, 91,862 trains, one Wednesday and one clock** —
+Germany, the Benelux, Switzerland, France, Poland, Denmark, Spain, Portugal
+and what Italy publishes. A EuroCity from Zürich to Hamburg, or from Berlin
+to Warszawa, is one dot for its whole run instead of stopping where one
+country's data ends. The national outlines are drawn a shade brighter than
+on the single-country maps — enough to read where you are, not enough to
+argue with the trains.
 
-The shared date is what makes it honest. DELFI runs out on 13 June 2026 and
-the Luxembourg feed starts on 6 May, so **Wednesday 10 June 2026** is the
-one window the sources agree on — Île-de-France Mobilités included, whose
-mirror runs 31 May to 2 July 2026. `build/build_eu.py` folds the national
-class schemes into five (high-speed, intercity, regional including S-Bahn
-and the RER, Swiss rack and panorama, night) and adds Eurostar's own feed
-for the Paris and London legs the national datasets do not carry.
+**One dataset, six framings.** At the whole-continent frame a Danish local
+train is 23 pixels per degree of speck, so the buttons under the network
+pills reframe the same data on the Centre, Iberia, Italy, Poland or
+Denmark without leaving the map that has all of them on it:
+`#eu/central`, `#eu/iberia`, `#eu/italy`, `#eu/poland`, `#eu/north`.
 
-Trains are published by *both* countries they run through — and SKI+ turns
-out to carry some 3,700 French regional services that SNCF publishes as well
-— so services are deduplicated across feeds, keeping whichever copy lists
-more stops. Long distance matches on class, line name, destination and a
-departure within twenty minutes; the two copies rarely agree exactly (an ICE
-43 to Hamburg-Altona appeared once with 20 stops and once with 19), which is
-why that match is deliberately loose. Regional cannot be matched that way,
-because "S1" runs in half of Europe, so it is matched on geography instead:
-two different trains do not share an origin, a destination and a departure
-minute. A match only ever counts between two different feeds — what one
-publisher lists twice is its own business. That merge finds 3,538
-duplicates, most of them French regional trains that were being drawn twice.
+### The shared date, and what it cost
 
-SNCF's own trains are the one date that could not be reconciled: the newest
-openly mirrored TER, TGV and Intercités timetable is from early 2025 and has
-no overlap at all with the 2026 windows of the others, so those run on their
-own Wednesday beside everyone else's. Two weekday timetables a year apart
-differ in detail, not in character — but the page says so in the meta line,
-the legend and the data notes. Paris is the exception to the exception: the
-RER and Transilien come from Île-de-France Mobilités and *are* on 10 June
-2026.
+**Wednesday 10 June 2026** is not a preference, it is an intersection.
+DELFI runs out on 13 June; Poland's feed is a 30-day window opening on
+4 June; Renfe Cercanías is a 30-day window opening on 3 June; Luxembourg's
+starts 6 May. 10 June is the only Wednesday inside all of them. Two prices
+were paid for it, and both are stated on the page:
 
-**It starts light.** The full map is 70,427 trains and 4.4 MB gzipped, most
+- **10 June is Portugal's national day**, so CP runs 868 trains instead of
+  its usual 1,362. The Iberia page, which is free to pick its own date,
+  uses 3 June and shows the full 1,362.
+- **AMT Genova publishes only the week of 1–8 June**, so the eighteen
+  Genova–Casella narrow-gauge trains are absent here. They are on the Italy
+  page, which runs on 3 June for exactly that reason.
+
+France is the one country that cannot share the date at all: the newest
+openly mirrored TER, TGV and Intercités timetable is early 2025, with no
+overlap with anyone's 2026 window, so those run on their own Wednesday
+beside everyone else's. Paris is the exception to the exception — the RER
+and Transilien come from Île-de-France Mobilités and *are* on 10 June 2026.
+
+Italy is the large hole and it is visible as one: Trenitalia publishes no
+national open timetable, so Rome and Naples carry a label and an open ring
+with nothing running through them.
+
+### How it is built
+
+`build/build_eu.py` merges GTFS for the original five countries.
+`build/merge_nets.py` folds in the four newer ones — but from their
+*finished* datasets rather than from their sources. Poland, Denmark, Iberia
+and Italy each have a builder that reads their own feeds, classifies by
+their own conventions and has been checked against their own page;
+re-reading fourteen more GTFS files inside `build_eu.py` would duplicate all
+of that and give the same answer. Each builder is run on the shared date and
+the results are concatenated.
+
+Each country's classes fold onto the combined five. The choices worth
+defending: Polish EIP and EIC are genuine long distance and become
+high-speed; the two SKM suburban operators and Spanish Cercanías join
+regional, where German S-Bahn already is; Italian narrow gauge joins the
+Swiss rack railways under *mountain*; and **Trenord's RE lines stay
+regional rather than being promoted to intercity** — a German RE is
+regional on this map and an RE13 to Milano is the same kind of train, so
+promoting it would invent a long-distance network for the one country that
+has none in open data.
+
+Trains published by *both* countries they run through are deduplicated
+across sources, keeping whichever copy lists more stops. Long distance
+matches on class, line name, destination and a departure within twenty
+minutes; the two copies rarely agree exactly (an ICE 43 to Hamburg-Altona
+appeared once with 20 stops and once with 19), which is why that match is
+deliberately loose. Regional cannot be matched that way, because "S1" runs
+in half of Europe, so it is matched on geography instead: two different
+trains do not share an origin, a destination and a departure minute. A match
+only ever counts between two different sources — what one publisher lists
+twice is its own business.
+
+**It starts light.** The full map is 91,862 trains and 6.7 MB gzipped, most
 of it regional services. Waiting for all of that before the first frame is
 the wrong trade, so `build/split_layers.py` cuts the dataset in two: the
-long-distance spine — 7,205 trains, **390 kB** — paints immediately, and the
-63,222 regional services are fetched afterwards and merged in. Nothing is
-dropped; the small trains simply arrive a moment later. First paint is
-eleven times lighter than it was.
+long-distance spine — 8,975 trains, **670 kB** — paints immediately, and the
+82,887 regional services are fetched afterwards and merged in. Nothing is
+dropped; the small trains simply arrive a moment later.
+
+### One rendering note
+
+Painting 92,000 trips a frame made it worth measuring where the time
+actually goes. Hoisting the per-class colour strings and line widths out of
+the draw loop — building `rgba(90,169,255,0.41)` inside it meant tens of
+thousands of string builds and CSS colour parses a frame — is a real win.
+Batching the same draws into one `Path2D` per class is **not**: measured, it
+was slightly slower. The map is fill-rate bound, not call-count bound, which
+the same scene at devicePixelRatio 1 confirms — 31 fps against 11 at DPR 2
+in a software-rendered headless browser, where a real GPU-backed one is far
+faster.
 
 For the fullest version of any one country, its own map is still there.
 
@@ -680,6 +725,7 @@ build/build_pl.py     Polish national aggregate -> JSON (category from PLK)
 build/build_dk.py     Rejseplanen -> JSON (rail filtered out of the bus feed)
 build/build_iberia.py Renfe x2 + FGC + CP -> JSON (strips fixed-width padding)
 build/build_it.py     six Italian regional feeds -> JSON
+build/merge_nets.py   finished country datasets -> the combined European map
 build/simplify_geo.py Douglas-Peucker pass over a finished basemap
 vs.html               rail and air side by side on one frame and one clock
 data/planes.json      flight list copied from the sibling air project

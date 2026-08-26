@@ -126,8 +126,13 @@ def collect(src, ns, date, rule, stops, trips, label_from):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("date")
-    for k in ("trenord", "toscana", "sardegna", "arst", "trentino", "genova"):
+    for k in ("trenord", "toscana", "sardegna", "arst", "trentino"):
         ap.add_argument("--" + k, required=True)
+    # Genova's feed covers a single week, 1-8 June 2026. On its own date it
+    # belongs on the map; on any other -- the combined European map runs a
+    # week later, so that every other country can share one Wednesday -- it
+    # is simply absent, and eighteen trains are the right thing to lose.
+    ap.add_argument("--genova")
     ap.add_argument("-o", "--out", default="data/it-trains.json")
     ap.add_argument("--note", default="")
     ap.add_argument("--bbox", default="6.4,36.5,18.7,47.2")
@@ -145,6 +150,7 @@ def main():
         ("4:", args.trentino, trentino,                     "R"),
         ("5:", args.genova,   lambda s, l: "narrow",        "Genova–Casella"),
     ]
+    sources = [x for x in sources if x[1]]
     for ns, src, rule, lab in sources:
         feeds[ns] = collect(src, ns, args.date, rule, stops, trips, lab)
 
