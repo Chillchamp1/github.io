@@ -122,6 +122,17 @@ country's data ends. The national outlines are drawn a shade brighter than
 on the single-country maps — enough to read where you are, not enough to
 argue with the trains.
 
+**The marks are smaller here than on any single-country map.** Nine
+countries in one frame is four times the traffic of the old landing map in
+the same pixels, and the dot size that reads as one train over Germany
+reads as a smear over the Ruhr, the Randstad and Katowice at once.
+Regional goes down to `size:0.20` deliberately: below `3.6 * size * DPR =
+1.5` the halo disc stops being drawn at all, and that halo was most of the
+green mass. The departure rings are turned down too — `ringGrow`,
+`ringAlpha` and `ringWidth` are per-network and default to what the country
+maps have always drawn, because at ninety-two thousand services a ring
+opens somewhere every few pixels and the map stops being about the trains.
+
 **One dataset, six framings.** At the whole-continent frame a Danish local
 train is 23 pixels per degree of speck, so the buttons under the network
 pills reframe the same data on the Centre, Iberia, Italy, Poland or
