@@ -965,6 +965,73 @@ const NETWORKS = {
       "Portugal's national day and 24 June is Sant Joan. As everywhere, " +
       "this is the published schedule, without delays.",
   },
+  it: {
+    label:"Italy", pill:"IT", unit:"trains",
+    data:"data/it-trains.json", geo:"data/it-geo.json",
+    /* The boot is eleven degrees tall: 52 px per degree in the same band
+       where Switzerland gets 249. */
+    minorPxPerDeg:46,
+    /* Rome, Naples, Bari and Palermo have no open timetable at all. Left
+       off, the map reads as broken rather than as the gap it is. */
+    freeCities:true,
+    classes:{
+      express:   {label:"Regio Express, Malpensa", cat:"high-speed",
+                  role:"ice",   size:0.46, secs:560, trail:5, ring:0.70},
+      regional:  {label:"Regional — R, Regionale", cat:"regional",
+                  role:"reg",   size:0.32, secs:380, trail:4, ring:0.12},
+      suburban:  {label:"Suburban — Milan's S lines", cat:"suburban",
+                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+      narrow:    {label:"Narrow gauge and local", cat:"narrow gauge",
+                  role:"mtn",   size:0.34, secs:420, trail:4, ring:0.40},
+    },
+    views:{ it: {label:"Italy",
+      core:{lon0:6.40, lon1:18.70, lat0:36.50, lat1:47.20},
+      maxv:{lon0:1.60, lon1:23.50, lat0:35.20, lat1:48.40},
+      clock:{lat:46.60, lon:15.60}} },
+    cities:[
+      ["Milano",45.4854,9.2040,1],      ["Torino",45.0620,7.6790,1],
+      ["Genova",44.4110,8.9190,1],      ["Bologna",44.5060,11.3430,1],
+      ["Firenze",43.7765,11.2480,1],    ["Roma",41.9010,12.5010,1],
+      ["Napoli",40.8530,14.2720,1],     ["Venezia",45.4400,12.3210,1],
+      ["Bari",41.1180,16.8710,1],       ["Palermo",38.1090,13.3630,1],
+      ["Cagliari",39.2160,9.1110,1],    ["Verona",45.4290,10.9820,0],
+      ["Brescia",45.5330,10.2140,0],    ["Bergamo",45.6900,9.6720,0],
+      ["Como",45.8110,9.0770,0],        ["Varese",45.8210,8.8330,0],
+      ["Lecco",45.8560,9.3960,0],       ["Pavia",45.1860,9.1500,0],
+      ["Novara",45.4470,8.6100,0],      ["Trento",46.0720,11.1190,0],
+      ["Bolzano",46.4980,11.3260,0],    ["Pisa",43.7090,10.3980,0],
+      ["Livorno",43.5450,10.3160,0],    ["Siena",43.3190,11.3300,0],
+      ["Lucca",43.8430,10.5050,0],      ["La Spezia",44.1070,9.8140,0],
+      ["Parma",44.8020,10.3290,0],      ["Sassari",40.7260,8.5590,0],
+      ["Ancona",43.6180,13.5040,0],     ["Perugia",43.1100,12.3890,0],
+      ["Trieste",45.6570,13.7710,0],    ["Catania",37.5080,15.0830,0],
+      ["Reggio Cal.",38.1140,15.6500,0],["Pescara",42.4630,14.2140,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " trains</strong> over one " +
+      d.weekday + " — not Italy's railway, but the part of it published as " +
+      "open data. Trenitalia has no national open timetable, so Rome, " +
+      "Naples, Venice and the whole south are missing. " + dateStr(d) + ".",
+    note: "Every Frecciarossa and every Intercity in the country is absent: " +
+      "no open feed carries them.",
+    caveats: "Italy is the one country here that cannot be mapped properly, " +
+      "and the map is built anyway because the shape of the gap is worth " +
+      "seeing. Trenitalia, which runs almost all of Italy's long-distance " +
+      "and most of its regional service, publishes no national open " +
+      "timetable; the Mobility Database's only entry filed under its name " +
+      "covers Sardinia — two lines and 41 stations. What is here is every " +
+      "regional contract that does publish rail: Trenord in Lombardy (by " +
+      "far the largest), Trenitalia's Tuscan network, the Sardinian " +
+      "standard and narrow gauge, the Trento–Malè and Valsugana lines, and " +
+      "the Genova–Casella. Together about 3,600 trains against a real " +
+      "national figure several times that, which is why Lombardy is lit up, " +
+      "Tuscany is a stripe, and the cities south of it carry an open ring " +
+      "and nothing else. Two notes on the sources: the catalogue files the " +
+      "Tuscan feed under \"Marche\", which is wrong — its routes are " +
+      "Firenze–Pisa, Firenze–Arezzo and La Spezia–Parma — and the date is " +
+      "forced by AMT Genova, whose feed covers a single week. Trenord " +
+      "ships no route geometry, so Lombardy's trains cut straight lines; " +
+      "Tuscany and Sardinia follow real track.",
+  },
   london: {
     label:"London", pill:"London", unit:"trains",
     data:"data/london-trains.json", geo:"data/london-geo.json",
@@ -1161,7 +1228,14 @@ function applyData(data, geo){
       const d = ((s.lon-alon)*k)**2 + (s.lat-alat)**2;
       if (d < bestD){ bestD = d; best = s; }
     }
-    if (best && bestD < (3/111.32)**2) LABELS.push({label, s:best, major, flip});
+    if (best && bestD < (3/111.32)**2){ LABELS.push({label, s:best, major, flip}); continue; }
+    /* A city with no station within 3 km normally means the wrong
+       coordinate, so it is dropped. On the Italy map it means something
+       else: Rome and Naples have no open timetable at all, and a map that
+       silently leaves them off reads as a rendering bug rather than as the
+       gap it is. freeCities places those anchors on their own coordinates. */
+    if (NET.freeCities)
+      LABELS.push({label, s:{lon:alon, lat:alat, x:0, y:0}, major, flip, free:true});
   }
 
   /* Origin events: rings on the map, bars in the profile strip. */
@@ -1313,6 +1387,11 @@ function resize(){
    here -- only resize() reallocates them. */
 function reproject(){
   for (const s of ST){ s.x = OX + ux(s.lon)*SX; s.y = OY + uy(s.lat)*SY; }
+  /* Free-standing city anchors (see LABELS) are not stations and so are not
+     in ST; they carry their own lon/lat and are projected here. */
+  for (const L of LABELS) if (L.free){
+    L.s.x = OX + ux(L.s.lon)*SX; L.s.y = OY + uy(L.s.lat)*SY;
+  }
   if (SHAPES) for (const sh of SHAPES){
     const {lon, lat, px, py} = sh;
     for (let i = 0; i < lon.length; i++){
@@ -1814,6 +1893,17 @@ function draw(){
     ctx.fillText(L.label, L.side > 0 ? L.s.x + 6 : L.s.x - 6, L.s.y + L.dy);
   }
   ctx.textAlign = "left";
+  /* A free-standing anchor has no station under it to mark where it is, so
+     it gets an open ring: a city on the map with nothing running through
+     it, which on the Italy page is the whole point. */
+  for (const L of PLACED) if (L.free){
+    ctx.beginPath();
+    ctx.arc(L.s.x, L.s.y, 2.6, 0, 6.2832);
+    ctx.strokeStyle = rgba(cInk3, 0.5);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.lineWidth = 3;
 
   updateChrome();
 }
