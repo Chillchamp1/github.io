@@ -1,17 +1,17 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: ten networks, from a cross-border map of five countries
+open timetables: twelve networks, from a cross-border map of five countries
 down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
 The landing map is the combined one — Germany, the Benelux, Switzerland and
-France, where trains cross borders instead of stopping at them. The ten networks live in one
+France, where trains cross borders instead of stopping at them. The twelve networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#london`. Every network carries a "Data notes & gaps"
+`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -312,6 +312,65 @@ is Paris Austerlitz to Nice), so `build/build_fr.py` identifies them by the
 hours they keep — still under way at two in the morning. That finds all
 eight and leaves the last suburban runs of the evening alone.
 
+## The Poland page
+
+`#pl` is **6,677 trains on Wednesday 24 June 2026** — thirteen operators in
+one file, 2,913 stations, and 99.7% of them following the published route
+geometry rather than straight lines.
+
+Poland has no state-published national GTFS the way Germany has DELFI, and
+what it has instead turns out to be better than that sounds. PKP PLK, the
+infrastructure manager, publishes the register of every train it signals;
+Mikołaj Kuranowski merges that register with each operator's own feed at
+[mkuran.pl/gtfs](https://mkuran.pl/gtfs). The result covers PKP Intercity,
+PolRegio, all six voivodeship railways (Dolnośląskie, Mazowieckie,
+Małopolskie, Śląskie, Wielkopolskie and the Łódź agglomeration line),
+Arriva RP, both SKM suburban operators, and the two Czech open-access
+carriers, Leo Express and RegioJet.
+
+Category comes from PLK's own `plk_category_code`, carried per trip, rather
+than from the line name — which in Poland would misread badly. Koleje
+Śląskie brands its regional lines S1, S4 and S5 exactly like a suburban
+railway, and classifying by name would have moved a third of Silesia's
+regional traffic into the S-Bahn category. The two operators that really
+are suburban railways, SKM Warszawa and PKP SKM Trójmiasto, are picked out
+by operator instead, because their own category codes collide with Koleje
+Śląskie's branding. A trip whose category changes en route carries a
+combined code — `EC/IC`, `EN/IC` — so the code is split and the
+highest-ranking token wins: a train that is a EuroNight for part of its run
+is drawn as a night train.
+
+The gap to state plainly: the feed is a **30-day rolling window**, and the
+copy reachable from this build environment was mirrored on 4 June 2026, so
+the newest ordinary Wednesday available is 24 June, not today's. Rail
+replacement buses (ZKA) are dropped, the way SEV is on the German map.
+
+## The Denmark page
+
+`#dk` is **3,837 trains on Wednesday 26 August 2026**, and every single one
+of them follows real track geometry.
+
+Rejseplanen is Denmark's single national journey planner and publishes one
+GTFS for the whole country — 26 agencies and 36,799 stops, most of it
+buses. Filtered to rail it gives complete national coverage: DSB's IC, Lyn
+and regional trains, GoCollective (the former Arriva Tog) across Jutland,
+the eleven Lokaltog private railways on Zealand, Midttrafik's and NT's
+local lines, the Öresundståg that Skånetrafiken runs across the bridge into
+Sweden, Snälltåget's night trains to Stockholm and Berlin, and the
+Copenhagen S-tog.
+
+The Copenhagen metro and the Aarhus, Odense and Hovedstaden light rail are
+left out, on the same rule the Swiss page uses — S-Bahn yes, trams and
+metro no. The metro alone would have been 47,000 trips, three times every
+train in the country, and it is not what a national rail map is about.
+
+One quirk of the feed is worth knowing about: GoCollective files thirteen
+thousand Jutland train trips under a single route numbered `030`, which is
+not a line anybody travels on. Where a short name is a bare number like
+that, the operator's name is shown on hover instead. Danish station names
+all end in " St." — a suffix that distinguishes nothing when every station
+has it — so it is stripped.
+
 ## The London page
 
 `#london` is **11,075 trains on Wednesday 26 August 2026**: the
@@ -530,6 +589,9 @@ build/bundle.py       both JSON files -> inlined into index.html
 build/export_video.js index.html -> portrait MP4
 build/export_tour.js  index.html -> portrait flyover MP4
 build/tour_pace.py    measures the flyover's on-screen train speed
+build/build_pl.py     Polish national aggregate -> JSON (category from PLK)
+build/build_dk.py     Rejseplanen -> JSON (rail filtered out of the bus feed)
+build/simplify_geo.py Douglas-Peucker pass over a finished basemap
 vs.html               rail and air side by side on one frame and one clock
 data/planes.json      flight list copied from the sibling air project
 data/planes-geo.json  its basemap (Germany filled, Europe as thin lines)
