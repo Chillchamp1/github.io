@@ -1,17 +1,17 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: thirteen networks, from a cross-border map of five countries
+open timetables: fourteen networks, from a cross-border map of five countries
 down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
 The landing map is the combined one — Germany, the Benelux, Switzerland and
-France, where trains cross borders instead of stopping at them. The thirteen networks live in one
+France, where trains cross borders instead of stopping at them. The fourteen networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#iberia`, `#london`. Every network carries a "Data notes & gaps"
+`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#iberia`, `#it`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -414,6 +414,50 @@ FGC's Barcelona–Vallès metro lines (route_type 1), its funiculars and the
 Montserrat rack railway (route_type 7) are left out, on the rule the Swiss
 and Danish pages use: suburban railway yes, metro and funicular no.
 
+## The Italy page, and why it is smaller than Italy
+
+`#it` is **3,606 trains on Wednesday 3 June 2026** — and that is not Italy's
+railway. It is the part of Italy's railway that is published as open data,
+which is a different and much smaller thing.
+
+Trenitalia runs almost all of Italy's long-distance service and most of its
+regional service, and publishes **no national open timetable**. The
+Mobility Database's only entry filed under the name "Trenitalia" covers
+Sardinia: two lines and 41 stations. Every Frecciarossa, every Intercity,
+and the regional networks of Lazio, Campania, Veneto, Piedmont, Puglia and
+Sicily are simply absent. I checked the alternatives directly rather than
+assuming: GTT in Turin has an agency literally called *Servizio
+Ferroviario* and not one rail route in its file; ANM in Naples files
+Trenitalia's presence as metro line 2; Rome's aggregate is bus, tram and
+metro only.
+
+What is here is every regional contract that does publish rail:
+
+| Source | Where | Trains |
+|---|---|---|
+| Trenord | Lombardy — Milan's S-lines, RE trunk, R branches | 2,464 |
+| Trenitalia (Toscana) | Firenze–Pisa, Firenze–Arezzo, La Spezia–Parma, Siena | 773 |
+| Trenitalia (Sardegna) | the Sardinian standard gauge | 187 |
+| ARST | Sardinian narrow gauge — Sassari–Alghero, Monserrato–Isili | 98 |
+| Trentino trasporti | Trento–Malè–Mezzana, Valsugana | 66 |
+| AMT Genova | Genova–Casella | 18 |
+
+So Lombardy is lit up, Tuscany is a stripe, Sardinia is specks, and Rome,
+Naples, Turin, Venice, Bari and Palermo carry **an open ring and nothing
+else**. That is the point of building the page at all: the shape of the gap
+is worth seeing, and a map that quietly left those cities off would read as
+a rendering bug rather than as the hole in Italian open data that it is.
+`freeCities` in the network config is what places a label with no station
+under it.
+
+Two notes on the sources. The catalogue files the Tuscan feed under
+**"Marche"**, which is wrong — its routes are unambiguously Tuscan, and it
+is the second-largest thing on this map. And the date is forced by AMT
+Genova, whose feed covers a single week (1–8 June 2026); 3 June is the only
+Wednesday in it, and every other feed covers that date too. Trenord ships
+no route geometry, so Lombardy's trains cut straight lines between stops;
+Tuscany and Sardinia follow real track.
+
 ## The London page
 
 `#london` is **11,075 trains on Wednesday 26 August 2026**: the
@@ -635,6 +679,7 @@ build/tour_pace.py    measures the flyover's on-screen train speed
 build/build_pl.py     Polish national aggregate -> JSON (category from PLK)
 build/build_dk.py     Rejseplanen -> JSON (rail filtered out of the bus feed)
 build/build_iberia.py Renfe x2 + FGC + CP -> JSON (strips fixed-width padding)
+build/build_it.py     six Italian regional feeds -> JSON
 build/simplify_geo.py Douglas-Peucker pass over a finished basemap
 vs.html               rail and air side by side on one frame and one clock
 data/planes.json      flight list copied from the sibling air project
