@@ -1,17 +1,17 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: twelve networks, from a cross-border map of five countries
+open timetables: thirteen networks, from a cross-border map of five countries
 down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
 The landing map is the combined one — Germany, the Benelux, Switzerland and
-France, where trains cross borders instead of stopping at them. The twelve networks live in one
+France, where trains cross borders instead of stopping at them. The thirteen networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#london`. Every network carries a "Data notes & gaps"
+`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#iberia`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -371,6 +371,49 @@ that, the operator's name is shown on hover instead. Danish station names
 all end in " St." — a suffix that distinguishes nothing when every station
 has it — so it is stripped.
 
+## The Iberia page
+
+`#iberia` is **8,230 trains on Wednesday 3 June 2026** across Spain and
+Portugal, 1,988 stations, merged from four separate feeds with four
+different conventions.
+
+There is no Iberian DELFI or Rejseplanen. The peninsula's rail arrives as
+Renfe's high-speed/long-distance/medium-distance export, Renfe Cercanías,
+FGC in Catalonia, and CP in Portugal — and two of those are malformed in
+the same specific way.
+
+**The padding.** Renfe exports both of its feeds as fixed-width text with
+the separators left in. `route_id` carries trailing spaces in `routes.txt`
+but not in `trips.txt`, and the last column of every file has its *header*
+padded with three hundred spaces — so a plain `csv.DictReader` produces a
+key called `end_date` followed by a paragraph of whitespace, and
+`row["end_date"]` raises `KeyError`. Read naively, Renfe Cercanías joins
+**zero** of its 121,941 trips to a route, and the entire Madrid, Barcelona,
+Valencia and Sevilla suburban network silently disappears while the map
+still looks plausible. Every key and value is stripped on the way in; that
+is the whole fix, and it is the reason this page exists at all.
+
+**The date.** The four feeds overlap in one narrow window — Cercanías is a
+30-day snapshot running 3 June to 2 July 2026 — and inside it the traffic
+is not flat. 10 June is Portugal's national day and CP drops from 1,362
+trains to 868; 24 June is Sant Joan and São João, and FGC halves. Wednesday
+3 June is the one date on which all four feeds are at or within a hair of
+their maximum.
+
+**What is missing.** Euskotren, FGV in Valencia and Renfe Feve are
+published through Spain's national access point and appear in the Mobility
+Database catalogue, but their mirrors return 404, so the Basque and
+Valencian narrow-gauge networks are absent. Only Cercanías and FGC ship
+route geometry, so about a third of the trains follow real track and the
+rest interpolate straight between stops — on a peninsula with this much
+mountain, that visibly cuts corners. Renfe's long-distance export carries
+no `trip_headsign` at all, so the destination on hover is taken from the
+last stop.
+
+FGC's Barcelona–Vallès metro lines (route_type 1), its funiculars and the
+Montserrat rack railway (route_type 7) are left out, on the rule the Swiss
+and Danish pages use: suburban railway yes, metro and funicular no.
+
 ## The London page
 
 `#london` is **11,075 trains on Wednesday 26 August 2026**: the
@@ -591,6 +634,7 @@ build/export_tour.js  index.html -> portrait flyover MP4
 build/tour_pace.py    measures the flyover's on-screen train speed
 build/build_pl.py     Polish national aggregate -> JSON (category from PLK)
 build/build_dk.py     Rejseplanen -> JSON (rail filtered out of the bus feed)
+build/build_iberia.py Renfe x2 + FGC + CP -> JSON (strips fixed-width padding)
 build/simplify_geo.py Douglas-Peucker pass over a finished basemap
 vs.html               rail and air side by side on one frame and one clock
 data/planes.json      flight list copied from the sibling air project

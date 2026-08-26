@@ -906,6 +906,65 @@ const NETWORKS = {
       "delays or cancellations. Through services to Hamburg, Berlin, " +
       "Stockholm and Innsbruck are drawn leaving the frame.",
   },
+  iberia: {
+    label:"Spain & Portugal", pill:"Iberia", unit:"trains",
+    data:"data/iberia-trains.json", geo:"data/iberia-geo.json",
+    /* Eight degrees of latitude in the same pixel band: the peninsula
+       measures 73 px per degree where Switzerland measures 249. */
+    minorPxPerDeg:62,
+    classes:{
+      /* One line each: a legend that wraps to eight rows grows tall enough
+         to bury Lisboa, which sits in exactly that corner of this frame. */
+      highspeed: {label:"High-speed — AVE, Avant", cat:"high-speed",
+                  role:"ice",   size:0.50, secs:640, trail:6, ring:1.00},
+      intercity: {label:"Intercity — Intercidades", cat:"intercity",
+                  role:"ic",    size:0.46, secs:560, trail:5, ring:0.70},
+      regional:  {label:"Regional — Media Distancia", cat:"regional",
+                  role:"reg",   size:0.30, secs:360, trail:4, ring:0.10},
+      cercanias: {label:"Cercanías, FGC, CP urbanos", cat:"suburban",
+                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+    },
+    views:{ iberia: {label:"Iberia",
+      core:{lon0:-9.70, lon1:4.50, lat0:36.00, lat1:43.95},
+      maxv:{lon0:-12.20, lon1:7.20, lat0:34.70, lat1:45.40},
+      clock:{lat:43.75, lon:2.60}} },
+    cities:[
+      ["Madrid",40.4065,-3.6895,1],      ["Barcelona",41.3792,2.1400,1],
+      ["València",39.4667,-0.3775,1],    ["Sevilla",37.3919,-5.9757,1],
+      ["Zaragoza",41.6590,-0.9110,1],    ["Málaga",36.7118,-4.4310,1],
+      ["Bilbao",43.2600,-2.9350,1],      ["Murcia",37.9800,-1.1310,0],
+      ["Alacant",38.3450,-0.4900,0],     ["Valladolid",41.6440,-4.7260,0],
+      ["Vigo",42.2340,-8.7130,0],        ["A Coruña",43.3540,-8.4060,0],
+      ["Córdoba",37.8890,-4.7880,0],     ["Granada",37.1620,-3.6090,0],
+      ["Santander",43.4610,-3.8080,0],   ["Oviedo",43.3610,-5.8500,0],
+      ["Pamplona",42.8110,-1.6320,0],    ["Donostia",43.3170,-1.9750,0],
+      ["Salamanca",40.9540,-5.6660,0],   ["Cáceres",39.4720,-6.3700,0],
+      ["Lisboa",38.7360,-9.1420,1],      ["Porto",41.1490,-8.5850,1],
+      ["Coimbra",40.2170,-8.4330,0],     ["Braga",41.5480,-8.4340,0],
+      ["Faro",37.0210,-7.9330,0],        ["Évora",38.5640,-7.9070,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " across Spain and Portugal, from the operators' own open " +
+      "timetables for " + dateStr(d) + ".",
+    note: "FGC's metro lines and funiculars are excluded; its suburban " +
+      "lines are not.",
+    caveats: "Four separate feeds with four conventions, merged onto one " +
+      "date: Renfe's high-speed/long-distance/medium-distance export, Renfe " +
+      "Cercanías, FGC in Catalonia, and CP in Portugal. Coverage is good but " +
+      "not total — Euskotren, FGV in Valencia and Renfe Feve are published " +
+      "by Spain's national access point but were not reachable as data from " +
+      "here, so the Basque and Valencian narrow-gauge networks are missing. " +
+      "Only Cercanías and FGC ship route geometry, so a third of the trains " +
+      "follow real track and the rest interpolate straight between stops; " +
+      "on a peninsula with this much mountain that cuts visible corners. " +
+      "Both Renfe files are fixed-width padded — route IDs carry trailing " +
+      "spaces on one side of the join and not the other — so every field is " +
+      "stripped on the way in; read naively the entire suburban network " +
+      "silently vanishes. The date is the one Wednesday all four feeds are " +
+      "at full strength: Cercanías is a 30-day snapshot, 10 June is " +
+      "Portugal's national day and 24 June is Sant Joan. As everywhere, " +
+      "this is the published schedule, without delays.",
+  },
   london: {
     label:"London", pill:"London", unit:"trains",
     data:"data/london-trains.json", geo:"data/london-geo.json",
@@ -1422,7 +1481,19 @@ function placeLabels(){
   ctx.font = '400 11px "IBM Plex Sans",system-ui,sans-serif';
   const pxPerDeg = SX / (VIEW.lon1 - VIEW.lon0);
   const withMinors = pxPerDeg >= NET.minorPxPerDeg;
+  /* The two furniture panels that sit on top of the map -- the legend and
+     the controls -- are fixed HTML, not canvas, so the collision pass has
+     to measure them rather than compute them. On Iberia the legend covered
+     Lisboa outright; on a phone the panels scroll below the map, and a
+     rect that does not overlap the canvas is simply dropped. */
   const taken = [CLOCK_BOX, KEY_BOX];
+  for (const id of ["legend", "controls"]){
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const b = el.getBoundingClientRect();
+    if (b.height <= 0 || b.bottom <= 0 || b.top >= H) continue;
+    taken.push({x:b.left - 6, y:b.top - 6, w:b.width + 12, h:b.height + 12});
+  }
   const hits = (r) =>
     r.x < 2 || r.y < 2 || r.x + r.w > W-2 ||
     taken.some(t => r.x < t.x+t.w && r.x+r.w > t.x && r.y < t.y+t.h && r.y+r.h > t.y);
