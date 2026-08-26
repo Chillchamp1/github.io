@@ -327,40 +327,76 @@ const DAY_SECONDS = 86400;
    more than one. */
 const NETWORKS = {
   eu: {
-    label:"Western Europe", pill:"Europe", unit:"trains",
+    label:"Europe", pill:"Europe", unit:"trains",
     data:"data/eu-trains.json", geo:"data/eu-geo.json",
     minorPxPerDeg:120, borders:true,
+    /* Rome and Naples have no open timetable, so no station falls near
+       them and the usual snap would drop their labels. On the map that
+       claims nine countries, leaving them blank reads as an omission
+       rather than as Italy's missing feed. */
+    freeCities:true,
     classes:{
-      ice:       {label:"High-speed — ICE, TGV, Eurostar", cat:"high-speed",
+      ice:       {label:"High-speed — ICE, TGV, AVE", cat:"high-speed",
                   role:"ice",   size:0.46, secs:600, trail:6, ring:1.00},
       intercity: {label:"Intercity — IC, EC, InterRegio", cat:"intercity",
                   role:"ic",    size:0.42, secs:560, trail:5, ring:0.70},
-      /* 52,000 regional services is most of the map's cost and, at a frame
-         1,300 km across, most of its texture: two trail segments read the
+      /* 83,000 regional services are most of the map's cost and, at a frame
+         2,600 km across, most of its texture: two trail segments read the
          same as four and cost half. */
-      regional:  {label:"Regional — RE, RB, Sprinter, RER", cat:"regional",
+      regional:  {label:"Regional — RE, RB, Cercanías", cat:"regional",
                   role:"reg",   size:0.28, secs:260, trail:2, ring:0.08},
-      mountain:  {label:"Rack railway and panorama", cat:"rack · panorama",
+      mountain:  {label:"Rack, panorama and narrow gauge", cat:"rack · narrow",
                   role:"mtn",   size:0.34, secs:420, trail:4, ring:0.40},
       night:     {label:"Night train", cat:"night",
                   role:"night", size:0.44, secs:600, trail:6, ring:1.00},
     },
-    views:{ eu: {label:"Europe",
-      core:{lon0:-5.10, lon1:15.40, lat0:42.30, lat1:55.30},
-      /* Room to grow north and south. The preset may only stretch as far as
-         maxv, and this region is wider than it is tall, so on a phone held
-         upright the old bounds left the map as a band across the middle
-         with a third of the screen empty above and below it. Sea and
-         unmapped land are a better use of that space than nothing: the map
-         itself is drawn larger. */
-      maxv:{lon0:-7.00, lon1:18.40, lat0:34.50, lat1:63.00},
-      clock:{lat:54.90, lon:6.20}} },
+    /* One dataset, six framings. The whole continent is the front door; the
+       presets are there because at 23 pixels per degree a Danish local
+       train is a speck, and reading one country properly should not require
+       leaving the map that has all of them on it. */
+    views:{
+      /* Centred a degree west of the landmass on purpose: the frame
+         widens symmetrically, and centred on the data Lisboa lands
+         fourteen pixels inside the legend and is dropped. */
+      eu:      {label:"Europe",
+                core:{lon0:-11.10, lon1:23.30, lat0:36.00, lat1:58.20},
+                maxv:{lon0:-14.00, lon1:30.50, lat0:32.80, lat1:62.50},
+                clock:{lat:57.30, lon:20.60}},
+      central: {label:"Centre",
+                core:{lon0:-5.10, lon1:15.40, lat0:42.30, lat1:55.30},
+                maxv:{lon0:-7.00, lon1:18.40, lat0:34.50, lat1:63.00},
+                clock:{lat:54.90, lon:6.20}},
+      iberia:  {label:"Iberia",
+                core:{lon0:-9.70, lon1:4.50, lat0:36.00, lat1:43.95},
+                maxv:{lon0:-12.20, lon1:7.20, lat0:34.70, lat1:45.40},
+                clock:{lat:43.75, lon:2.60}},
+      italy:   {label:"Italy",
+                core:{lon0:6.40, lon1:18.70, lat0:36.50, lat1:47.20},
+                maxv:{lon0:1.60, lon1:23.50, lat0:35.20, lat1:48.40},
+                clock:{lat:46.60, lon:15.60}},
+      poland:  {label:"Poland",
+                core:{lon0:13.90, lon1:24.30, lat0:48.90, lat1:54.95},
+                maxv:{lon0:11.40, lon1:27.20, lat0:47.40, lat1:56.20},
+                clock:{lat:54.55, lon:20.60}},
+      north:   {label:"Denmark",
+                core:{lon0:7.90, lon1:13.40, lat0:54.50, lat1:57.85},
+                maxv:{lon0:6.10, lon1:16.60, lat0:53.30, lat1:58.70},
+                clock:{lat:57.60, lon:12.60}},
+    },
     cities:[
       ["Berlin",52.5251,13.3694,1],      ["Hamburg",53.5528,10.0067,1],
       ["München",48.1402,11.5600,1],     ["Köln",50.9430,6.9587,1,1],
       ["Frankfurt",50.1071,8.6638,1],    ["Amsterdam",52.3789,4.9003,1,1],
       ["Brussel",50.8360,4.3355,1,1],    ["Zürich",47.3782,8.5403,1],
       ["Paris",48.8767,2.3585,1,1],      ["Lyon",45.7602,4.8595,1,1],
+      ["Warszawa",52.2288,21.0033,1],    ["Kraków",50.0678,19.9475,1],
+      ["Poznań",52.4022,16.9126,1],      ["Wrocław",51.0989,17.0367,1],
+      ["Gdańsk",54.3556,18.6440,1],      ["København",55.6727,12.5652,1],
+      ["Madrid",40.4065,-3.6895,1],      ["Barcelona",41.3792,2.1400,1],
+      ["Lisboa",38.7360,-9.1420,1,1],    ["Porto",41.1490,-8.5850,1,1],
+      ["Sevilla",37.3919,-5.9757,1,1],   ["València",39.4667,-0.3775,1],
+      ["Milano",45.4854,9.2040,1],       ["Firenze",43.7765,11.2480,1],
+      ["Roma",41.9010,12.5010,1],        ["Napoli",40.8530,14.2720,1],
       ["Marseille",43.3027,5.3804,0],    ["Bordeaux",44.8262,-0.5561,0,1],
       ["Toulouse",43.6114,1.4536,0],     ["Nantes",47.2172,-1.5423,0,1],
       ["Strasbourg",48.5850,7.7345,0],   ["Stuttgart",48.7838,9.1817,0],
@@ -369,44 +405,54 @@ const NETWORKS = {
       ["Basel",47.5476,7.5896,0],        ["Bern",46.9490,7.4396,0,1],
       ["Genève",46.2102,6.1424,0,1],     ["Rotterdam",51.9249,4.4699,0,1],
       ["Antwerpen",51.2172,4.4210,0,1],  ["Luxembourg",49.6000,6.1342,0],
+      ["Łódź",51.7690,19.4740,0],        ["Szczecin",53.4325,14.5561,0],
+      ["Katowice",50.2576,19.0166,0],    ["Lublin",51.2333,22.5686,0],
+      ["Aarhus",56.1500,10.2040,0],      ["Odense",55.4038,10.3861,0],
+      ["Zaragoza",41.6590,-0.9110,0],    ["Bilbao",43.2600,-2.9350,0],
+      ["Málaga",36.7118,-4.4310,0],      ["Coimbra",40.2170,-8.4330,0,1],
+      ["Torino",45.0620,7.6790,0],       ["Genova",44.4110,8.9190,0],
+      ["Venezia",45.4400,12.3210,0],     ["Bologna",44.5060,11.3430,0],
+      ["Pisa",43.7090,10.3980,0],        ["Cagliari",39.2160,9.1110,0],
+      ["Verona",45.4290,10.9820,0],      ["Trento",46.0720,11.1190,0],
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
-      d.weekday + " across Germany, the Benelux, Switzerland and France — " +
-      "borders drawn, but not stopped at. " + dateStr(d) + ", except SNCF's " +
-      "TER, TGV and Intercités, which are a 2025 timetable.",
-    note: "Five countries on one map, so a EuroCity from Zürich to Hamburg " +
-      "is one dot for its whole run instead of stopping at the border. " +
-      "SNCF's own trains are drawn from an older timetable than everything " +
-      "else, Paris included — see the data notes.",
-    caveats: "Sources merged on the one Wednesday they cover: the " +
-      "German DELFI dataset, OVapi/NDOV with SNCB and the Luxembourg feed " +
-      "for the Benelux, the Swiss SKI+/SBB aggregate, Île-de-France " +
-      "Mobilités for the RER and Transilien, and Eurostar's own " +
-      "feed for the Paris and London legs. The shared date is what makes " +
-      "the map honest — DELFI runs out on 13 June 2026 and Luxembourg's " +
-      "feed starts on 6 May, so 10 June is the only window all four agree " +
-      "on. France is the one exception and cannot be otherwise: the newest " +
-      "openly mirrored SNCF timetable is from early 2025, with no overlap " +
-      "at all with the 2026 windows of the others, so its trains run on " +
-      "their own Wednesday, 5 February 2025, beside everyone else's June " +
-      "2026. Two weekday timetables a year apart differ in detail, not in " +
-      "character — but if you are counting French trains rather than " +
-      "watching them, use the France map and read its notes. Paris is the " +
-      "exception to the exception: the RER and Transilien come from " +
-      "Île-de-France Mobilités, whose mirror does cover 10 June 2026, so the " +
-      "Paris region runs on the same day as Germany. Trains are published by " +
-      "both countries they run through — and SKI+ carries some 3,700 French " +
-      "regional services that SNCF publishes as well — so services are " +
-      "deduplicated across feeds: long distance on line, departure minute " +
+      d.weekday + " across nine countries, from Portugal to Poland and " +
+      "Sicily to Skagen — borders drawn, but not stopped at. " + dateStr(d) +
+      ", except SNCF's TER, TGV and Intercités, which are a 2025 timetable.",
+    note: "Nine countries on one map and one clock, so a EuroCity from " +
+      "Zürich to Hamburg or from Berlin to Warszawa is one dot for its " +
+      "whole run instead of stopping at the border. Use the buttons under " +
+      "the network pills to frame one country without leaving the map.",
+    caveats: "Every source merged onto the one Wednesday they all cover, " +
+      "10 June 2026: the German DELFI dataset, OVapi/NDOV with SNCB and " +
+      "Luxembourg for the Benelux, the Swiss SKI+/SBB aggregate, " +
+      "Île-de-France Mobilités for the RER and Transilien, Eurostar's own " +
+      "feed, PKP PLK's national register for Poland, Rejseplanen for " +
+      "Denmark, Renfe's two exports with FGC and CP for Iberia, and six " +
+      "Italian regional contracts. The shared date is what makes this a map " +
+      "rather than a collage — DELFI runs out on 13 June, Poland's feed is " +
+      "a 30-day window opening on 4 June, Renfe Cercanías a 30-day window " +
+      "opening on 3 June, so 10 June is the only Wednesday inside all of " +
+      "them. Two prices were paid for that and are worth knowing: 10 June " +
+      "is Portugal's national day, so CP runs 868 trains instead of its " +
+      "usual 1,362, and AMT Genova publishes only the week of 1–8 June, so " +
+      "the Genova–Casella narrow gauge is absent here though it is on the " +
+      "Italy map. France is the one country that cannot share the date at " +
+      "all: the newest openly mirrored SNCF timetable is early 2025, with " +
+      "no overlap with anyone's 2026 window, so its trains run on their own " +
+      "Wednesday, 5 February 2025 — except Paris, whose RER and Transilien " +
+      "come from Île-de-France Mobilités and do cover 10 June. Italy is the " +
+      "large hole: Trenitalia publishes no national open timetable, so " +
+      "every Frecciarossa and Intercity and the whole south are missing, " +
+      "and what is drawn is Lombardy, Tuscany and Sardinia — see the Italy " +
+      "map. Trains published by both countries they run through are " +
+      "deduplicated across sources: long distance on line, departure minute " +
       "and destination; regional on geography, since “S1” runs in half of " +
       "Europe and only the origin, the destination and the minute can tell " +
-      "two regional trains apart. Germany's trains follow the route geometry in its feed " +
-      "(simplified harder here than on the Germany map, because this is the " +
-      "landing page); Benelux and Swiss trains interpolate straight between " +
-      "stops, since neither feed publishes geometry. France, Austria, " +
-      "Poland and Czechia are drawn as neighbours but carry no trains of " +
-      "their own — services from the four feeds run off the frame toward " +
-      "them. For the fullest version of any one country, use its own map.",
+      "two regional trains apart. Route geometry follows each feed: Germany, " +
+      "Poland, Denmark, Tuscany and Spanish Cercanías run on real track, " +
+      "the rest interpolate straight between stops. For the fullest version " +
+      "of any one country, use its own map.",
   },
   de: {
     label:"Germany", pill:"DE", unit:"trains",
@@ -1751,63 +1797,89 @@ const pulseSpan = () => Math.max(180, Math.min(960, minutesPerSecond*60*0.65));
 const DOT_R = 1.8;
 let hitList = [];
 
+/* Everything about how a class is painted, worked out once per frame
+   instead of once per train. On the combined map that is 92,000 trips and
+   up to six draw calls each: building "rgba(90,169,255,0.41)" inside the
+   loop meant tens of thousands of string builds and CSS colour parses a
+   frame, which cost more than the geometry did. */
+let STY = [], STY_KEY = "";
+function styles(hues){
+  const key = CLASSES.join(",") + "|" + DPR;
+  if (key === STY_KEY) return STY;
+  STY_KEY = key;
+  STY = CLASSES.map((k, i) => {
+    const m = CLASS_META[k] || {size:1};
+    const col = hues[i], scale = m.size || 1, steps = m.trail || 7;
+    const trail = [];
+    for (let j = 1; j <= steps; j++){
+      const a = (1 - j/steps) * 0.55;
+      trail.push(a <= 0.02 ? null
+        : {s: rgba(col, a), w: Math.max(1/DPR, 2.4*scale*(1 - j/(steps+3)))});
+    }
+    return {scale, steps, trail, span: m.secs || 1200,
+            halo: rgba(col, 0.15), haloR: 3.6*scale,
+            drawHalo: 3.6*scale*DPR >= 1.5,
+            dot: rgba(col, 0.98), flat: rgba(col, 1),
+            r: DOT_R*scale, rDev: DOT_R*scale*DPR};
+  });
+  return STY;
+}
+
 function draw(){
   const bgBot = pick("bgBot"), cInk3 = pick("ink3");
   const hues  = CLASSES.map(k => pick(CLASS_META[k].role));
+  const sty = styles(hues);
 
   if (!baseReady) renderBase();
   ctx.drawImage(base, 0, 0, W, H);
 
   hitList = [];
+  ctx.lineCap = "round";
   const g = ctx;
   for (const t of TRIPS){
-    const meta = CLASS_META[CLASSES[t.c]] || {size:1};
+    const S = sty[t.c] || sty[0];
     for (const off of (t.t1 > DAY_SECONDS ? [0, DAY_SECONDS] : [0])){
       const sec = simSec + off;
       const head = posAt(t, sec);
       if (!head) continue;
       if (head[0] < -60 || head[0] > W+60 || head[1] < -60 || head[1] > H+60) continue;
 
-      const col = hues[t.c], scale = meta.size;
-      const steps = meta.trail || 7;
-      const span = meta.secs || 1200;
+      const steps = S.steps, step = S.span/steps;
       let px = head[0], py = head[1];
       for (let k = 1; k <= steps; k++){
-        const back = posAt(t, sec - (span/steps)*k);
+        const ts = S.trail[k-1];
+        if (!ts) break;
+        const back = posAt(t, sec - step*k);
         if (!back) break;
-        const a = (1 - k/steps) * 0.55;
-        if (a <= 0.02) break;
         g.beginPath();
         g.moveTo(px, py);
         g.lineTo(back[0], back[1]);
-        g.strokeStyle = rgba(col, a);
-        g.lineWidth = Math.max(1/DPR, 2.4 * scale * (1 - k/(steps+3)));
-        g.lineCap = "round";
+        g.strokeStyle = ts.s;
+        g.lineWidth = ts.w;
         g.stroke();
         px = back[0]; py = back[1];
       }
 
       /* The halo is a 15%-opacity disc; below about a pixel and a half it
-         is invisible, and on a map with fifty thousand regional services
+         is invisible, and on a map with eighty thousand regional services
          those are thousands of arcs a frame spent on nothing. */
-      if (3.6*scale*DPR >= 1.5){
+      if (S.drawHalo){
         g.beginPath();
-        g.arc(head[0], head[1], 3.6*scale, 0, 6.2832);
-        g.fillStyle = rgba(col, 0.15);
+        g.arc(head[0], head[1], S.haloR, 0, 6.2832);
+        g.fillStyle = S.halo;
         g.fill();
       }
 
-      const rDev = DOT_R*scale*DPR;
-      if (rDev < 1.3){
-        const side = Math.max(1, Math.round(rDev*2));
-        g.fillStyle = rgba(col, 1);
+      if (S.rDev < 1.3){
+        const side = Math.max(1, Math.round(S.rDev*2));
+        g.fillStyle = S.flat;
         g.fillRect(Math.round(head[0]*DPR - side/2)/DPR,
                      Math.round(head[1]*DPR - side/2)/DPR,
                      side/DPR, side/DPR);
       } else {
         g.beginPath();
-        g.arc(head[0], head[1], DOT_R*scale, 0, 6.2832);
-        g.fillStyle = rgba(col, 0.98);
+        g.arc(head[0], head[1], S.r, 0, 6.2832);
+        g.fillStyle = S.dot;
         g.fill();
       }
       hitList.push([head[0], head[1], t]);
