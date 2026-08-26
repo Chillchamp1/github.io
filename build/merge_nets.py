@@ -39,6 +39,12 @@ defending:
 
   Italian narrow gauge joins `mountain`, alongside the Swiss rack railways.
 
+  Czech R lines -- rychliky running through a region -- become `intercity`;
+  the Esko S networks join `regional`. British operators are already sorted
+  into tiers by build_uk.py, so intercity stays intercity and the Overground,
+  Merseyrail and TfL Rail join `regional` with every other suburban railway
+  on this map.
+
 Cross-source duplicates are merged the way build_eu.py merges them, and for
 the same reason: an EC Hamburg-Copenhagen is in DELFI and in Rejseplanen,
 a Berlin-Warszawa EC is in DELFI and in the Polish register, a
@@ -60,6 +66,10 @@ CLASS_MAP = {
            "regional": "regional", "cercanias": "regional"},
     "it": {"express": "regional", "regional": "regional",
            "suburban": "regional", "narrow": "mountain"},
+    "uk": {"intercity": "intercity", "regional": "regional",
+           "suburban": "regional", "night": "night"},
+    "cz": {"express": "intercity", "regional": "regional",
+           "suburban": "regional"},
 }
 
 

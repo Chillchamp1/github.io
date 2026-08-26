@@ -367,8 +367,8 @@ const NETWORKS = {
          widens symmetrically, and centred on the data Lisboa lands
          fourteen pixels inside the legend and is dropped. */
       eu:      {label:"Europe",
-                core:{lon0:-11.10, lon1:23.30, lat0:36.00, lat1:58.20},
-                maxv:{lon0:-14.00, lon1:30.50, lat0:32.80, lat1:62.50},
+                core:{lon0:-11.10, lon1:23.30, lat0:36.00, lat1:58.85},
+                maxv:{lon0:-14.00, lon1:30.50, lat0:32.80, lat1:63.00},
                 clock:{lat:57.30, lon:20.60}},
       central: {label:"Centre",
                 core:{lon0:-5.10, lon1:15.40, lat0:42.30, lat1:55.30},
@@ -386,6 +386,10 @@ const NETWORKS = {
                 core:{lon0:13.90, lon1:24.30, lat0:48.90, lat1:54.95},
                 maxv:{lon0:11.40, lon1:27.20, lat0:47.40, lat1:56.20},
                 clock:{lat:54.55, lon:20.60}},
+      britain: {label:"Britain",
+                core:{lon0:-6.40, lon1:1.90, lat0:50.00, lat1:58.70},
+                maxv:{lon0:-11.20, lon1:6.80, lat0:48.60, lat1:60.20},
+                clock:{lat:58.00, lon:0.60}},
       north:   {label:"Denmark",
                 core:{lon0:7.90, lon1:13.40, lat0:54.50, lat1:57.85},
                 maxv:{lon0:6.10, lon1:16.60, lat0:53.30, lat1:58.70},
@@ -405,6 +409,12 @@ const NETWORKS = {
       ["Sevilla",37.3919,-5.9757,1,1],   ["València",39.4667,-0.3775,1],
       ["Milano",45.4854,9.2040,1],       ["Firenze",43.7765,11.2480,1],
       ["Roma",41.9010,12.5010,1],        ["Napoli",40.8530,14.2720,1],
+      ["London",51.5285,-0.1240,1],      ["Manchester",53.4774,-2.2309,1],
+      ["Birmingham",52.4778,-1.8988,1],  ["Glasgow",55.8600,-4.2580,1],
+      ["Edinburgh",55.9521,-3.1889,1],   ["Praha",50.0830,14.4356,1],
+      ["Leeds",53.7955,-1.5487,0],       ["Liverpool",53.4076,-2.9779,0],
+      ["Bristol",51.4490,-2.5810,0],     ["Newcastle",54.9686,-1.6174,0],
+      ["Cardiff",51.4760,-3.1790,0],     ["Brno",49.1907,16.6122,0],
       ["Marseille",43.3027,5.3804,0],    ["Bordeaux",44.8262,-0.5561,0,1],
       ["Toulouse",43.6114,1.4536,0],     ["Nantes",47.2172,-1.5423,0,1],
       ["Strasbourg",48.5850,7.7345,0],   ["Stuttgart",48.7838,9.1817,0],
@@ -424,10 +434,11 @@ const NETWORKS = {
       ["Verona",45.4290,10.9820,0],      ["Trento",46.0720,11.1190,0],
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
-      d.weekday + " across nine countries, from Portugal to Poland and " +
-      "Sicily to Skagen — borders drawn, but not stopped at. " + dateStr(d) +
-      ", except SNCF's TER, TGV and Intercités, which are a 2025 timetable.",
-    note: "Nine countries on one map and one clock, so a EuroCity from " +
+      d.weekday + " across eleven countries, from Portugal to Poland and " +
+      "Penzance to Thurso — borders drawn, but not stopped at. " + dateStr(d) +
+      ", except SNCF's TER, TGV and Intercités (a 2025 timetable) and " +
+      "Britain's National Rail (2021 — the newest openly mirrored one).",
+    note: "Eleven countries on one map and one clock, so a EuroCity from " +
       "Zürich to Hamburg or from Berlin to Warszawa is one dot for its " +
       "whole run instead of stopping at the border. Use the buttons under " +
       "the network pills to frame one country without leaving the map.",
@@ -436,8 +447,10 @@ const NETWORKS = {
       "Luxembourg for the Benelux, the Swiss SKI+/SBB aggregate, " +
       "Île-de-France Mobilités for the RER and Transilien, Eurostar's own " +
       "feed, PKP PLK's national register for Poland, Rejseplanen for " +
-      "Denmark, Renfe's two exports with FGC and CP for Iberia, and six " +
-      "Italian regional contracts. The shared date is what makes this a map " +
+      "Denmark, Renfe's two exports with FGC and CP for Iberia, six " +
+      "Italian regional contracts, PID and IDS JMK for Czechia, and the " +
+      "National Rail timetable for Britain. The shared date is what makes " +
+      "this a map " +
       "rather than a collage — DELFI runs out on 13 June, Poland's feed is " +
       "a 30-day window opening on 4 June, Renfe Cercanías a 30-day window " +
       "opening on 3 June, so 10 June is the only Wednesday inside all of " +
@@ -449,11 +462,19 @@ const NETWORKS = {
       "all: the newest openly mirrored SNCF timetable is early 2025, with " +
       "no overlap with anyone's 2026 window, so its trains run on their own " +
       "Wednesday, 5 February 2025 — except Paris, whose RER and Transilien " +
-      "come from Île-de-France Mobilités and do cover 10 June. Italy is the " +
+      "come from Île-de-France Mobilités and do cover 10 June. Britain is " +
+      "the second exception and the larger one: the only openly mirrored " +
+      "National Rail timetable is 2021, so its 20,265 trains run on " +
+      "Wednesday 9 June 2021 beside everyone else's 2026 — a whole country " +
+      "five years out, which is worth knowing before counting anything. " +
+      "Italy is the " +
       "large hole: Trenitalia publishes no national open timetable, so " +
       "every Frecciarossa and Intercity and the whole south are missing, " +
       "and what is drawn is Lombardy, Tuscany and Sardinia — see the Italy " +
-      "map. Trains published by both countries they run through are " +
+      "map. Czechia is the same shape of hole: České dráhy publishes " +
+      "nothing, so only Prague's and Brno's regions are here and the " +
+      "country between them is empty. Trains published by both countries " +
+      "they run through are " +
       "deduplicated across sources: long distance on line, departure minute " +
       "and destination; regional on geography, since “S1” runs in half of " +
       "Europe and only the origin, the destination and the minute can tell " +
@@ -1085,6 +1106,137 @@ const NETWORKS = {
       "forced by AMT Genova, whose feed covers a single week. Trenord " +
       "ships no route geometry, so Lombardy's trains cut straight lines; " +
       "Tuscany and Sardinia follow real track.",
+  },
+  uk: {
+    label:"Britain", pill:"UK", unit:"trains",
+    data:"data/uk-trains.json", geo:"data/uk-geo.json",
+    minorPxPerDeg:46,
+    /* Between two and half past four Britain has a dozen trains moving. */
+    ffwdBelow:30, ffwdBoost:5,
+    /* Northern Ireland Railways is not a National Rail operator and is in no
+       open feed, so Belfast and Derry carry a label and nothing else. */
+    freeCities:true,
+    classes:{
+      intercity: {label:"Intercity — LNER, Avanti, XC", cat:"intercity",
+                  role:"ic",    size:0.48, secs:620, trail:6, ring:1.00},
+      regional:  {label:"Regional and commuter", cat:"regional",
+                  role:"reg",   size:0.28, secs:340, trail:3, ring:0.10},
+      suburban:  {label:"Overground, Merseyrail, TfL Rail", cat:"suburban",
+                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+      night:     {label:"Caledonian Sleeper", cat:"night",
+                  role:"night", size:0.46, secs:640, trail:6, ring:1.00},
+    },
+    views:{ uk: {label:"Britain",
+      core:{lon0:-6.40, lon1:1.90, lat0:50.00, lat1:58.70},
+      maxv:{lon0:-11.20, lon1:6.80, lat0:48.60, lat1:60.20},
+      clock:{lat:58.00, lon:0.60}} },
+    cities:[
+      ["London",51.5285,-0.1240,1],       ["Birmingham",52.4778,-1.8988,1],
+      ["Manchester",53.4774,-2.2309,1],   ["Leeds",53.7955,-1.5487,1],
+      ["Glasgow",55.8600,-4.2580,1],      ["Edinburgh",55.9521,-3.1889,1],
+      ["Liverpool",53.4076,-2.9779,1],    ["Bristol",51.4490,-2.5810,1],
+      ["Newcastle",54.9686,-1.6174,1],    ["Sheffield",53.3781,-1.4620,1],
+      ["Cardiff",51.4760,-3.1790,1],      ["Nottingham",52.9470,-1.1465,0],
+      ["Southampton",50.9070,-1.4130,0],  ["Brighton",50.8290,-0.1410,0],
+      ["Norwich",52.6270,1.3060,0],       ["Plymouth",50.3780,-4.1430,0],
+      ["Aberdeen",57.1430,-2.0980,0],     ["Inverness",57.4800,-4.2230,0],
+      ["Exeter",50.7290,-3.5430,0],       ["York",53.9580,-1.0930,0],
+      ["Hull",53.7440,-0.3450,0],         ["Leicester",52.6310,-1.1250,0],
+      ["Preston",53.7560,-2.7080,0],      ["Swansea",51.6250,-3.9400,0],
+      ["Carlisle",54.8910,-2.9330,0],     ["Penzance",50.1220,-5.5320,0],
+      ["Belfast",54.6040,-5.9270,1],      ["Derry",54.9970,-7.3090,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " on the National Rail network, every operator from " +
+      "Penzance to Thurso — " + dateStr(d) + ", the newest openly mirrored " +
+      "British timetable.",
+    note: "The Underground, the Glasgow Subway and the Tyne and Wear Metro " +
+      "are excluded; the Overground, Merseyrail and TfL Rail are not.",
+    caveats: "The London page says British open data carries no National " +
+      "Rail, and for the Bus Open Data Service it uses that is still true: " +
+      "1.3 GB of 13,327 bus routes, 348 coach routes, metros and trams, and " +
+      "not one heavy-rail operator. This is a different file — the Mobility " +
+      "Database catalogues it under “Chiltern Railways”, which is how it " +
+      "went unnoticed, and inside are twenty-seven National Rail operators, " +
+      "3,004 stations and 176,591 trips. Two things to know. It is a 2021 " +
+      "timetable: the calendar runs December 2020 to December 2021 and the " +
+      "station list dates it precisely — Worcestershire Parkway (opened " +
+      "2020), Horden (2020) and Bow Street (February 2021) are all served " +
+      "on the day drawn, while Soham and Marsh Barton do not exist yet. " +
+      "20,265 trains against roughly 22,000 on a normal pre-pandemic " +
+      "weekday. And the feed's operator names are older than its timetable " +
+      "— it still says South West Trains and Virgin — so they are renamed " +
+      "to whoever was actually running those trains in June 2021. " +
+      "Classification is by operator, since British franchises have a shape: " +
+      "Grand Central's median trip is 385 km with 17 km between stops, " +
+      "London Overground's is 14 km with 1 km. The mixed franchises — Great " +
+      "Western runs Paddington to Penzance and Thames Valley locals under " +
+      "one name — promote a trip to intercity at 150 km and 10 km per stop. " +
+      "422 entries in stops.txt have no coordinates at all, ten of them " +
+      "called at on a weekday and all of them recently opened stations; " +
+      "those calls are dropped rather than guessed, so a train runs through " +
+      "without a marked stop instead of teleporting to the Gulf of Guinea. " +
+      "No route geometry in the feed, so trains interpolate straight between " +
+      "stops. Northern Ireland Railways is not a National Rail operator and " +
+      "appears in no open feed, so Belfast and Derry are labelled and empty.",
+  },
+  cz: {
+    label:"Czechia", pill:"CZ", unit:"trains",
+    data:"data/cz-trains.json", geo:"data/cz-geo.json",
+    minorPxPerDeg:120,
+    /* Both regional systems stop dead between one and four. */
+    ffwdBelow:20, ffwdBoost:6,
+    /* Ostrava, Plzeň, Olomouc and the rest have no open timetable: labelled
+       and empty, the way Rome is on the Italy map. */
+    freeCities:true,
+    classes:{
+      express:   {label:"Rychlík — R lines", cat:"intercity",
+                  role:"ic",    size:0.46, secs:560, trail:5, ring:0.70},
+      regional:  {label:"Regional", cat:"regional",
+                  role:"reg",   size:0.30, secs:360, trail:4, ring:0.12},
+      suburban:  {label:"Esko — S lines", cat:"suburban",
+                  role:"tram",  size:0.28, secs:320, trail:3, ring:0.10},
+    },
+    views:{ cz: {label:"Czechia",
+      core:{lon0:13.05, lon1:17.70, lat0:48.65, lat1:50.70},
+      maxv:{lon0:11.80, lon1:19.10, lat0:47.70, lat1:51.70},
+      clock:{lat:50.45, lon:17.05}} },
+    cities:[
+      ["Praha",50.0830,14.4356,1],        ["Brno",49.1907,16.6122,1],
+      ["Kladno",50.1490,14.1030,0],       ["Kolín",50.0290,15.2010,0],
+      ["Kutná Hora",49.9540,15.2680,0],   ["Mladá Boleslav",50.4120,14.9080,0],
+      ["Beroun",49.9540,14.0700,0],       ["Benešov",49.7810,14.6820,0],
+      ["Nymburk",50.1880,15.0400,0],      ["Znojmo",48.8570,16.0490,0],
+      ["Břeclav",48.7590,16.8880,0],      ["Hodonín",48.8510,17.1320,0],
+      ["Vyškov",49.2770,16.9990,0],       ["Blansko",49.3640,16.6440,0],
+      ["Tišnov",49.3490,16.4180,0],       ["Uherské Hradiště",49.0700,17.4590,0],
+      ["Ostrava",49.8580,18.2790,1],      ["Plzeň",49.7440,13.3740,1],
+      ["Olomouc",49.5940,17.2510,1],      ["České Budějovice",48.9740,14.4800,1],
+      ["Hradec Králové",50.2100,15.8320,0], ["Pardubice",50.0330,15.7580,0],
+      ["Ústí nad Labem",50.6580,14.0320,0], ["Liberec",50.7700,15.0570,0],
+      ["Zlín",49.2260,17.6700,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
+      d.weekday + " — Prague and its region, and Brno and its region. Not " +
+      "Czechia: České dráhy publishes no national timetable, so the country " +
+      "between them is empty. " + dateStr(d) + ".",
+    note: "Trams, the Prague metro, trolleybuses and buses are excluded from " +
+      "both systems.",
+    caveats: "Czechia has no national open timetable. České dráhy publishes " +
+      "none, and the Mobility Database's Czech section is Prague, Olomouc, " +
+      "Liberec, South Moravia and a national *bus* feed — Olomouc and " +
+      "Liberec are tram and bus only. What is left is two integrated " +
+      "regional systems that do carry railways: PID for Prague and the whole " +
+      "Central Bohemian region, and IDS JMK for South Moravia, Brno out to " +
+      "Břeclav, Znojmo, Vyškov and the Slovak border at Myjava. Between them " +
+      "about 3,800 trains — and the empty middle of the map is not a " +
+      "rendering fault but the shape of what is published: Ostrava, Plzeň, " +
+      "Olomouc and České Budějovice are labelled with nothing running " +
+      "through them. Category comes from the line prefix, which both systems " +
+      "use the same way: S is the suburban network, R is a rychlík through " +
+      "the region, the rest is regional. Only PID ships route geometry, so " +
+      "Bohemian trains follow the track and Moravian ones cut straight " +
+      "between stops. As everywhere, this is the published schedule.",
   },
   london: {
     label:"London", pill:"London", unit:"trains",

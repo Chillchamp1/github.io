@@ -1,7 +1,7 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: fourteen networks, from a cross-border map of five countries
+open timetables: sixteen networks, from a cross-border map of eleven countries
 down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
@@ -12,7 +12,7 @@ Poland on one Wednesday, where trains cross borders instead of stopping at
 them, with buttons to reframe it on any one of them. The fourteen networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#iberia`, `#it`, `#london`. Every network carries a "Data notes & gaps"
+`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#iberia`, `#it`, `#uk`, `#cz`, `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -114,9 +114,9 @@ midnight still stay in their own categories.
 ## The combined map
 
 `#eu` is the landing page and the only one where a border is just a line on
-the ground: **nine countries, 91,862 trains, one Wednesday and one clock** —
-Germany, the Benelux, Switzerland, France, Poland, Denmark, Spain, Portugal
-and what Italy publishes. A EuroCity from Zürich to Hamburg, or from Berlin
+the ground: **eleven countries, 115,953 trains, one Wednesday and one
+clock** — Germany, the Benelux, Switzerland, France, Poland, Denmark, Spain,
+Portugal, Czechia, Britain and what Italy publishes. A EuroCity from Zürich to Hamburg, or from Berlin
 to Warszawa, is one dot for its whole run instead of stopping where one
 country's data ends. The national outlines are drawn a shade brighter than
 on the single-country maps — enough to read where you are, not enough to
@@ -137,7 +137,8 @@ opens somewhere every few pixels and the map stops being about the trains.
 train is 23 pixels per degree of speck, so the buttons under the network
 pills reframe the same data on the Centre, Iberia, Italy, Poland or
 Denmark without leaving the map that has all of them on it:
-`#eu/central`, `#eu/iberia`, `#eu/italy`, `#eu/poland`, `#eu/north`.
+`#eu/central`, `#eu/iberia`, `#eu/italy`, `#eu/poland`, `#eu/britain`,
+`#eu/north`.
 
 ### The shared date, and what it cost
 
@@ -154,7 +155,12 @@ were paid for it, and both are stated on the page:
   Genova–Casella narrow-gauge trains are absent here. They are on the Italy
   page, which runs on 3 June for exactly that reason.
 
-France is the one country that cannot share the date at all: the newest
+Britain cannot share the date either, and by more: the only openly
+mirrored National Rail timetable is 2021, so its 20,265 trains run on
+Wednesday 9 June 2021 beside everyone else's 2026 — a whole country five
+years out, which is worth knowing before counting anything.
+
+France is the other country that cannot share the date: the newest
 openly mirrored TER, TGV and Intercités timetable is early 2025, with no
 overlap with anyone's 2026 window, so those run on their own Wednesday
 beside everyone else's. Paris is the exception to the exception — the RER
@@ -196,11 +202,11 @@ trains do not share an origin, a destination and a departure minute. A match
 only ever counts between two different sources — what one publisher lists
 twice is its own business.
 
-**It starts light.** The full map is 91,862 trains and 6.7 MB gzipped, most
+**It starts light.** The full map is 115,953 trains and 8.4 MB gzipped, most
 of it regional services. Waiting for all of that before the first frame is
 the wrong trade, so `build/split_layers.py` cuts the dataset in two: the
-long-distance spine — 8,975 trains, **670 kB** — paints immediately, and the
-82,887 regional services are fetched afterwards and merged in. Nothing is
+long-distance spine — 11,217 trains, **920 kB** — paints immediately, and the
+104,736 regional services are fetched afterwards and merged in. Nothing is
 dropped; the small trains simply arrive a moment later.
 
 ### One rendering note
@@ -514,6 +520,83 @@ Wednesday in it, and every other feed covers that date too. Trenord ships
 no route geometry, so Lombardy's trains cut straight lines between stops;
 Tuscany and Sardinia follow real track.
 
+## The Britain page
+
+`#uk` is **20,265 trains on Wednesday 9 June 2021** — every National Rail
+operator, 2,552 stations, Penzance to Thurso.
+
+The London page says British open data carries no National Rail, and for
+the source it uses that is still true. I re-checked it here: the Bus Open
+Data Service aggregate is **1.3 GB** containing 13,327 bus routes, 348 coach
+routes, and metros and trams — not one heavy-rail operator.
+
+This is a different file, and it was hiding in plain sight. The Mobility
+Database catalogues it under **"Chiltern Railways"**, marked inactive.
+Open it and there are twenty-seven National Rail operators inside, 3,004
+stations and 176,591 trips.
+
+**It is a 2021 timetable, and the station list proves it rather than the
+metadata.** The calendar runs December 2020 to December 2021. Worcestershire
+Parkway (opened February 2020), Horden (June 2020) and Bow Street (February
+2021) are all present *and served on the day drawn* — Bow Street has 24
+calls — while Soham (December 2021) and Marsh Barton (2023) do not exist
+yet. 20,265 trains against roughly 22,000 on a normal pre-pandemic weekday.
+
+**The operator names are older than the timetable.** The feed still says
+South West Trains, London Midland, East Coast and Virgin Trains —
+franchises that had ended by 2019. The agency table simply was not
+refreshed with the timetable, so `OPERATOR_2021` renames them to whoever
+was actually running those trains in June 2021.
+
+Classification is by operator, because British franchises have a shape.
+Measured on the day:
+
+| | median trip | median stop spacing |
+|---|---|---|
+| Grand Central | 385 km | 17 km |
+| LNER | 290 km | 16 km |
+| Avanti West Coast | 259 km | 13 km |
+| CrossCountry | 161 km | 9 km |
+| Northern | 38 km | 3.6 km |
+| London Overground | 14 km | 1.0 km |
+
+Three franchises are genuinely mixed — Great Western runs Paddington to
+Penzance and Thames Valley locals under one name — so within those a trip is
+promoted to intercity at 150 km and 10 km per stop, which catches the
+Cornish expresses without touching a Slough stopper.
+
+Two gaps stated rather than hidden: **422 entries in `stops.txt` have no
+coordinates at all** — ten of them called at on a weekday, and all of them
+recently opened stations. Those calls are dropped rather than guessed, so a
+train runs through without a marked stop instead of teleporting to the Gulf
+of Guinea. And **Northern Ireland Railways is not a National Rail operator
+and appears in no open feed**, so Belfast and Derry are labelled and empty.
+No route geometry in the feed, so trains interpolate straight between stops.
+
+## The Czechia page
+
+`#cz` is **3,826 trains on Wednesday 10 June 2026** — and it is Prague's
+region and Brno's region, not Czechia.
+
+České dráhy publishes no national timetable. The Mobility Database's Czech
+section is Prague, Olomouc, Liberec, South Moravia and a national *bus*
+feed; Olomouc and Liberec are tram and bus only. What is left is two
+integrated regional systems that do carry railways:
+
+| Source | Where | Trains |
+|---|---|---|
+| PID | Prague and the whole Central Bohemian region | 2,683 |
+| IDS JMK | South Moravia — Brno out to Břeclav, Znojmo, Vyškov, Myjava | 1,143 |
+
+The empty middle of that map is not a rendering fault. Ostrava, Plzeň,
+Olomouc and České Budějovice are labelled with nothing running through
+them, the same way Rome is on the Italy page.
+
+Category comes from the line prefix, which both systems use identically: S
+is the suburban Esko network, R is a rychlík running through the region,
+the rest is regional. Only PID ships route geometry, so Bohemian trains
+follow the track and Moravian ones cut straight between stops.
+
 ## The London page
 
 `#london` is **11,075 trains on Wednesday 26 August 2026**: the
@@ -736,6 +819,8 @@ build/build_pl.py     Polish national aggregate -> JSON (category from PLK)
 build/build_dk.py     Rejseplanen -> JSON (rail filtered out of the bus feed)
 build/build_iberia.py Renfe x2 + FGC + CP -> JSON (strips fixed-width padding)
 build/build_it.py     six Italian regional feeds -> JSON
+build/build_uk.py     National Rail -> JSON (operator tiers, 2021 timetable)
+build/build_cz.py     PID + IDS JMK -> JSON (the two Czech regions that publish)
 build/merge_nets.py   finished country datasets -> the combined European map
 build/simplify_geo.py Douglas-Peucker pass over a finished basemap
 vs.html               rail and air side by side on one frame and one clock
