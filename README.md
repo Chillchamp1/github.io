@@ -1,18 +1,21 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: sixteen networks, from a cross-border map of eleven countries
-down to single cities. Every dot is a scheduled train. The map is dark at
+open timetables: twenty-one networks, from a cross-border map of nineteen
+countries down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
 **Live: https://chillchamp1.github.io/github.io/**
 
-The landing map is the combined one — nine countries from Portugal to
-Poland on one Wednesday, where trains cross borders instead of stopping at
-them, with buttons to reframe it on any one of them. The fourteen networks live in one
+The landing map is the combined one — nineteen countries from Portugal to
+Slovakia and Sicily to the Arctic Circle on one Wednesday, where trains
+cross borders instead of stopping at them, with buttons to reframe it on any
+one region. The networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
-`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`, `#iberia`, `#it`, `#uk`, `#cz`, `#london`. Every network carries a "Data notes & gaps"
+`#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`,
+`#iberia`, `#it`, `#uk`, `#cz`, `#at`, `#sk`, `#hr`, `#ie`, `#scan`,
+`#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -114,11 +117,13 @@ midnight still stay in their own categories.
 ## The combined map
 
 `#eu` is the landing page and the only one where a border is just a line on
-the ground: **eleven countries, 115,953 trains, one Wednesday and one
-clock** — Germany, the Benelux, Switzerland, France, Poland, Denmark, Spain,
-Portugal, Czechia, Britain and what Italy publishes. A EuroCity from Zürich to Hamburg, or from Berlin
-to Warszawa, is one dot for its whole run instead of stopping where one
-country's data ends. The national outlines are drawn a shade brighter than
+the ground: **nineteen countries, 131,507 trains, one Wednesday and one
+clock** — Germany, the Benelux, Switzerland, Austria, France, Poland,
+Czechia, Slovakia, Denmark, Sweden, Norway, Spain, Portugal, Croatia,
+Britain, Ireland and what Italy publishes. A EuroCity from Zürich to
+Hamburg, a railjet from Wien to Bratislava, or an Öresundståg from
+København to Göteborg is one dot for its whole run instead of stopping
+where one country's data ends. The national outlines are drawn a shade brighter than
 on the single-country maps — enough to read where you are, not enough to
 argue with the trains.
 
@@ -133,12 +138,21 @@ green mass. The departure rings are turned down too — `ringGrow`,
 maps have always drawn, because at ninety-two thousand services a ring
 opens somewhere every few pixels and the map stops being about the trains.
 
-**One dataset, six framings.** At the whole-continent frame a Danish local
+**One dataset, ten framings.** At the whole-continent frame a Danish local
 train is 23 pixels per degree of speck, so the buttons under the network
-pills reframe the same data on the Centre, Iberia, Italy, Poland or
-Denmark without leaving the map that has all of them on it:
-`#eu/central`, `#eu/iberia`, `#eu/italy`, `#eu/poland`, `#eu/britain`,
-`#eu/north`.
+pills reframe the same data without leaving the map that has all of it on
+it: `#eu/central`, `#eu/iberia`, `#eu/italy`, `#eu/poland`,
+`#eu/britain` (Britain and Ireland), `#eu/north` (Denmark), `#eu/alps`
+(Austria, Slovakia, Czechia and the eastern Alps), `#eu/adria` (Croatia)
+and `#eu/nordic`.
+
+**The default frame is set by the toolbar, not by the data.** Adding Sweden
+and Norway meant deciding where the top edge goes, and the number that
+matters is not Oslo's latitude (59.91) but the 90 px of pill rows that
+overlay the canvas: at the old `lat1` of 58.85 both Nordic capitals sat
+behind a button. `lat1` is now 63.60, which puts Oslo at 120 px and
+Stockholm at 139, and costs 17% of scale everywhere else. Kiruna, Narvik
+and Bodø stay out of the default view and have `#eu/nordic`.
 
 ### The shared date, and what it cost
 
@@ -160,6 +174,11 @@ mirrored National Rail timetable is 2021, so its 20,265 trains run on
 Wednesday 9 June 2021 beside everyone else's 2026 — a whole country five
 years out, which is worth knowing before counting anything.
 
+Austria is the third of these. The only openly mirrored ÖBB feed is the
+2023/24 annual timetable, so its 6,040 trains run on Wednesday 21 August
+2024. Austria's current data sits behind the national access point at
+`data.mobilitaetsverbuende.at`, which this build cannot reach.
+
 France is the other country that cannot share the date: the newest
 openly mirrored TER, TGV and Intercités timetable is early 2025, with no
 overlap with anyone's 2026 window, so those run on their own Wednesday
@@ -173,10 +192,11 @@ with nothing running through them.
 ### How it is built
 
 `build/build_eu.py` merges GTFS for the original five countries.
-`build/merge_nets.py` folds in the four newer ones — but from their
-*finished* datasets rather than from their sources. Poland, Denmark, Iberia
-and Italy each have a builder that reads their own feeds, classifies by
-their own conventions and has been checked against their own page;
+`build/merge_nets.py` folds in the eleven newer ones — but from their
+*finished* datasets rather than from their sources. Poland, Denmark, Iberia,
+Italy, Britain, Czechia, Austria, Slovakia, Croatia, Ireland and the Nordics
+each have a builder that reads their own feeds, classifies by their own
+conventions and has been checked against their own page;
 re-reading fourteen more GTFS files inside `build_eu.py` would duplicate all
 of that and give the same answer. Each builder is run on the shared date and
 the results are concatenated.
@@ -184,7 +204,10 @@ the results are concatenated.
 Each country's classes fold onto the combined five. The choices worth
 defending: Polish EIP and EIC are genuine long distance and become
 high-speed; the two SKM suburban operators and Spanish Cercanías join
-regional, where German S-Bahn already is; Italian narrow gauge joins the
+regional, where German S-Bahn already is; Austrian railjet and Slovak rj
+become high-speed beside the ICE and TGV they connect with, while Austrian
+REX and CJX stay regional; the Irish DART joins the other electric suburban
+railways under regional; Italian narrow gauge joins the
 Swiss rack railways under *mountain*; and **Trenord's RE lines stay
 regional rather than being promoted to intercity** — a German RE is
 regional on this map and an RE13 to Milano is the same kind of train, so
@@ -202,11 +225,11 @@ trains do not share an origin, a destination and a departure minute. A match
 only ever counts between two different sources — what one publisher lists
 twice is its own business.
 
-**It starts light.** The full map is 115,953 trains and 8.4 MB gzipped, most
+**It starts light.** The full map is 131,507 trains and 9.6 MB gzipped, most
 of it regional services. Waiting for all of that before the first frame is
 the wrong trade, so `build/split_layers.py` cuts the dataset in two: the
-long-distance spine — 11,217 trains, **920 kB** — paints immediately, and the
-104,736 regional services are fetched afterwards and merged in. Nothing is
+long-distance spine — 12,825 trains, **1.1 MB** — paints immediately, and the
+118,682 regional services are fetched afterwards and merged in. Nothing is
 dropped; the small trains simply arrive a moment later.
 
 ### One rendering note
@@ -597,6 +620,175 @@ is the suburban Esko network, R is a rychlík running through the region,
 the rest is regional. Only PID ships route geometry, so Bohemian trains
 follow the track and Moravian ones cut straight between stops.
 
+## The Austria page
+
+`#at` is **6,040 trains on Wednesday 21 August 2024** — ÖBB, the
+Montafonerbahn and the City Airport Train, Bregenz to the Hungarian border,
+99% of them on published track geometry.
+
+**The year is not a typo.** The only openly mirrored ÖBB feed runs
+10 December 2023 to 14 December 2024: one annual timetable period, complete,
+with 8,562 stops and route geometry — and then it stops. Austria's current
+data lives behind the national access point at
+`data.mobilitaetsverbuende.at`, which this build cannot reach. 21 August
+2024 is an ordinary summer weekday inside the feed's strongest stretch.
+This is the same compromise the Britain page makes, and it is stated the
+same way.
+
+Classification comes from `trip_short_name`, not from the route table. The
+feed's `route_short_name` is a route-*group* code — A, D, S, REX — that files
+railjets in with whatever else its group contains, while the train number
+carries ÖBB's own category. Measured on the day drawn:
+
+| Category | Trains | Median length | Median stop spacing |
+|---|---|---|---|
+| S | 2,750 | 21 km | 2.3 km |
+| R | 1,349 | 24 km | 2.7 km |
+| REX | 1,150 | 53 km | 5.1 km |
+| RJX | 78 | 288 km | 37.8 km |
+| NJ | 65 | 221 km | 51.3 km |
+
+REX and CJX are drawn as **regional, not intercity**. They are Austria's
+equivalent of a German RE, and a German RE is regional on every other page
+here; promoting them would make the Austrian long-distance network look
+three times the size it is.
+
+## The Slovakia page
+
+`#sk` is **2,039 trains on Wednesday 10 June 2026** — the whole national
+network, current, from one file.
+
+Slovakia publishes what its western neighbour does not: a single national
+timetable covering every passenger operator. ŽSSK carries the great
+majority; RegioJet and Leo Express run the Bratislava–Košice trunk beside
+it, and the Trenčianska elektrická železnica runs up to Trenčianska Teplá.
+
+There is **no route geometry**, so trains take the straight line between
+stops. Across the Tatras and along the Váh that reads shorter and
+straighter than the railway is.
+
+Category comes from the train's own designation, and the tiers separate
+cleanly when measured:
+
+| Category | Trains | Median length | Median stop spacing |
+|---|---|---|---|
+| Os — osobný, all stops | 1,558 | 35 km | 2.8 km |
+| REX — regionálny expres | 165 | 54 km | 5.3 km |
+| R — rýchlik | 133 | 139 km | 12.5 km |
+| Ex — expres | 38 | 314 km | 19.6 km |
+| EC | 37 | 301 km | 21.5 km |
+| rj — railjet | 26 | 302 km | 36.4 km |
+
+`R`, the rýchlik that runs the length of a corridor, is drawn as intercity,
+matching how the Czechia page treats its own R lines.
+
+The frame reaches into Austria on the west, not for the data but for the
+label: Bratislava sits almost on the border, and a tighter frame put it
+behind the legend panel where the collision pass drops it.
+
+## The Croatia page
+
+`#hr` is **728 trains on Wednesday 10 June 2026** — HŽ Putnički prijevoz,
+the whole country in one current file. 728 is not a gap in the data; it is
+the size of the network.
+
+Zagreb out to Rijeka, Split, Osijek, Vukovar and Varaždin, plus the Istrian
+line from Pula that reaches the rest of Croatia only by crossing Slovenia.
+Two things the feed does not give, and both shape the page.
+
+**No route geometry.** Trains take the straight line between stops. Along
+the Lika line to Split that badly understates the distance, because the
+railway winds where the straight line does not.
+
+**No train category anywhere.** There is no `route_short_name`; routes are
+named for their corridor ("Zagreb Glavni kolodvor - Split") and
+`trip_short_name` is a bare number. So the tier here is *measured* rather
+than read, from how far each run goes and how far apart it stops:
+
+| Class | Rule | Trains |
+|---|---|---|
+| Long distance | ≥ 120 km end to end **and** ≥ 8 km between stops | 18 |
+| Zagreb and Split local | < 60 km **and** < 2.5 km between stops | 235 |
+| Regional | everything else | 475 |
+
+The thresholds sit in gaps in the distribution rather than through
+clusters: the 90th percentile of trip length is 90 km and the 95th is
+143 km, so 120 km cuts through empty space.
+
+## The Ireland page
+
+`#ie` is **880 trains on Wednesday 10 June 2026** — Iarnród Éireann, every
+route it runs, all of them on published track geometry.
+
+Ireland publishes a single national rail feed through the National
+Transport Authority and it is a small, tidy thing: one operator, nineteen
+routes, geometry for every train. Dublin to Belfast, Cork, Galway, Sligo,
+Tralee, Westport and Waterford, plus the Dublin and Cork suburban networks.
+Nothing is missing — the network really is this size.
+
+The feed's own route names are nearly useless: fourteen of the nineteen are
+called simply `rail`. The class is in `trip_short_name` instead, whose
+leading letter is the operator's fleet code, and the letters separate
+cleanly:
+
+| Letter | Trains | Median length | Median stop spacing | Drawn as |
+|---|---|---|---|---|
+| A | 249 | 132 km | 18.9 km | InterCity |
+| E | 199 | 27 km | 1.0 km | DART |
+| P | 220 | 23 km | 3.2 km | Commuter |
+| D | 211 | 23 km | 3.1 km | Commuter |
+
+P and D have the same profile as each other — P is the Dublin diesel
+commuter fleet, D the Cork and Limerick one — so they are drawn as one
+class, because the data says they are one kind of train whatever the depot.
+Trips numbered `BUS` are rail-replacement coaches running under a rail
+route id; two run on an ordinary Wednesday and both are dropped.
+
+## The Scandinavia page
+
+`#scan` is **6,021 trains on Wednesday 10 June 2026** across Sweden and
+Norway — Malmö to Narvik, Bergen to Stockholm, from two current national
+aggregates. Denmark keeps its own page; the three meet on the European map.
+
+The two feeds classify in completely different ways and each is taken at
+its own word.
+
+**Sweden** (Trafiklab GTFS Sverige 2) uses the extended GTFS route types
+properly, so the tier is simply read off: 101 high speed, 102 long
+distance, 106 regional. Two operators are moved out of the type their file
+gives them, because the type describes the vehicle and this map is about
+the journey — Arlanda Express is filed as high speed but is a 37 km airport
+shuttle, and Snälltåget's 620 km Malmö–Stockholm run is a night train. SL's
+Stockholm pendeltåg, filed regional, stops every 2.1 km and is drawn as
+suburban with every other commuter railway here.
+
+**Norway** (Entur) puts nearly everything under type 100 and states the
+tier in the line code instead. The codes mean what they say:
+
+| Code | Trains | Median length | Median stop spacing |
+|---|---|---|---|
+| F — fjerntog | 104 | 363 km | 25.9 km |
+| RE — regionekspress | 424 | 95 km | 17.4 km |
+| R — regiontog | 723 | 63 km | 5.3 km |
+| L — lokaltog | 576 | 25 km | 1.5 km |
+
+RE and RX are drawn as regional rather than intercity, the same call the
+Austria page makes about REX.
+
+**Sweden ships no route geometry and Norway does**, so Norwegian trains
+follow the track and Swedish ones cut straight between stops. The Stockholm
+tunnelbana (route type 401) and the Oslo T-bane are metros and stay out.
+
+**306 trains appeared twice** and were merged. Öresundståg, Snälltåget and
+SJ's Oslo trains are in both files under different numbers — Oslo–Göteborg
+is `393` to Trafiklab and `RE20` to Entur — so name matching finds none of
+them and the merge keys on where and when a train runs instead. Trafiklab's
+own aggregate also carries a train twice when two county authorities both
+publish it, so a same-file merge additionally requires the train numbers to
+agree: `8614` and `8614 8614` are one train, while `158` and `118` leave
+Stockholm for Hallsberg in the same minute and are two portions of a train
+that splits.
+
 ## The London page
 
 `#london` is **11,075 trains on Wednesday 26 August 2026**: the
@@ -821,6 +1013,11 @@ build/build_iberia.py Renfe x2 + FGC + CP -> JSON (strips fixed-width padding)
 build/build_it.py     six Italian regional feeds -> JSON
 build/build_uk.py     National Rail -> JSON (operator tiers, 2021 timetable)
 build/build_cz.py     PID + IDS JMK -> JSON (the two Czech regions that publish)
+build/build_at.py     OeBB -> JSON (category from the train number, 2024 timetable)
+build/build_sk.py     ZSSK + RegioJet + Leo Express -> JSON
+build/build_hr.py     HZPP -> JSON (tier measured, because the feed states none)
+build/build_ie.py     Transport for Ireland -> JSON (tier from the fleet letter)
+build/build_scan.py   Trafiklab + Entur -> JSON (two feeds, two class schemes)
 build/merge_nets.py   finished country datasets -> the combined European map
 build/simplify_geo.py Douglas-Peucker pass over a finished basemap
 vs.html               rail and air side by side on one frame and one clock
@@ -889,6 +1086,19 @@ datasets, credit the original publishers:
 | Paris region timetable | Île-de-France Mobilités | publisher's open-data terms |
 | France timetable | SNCF open data (TER, TGV, Intercités), via the Mobility Database mirror | SNCF's open licence |
 | Cross-border high-speed | Eurostar (incl. former Thalys) | publisher's open-data terms |
+| Poland timetable | PKP PLK national train register, via the Polish Trains aggregate | publisher's open-data terms |
+| Denmark timetable | Rejseplanen | publisher's open-data terms |
+| Iberia timetables | Renfe (AV/LD/MD and Cercanías), FGC, CP — Comboios de Portugal | each publisher's open-data terms |
+| Italy timetables | Trenord; Trenitalia (Toscana, Sardegna); ARST; Trentino trasporti; AMT Genova | each publisher's open-data terms |
+| Britain timetable | National Rail, via the Mobility Database mirror | original publisher's terms |
+| Czechia timetables | PID (Prague and Central Bohemia), IDS JMK (South Moravia) | each publisher's open-data terms |
+| Austria timetable | ÖBB Personenverkehr, via the Mobility Database mirror | publisher's open-data terms |
+| Slovakia timetable | Železničná spoločnosť Slovensko, with RegioJet and Leo Express | publisher's open-data terms |
+| Croatia timetable | HŽ Putnički prijevoz | publisher's open-data terms |
+| Ireland timetable | Transport for Ireland / Iarnród Éireann | CC-BY 4.0 |
+| Sweden timetable | Trafiklab GTFS Sverige 2 | CC0 1.0 |
+| Norway timetable | Entur national aggregate | NLOD |
+| Austria, Slovakia, Croatia, Ireland, Scandinavia basemaps | [Natural Earth](https://www.naturalearthdata.com/) via world-atlas | public domain |
 | Combined-map basemap, France basemap | [Natural Earth](https://www.naturalearthdata.com/) via world-atlas | public domain |
 | Tokyo timetable | [mini-tokyo-3d](https://github.com/nagix/mini-tokyo-3d) dataset, © Akihiko Kusanagi, derived from ODPT open data | MIT (dataset), ODPT terms upstream |
 | London Underground, DLR, Tramlink | Bus Open Data Service, Department for Transport | Open Government Licence v3.0 |

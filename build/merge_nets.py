@@ -45,6 +45,17 @@ defending:
   Merseyrail and TfL Rail join `regional` with every other suburban railway
   on this map.
 
+  Austrian railjet and Slovak rj become `ice`, beside the ICE and the TGV
+  they connect with; Austrian REX and CJX join `regional`, as they are on
+  their own page. Irish InterCity is intercity and the DART is regional,
+  where every other electric suburban railway here already is.
+
+Two of the sources are not on 10 June 2026 and cannot be: the British feed
+is a 2021 timetable and the Austrian one is 2024, because those are the
+newest their publishers have openly mirrored. They are drawn at their own
+minute of their own Wednesday alongside everyone else's, which is the
+compromise this map makes to have them at all, and the page says so.
+
 Cross-source duplicates are merged the way build_eu.py merges them, and for
 the same reason: an EC Hamburg-Copenhagen is in DELFI and in Rejseplanen,
 a Berlin-Warszawa EC is in DELFI and in the Polish register, a
@@ -70,6 +81,16 @@ CLASS_MAP = {
            "suburban": "regional", "night": "night"},
     "cz": {"express": "intercity", "regional": "regional",
            "suburban": "regional"},
+    "at": {"express": "ice", "intercity": "intercity", "regional": "regional",
+           "sbahn": "regional", "night": "night"},
+    "sk": {"express": "ice", "intercity": "intercity", "regional": "regional",
+           "night": "night"},
+    "hr": {"intercity": "intercity", "regional": "regional",
+           "suburban": "regional"},
+    "ie": {"intercity": "intercity", "commuter": "regional",
+           "dart": "regional"},
+    "scan": {"highspeed": "ice", "intercity": "intercity",
+             "regional": "regional", "suburban": "regional", "night": "night"},
 }
 
 

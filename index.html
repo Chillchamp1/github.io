@@ -332,14 +332,14 @@ const NETWORKS = {
     minorPxPerDeg:120, borders:true,
     /* Rome and Naples have no open timetable, so no station falls near
        them and the usual snap would drop their labels. On the map that
-       claims nine countries, leaving them blank reads as an omission
+       claims nineteen countries, leaving them blank reads as an omission
        rather than as Italy's missing feed. */
     freeCities:true,
     classes:{
-      /* Smaller marks than any single-country map. Nine countries in one
-         frame is four times the traffic of the old landing map in the same
-         pixels, and at that density the dot size that reads as one train
-         over Germany reads as a smear over the Ruhr, the Randstad and
+      /* Smaller marks than any single-country map. Nineteen countries in
+         one frame is five times the traffic of the old landing map in the
+         same pixels, and at that density the dot size that reads as one
+         train over Germany reads as a smear over the Ruhr, the Randstad and
          Katowice at once. Regional goes to 0.20 deliberately: below
          3.6*size*DPR = 1.5 the halo disc stops being drawn at all, which is
          where most of the green mass came from. */
@@ -367,9 +367,16 @@ const NETWORKS = {
          widens symmetrically, and centred on the data Lisboa lands
          fourteen pixels inside the legend and is dropped. */
       eu:      {label:"Europe",
-                core:{lon0:-11.10, lon1:23.30, lat0:36.00, lat1:58.85},
-                maxv:{lon0:-14.00, lon1:30.50, lat0:32.80, lat1:63.00},
-                clock:{lat:57.30, lon:20.60}},
+                /* lat1 was 58.85 until Sweden and Norway arrived, and the
+                   number that matters is not where Oslo is (59.91) but where
+                   the toolbars end: the two pill rows cover the top 90 px of
+                   the canvas, so a capital at the frame's edge is a capital
+                   behind a button. 63.60 puts Oslo at 120 px and Stockholm at
+                   139, clear of both, and costs 17% of scale everywhere else.
+                   Kiruna and Narvik stay out and have the Nordics preset. */
+                core:{lon0:-11.10, lon1:23.30, lat0:36.00, lat1:63.60},
+                maxv:{lon0:-14.00, lon1:32.00, lat0:32.80, lat1:71.40},
+                clock:{lat:59.20, lon:24.60}},
       central: {label:"Centre",
                 core:{lon0:-5.10, lon1:15.40, lat0:42.30, lat1:55.30},
                 maxv:{lon0:-7.00, lon1:18.40, lat0:34.50, lat1:63.00},
@@ -386,14 +393,26 @@ const NETWORKS = {
                 core:{lon0:13.90, lon1:24.30, lat0:48.90, lat1:54.95},
                 maxv:{lon0:11.40, lon1:27.20, lat0:47.40, lat1:56.20},
                 clock:{lat:54.55, lon:20.60}},
-      britain: {label:"Britain",
-                core:{lon0:-6.40, lon1:1.90, lat0:50.00, lat1:58.70},
-                maxv:{lon0:-11.20, lon1:6.80, lat0:48.60, lat1:60.20},
+      britain: {label:"Britain & Ireland",
+                core:{lon0:-10.80, lon1:1.90, lat0:50.00, lat1:58.70},
+                maxv:{lon0:-13.00, lon1:6.80, lat0:48.60, lat1:60.20},
                 clock:{lat:58.00, lon:0.60}},
       north:   {label:"Denmark",
                 core:{lon0:7.90, lon1:13.40, lat0:54.50, lat1:57.85},
                 maxv:{lon0:6.10, lon1:16.60, lat0:53.30, lat1:58.70},
                 clock:{lat:57.60, lon:12.60}},
+      alps:    {label:"Alps & Danube",
+                core:{lon0:8.00, lon1:22.80, lat0:45.20, lat1:50.10},
+                maxv:{lon0:5.80, lon1:25.60, lat0:43.60, lat1:52.00},
+                clock:{lat:49.85, lon:21.80}},
+      adria:   {label:"Adriatic",
+                core:{lon0:12.40, lon1:20.00, lat0:42.30, lat1:47.00},
+                maxv:{lon0:10.60, lon1:22.40, lat0:41.20, lat1:48.40},
+                clock:{lat:46.80, lon:19.30}},
+      nordic:  {label:"Nordics",
+                core:{lon0:4.50, lon1:26.00, lat0:54.40, lat1:69.60},
+                maxv:{lon0:0.80, lon1:33.00, lat0:53.00, lat1:71.40},
+                clock:{lat:69.10, lon:22.40}},
     },
     cities:[
       ["Berlin",52.5251,13.3694,1],      ["Hamburg",53.5528,10.0067,1],
@@ -432,25 +451,42 @@ const NETWORKS = {
       ["Venezia",45.4400,12.3210,0],     ["Bologna",44.5060,11.3430,0],
       ["Pisa",43.7090,10.3980,0],        ["Cagliari",39.2160,9.1110,0],
       ["Verona",45.4290,10.9820,0],      ["Trento",46.0720,11.1190,0],
+      ["Wien",48.2085,16.3721,1],        ["Stockholm",59.3300,18.0590,1],
+      ["Oslo",59.9110,10.7500,1],        ["Dublin",53.3498,-6.2603,1],
+      ["Bratislava",48.1583,17.1067,1],  ["Zagreb",45.8046,15.9776,1],
+      ["Göteborg",57.7089,11.9746,1],    ["Malmö",55.6090,13.0000,1],
+      ["Bergen",60.3894,5.3320,1],       ["Graz",47.0707,15.4395,0],
+      ["Salzburg",47.8025,13.0450,0],    ["Innsbruck",47.2654,11.3928,0],
+      ["Linz",48.3060,14.2860,0],        ["Klagenfurt",46.6247,14.3079,0],
+      ["Košice",48.7164,21.2611,0],      ["Žilina",49.2200,18.7400,0],
+      ["Split",43.5100,16.4390,0],       ["Rijeka",45.3270,14.4460,0],
+      ["Osijek",45.5590,18.6790,0],      ["Belfast",54.5973,-5.9301,0],
+      ["Cork",51.8985,-8.4756,0],        ["Galway",53.2707,-9.0568,0],
+      ["Trondheim",63.4360,10.3990,0],   ["Uppsala",59.8580,17.6460,0],
+      ["Stavanger",58.9700,5.7330,0],    ["Sundsvall",62.3900,17.3060,0],
+      ["Umeå",63.8290,20.2590,0],        ["Luleå",65.5840,22.1550,0],
+      ["Narvik",68.4380,17.4270,0],      ["Kiruna",67.8560,20.2250,0],
     ],
     meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> over one " +
-      d.weekday + " across eleven countries, from Portugal to Poland and " +
-      "Penzance to Thurso — borders drawn, but not stopped at. " + dateStr(d) +
-      ", except SNCF's TER, TGV and Intercités (a 2025 timetable) and " +
-      "Britain's National Rail (2021 — the newest openly mirrored one).",
-    note: "Eleven countries on one map and one clock, so a EuroCity from " +
-      "Zürich to Hamburg or from Berlin to Warszawa is one dot for its " +
-      "whole run instead of stopping at the border. Use the buttons under " +
-      "the network pills to frame one country without leaving the map.",
+      d.weekday + " across nineteen countries, from Portugal to Slovakia and " +
+      "Sicily to the Arctic Circle — borders drawn, but not stopped at. " +
+      dateStr(d) + ", except SNCF's TER, TGV and Intercités (a 2025 " +
+      "timetable), Austria's ÖBB (2024) and Britain's National Rail (2021 — " +
+      "the newest openly mirrored ones).",
+    note: "Nineteen countries on one map and one clock, so a EuroCity from " +
+      "Zürich to Hamburg or a railjet from Wien to Bratislava is one dot for " +
+      "its whole run instead of stopping at the border. Use the buttons " +
+      "under the network pills to frame one country without leaving the map.",
     caveats: "Every source merged onto the one Wednesday they all cover, " +
       "10 June 2026: the German DELFI dataset, OVapi/NDOV with SNCB and " +
       "Luxembourg for the Benelux, the Swiss SKI+/SBB aggregate, " +
       "Île-de-France Mobilités for the RER and Transilien, Eurostar's own " +
       "feed, PKP PLK's national register for Poland, Rejseplanen for " +
-      "Denmark, Renfe's two exports with FGC and CP for Iberia, six " +
-      "Italian regional contracts, PID and IDS JMK for Czechia, and the " +
-      "National Rail timetable for Britain. The shared date is what makes " +
-      "this a map " +
+      "Denmark, Trafiklab's GTFS Sverige 2 and Entur's Norwegian aggregate " +
+      "for the Nordics, Renfe's two exports with FGC and CP for Iberia, six " +
+      "Italian regional contracts, PID and IDS JMK for Czechia, ŽSSK for " +
+      "Slovakia, HŽ for Croatia, Transport for Ireland, and the National " +
+      "Rail timetable for Britain. The shared date is what makes this a map " +
       "rather than a collage — DELFI runs out on 13 June, Poland's feed is " +
       "a 30-day window opening on 4 June, Renfe Cercanías a 30-day window " +
       "opening on 3 June, so 10 June is the only Wednesday inside all of " +
@@ -458,30 +494,30 @@ const NETWORKS = {
       "is Portugal's national day, so CP runs 868 trains instead of its " +
       "usual 1,362, and AMT Genova publishes only the week of 1–8 June, so " +
       "the Genova–Casella narrow gauge is absent here though it is on the " +
-      "Italy map. France is the one country that cannot share the date at " +
-      "all: the newest openly mirrored SNCF timetable is early 2025, with " +
-      "no overlap with anyone's 2026 window, so its trains run on their own " +
-      "Wednesday, 5 February 2025 — except Paris, whose RER and Transilien " +
-      "come from Île-de-France Mobilités and do cover 10 June. Britain is " +
-      "the second exception and the larger one: the only openly mirrored " +
-      "National Rail timetable is 2021, so its 20,265 trains run on " +
-      "Wednesday 9 June 2021 beside everyone else's 2026 — a whole country " +
-      "five years out, which is worth knowing before counting anything. " +
-      "Italy is the " +
-      "large hole: Trenitalia publishes no national open timetable, so " +
-      "every Frecciarossa and Intercity and the whole south are missing, " +
-      "and what is drawn is Lombardy, Tuscany and Sardinia — see the Italy " +
-      "map. Czechia is the same shape of hole: České dráhy publishes " +
-      "nothing, so only Prague's and Brno's regions are here and the " +
-      "country between them is empty. Trains published by both countries " +
-      "they run through are " +
+      "Italy map. Three countries cannot share the date at all, because the " +
+      "newest timetable their publishers have openly mirrored is older than " +
+      "everyone else's window. France runs on Wednesday 5 February 2025 " +
+      "(except Paris, whose RER and Transilien come from Île-de-France " +
+      "Mobilités and do cover 10 June); Austria's 6,040 trains run on " +
+      "Wednesday 21 August 2024, its current data sitting behind a national " +
+      "access point this build cannot reach; and Britain's 20,265 run on " +
+      "Wednesday 9 June 2021 — a whole country five years out, which is " +
+      "worth knowing before counting anything. Italy is the large hole: " +
+      "Trenitalia publishes no national open timetable as GTFS, so every " +
+      "Frecciarossa and Intercity and the whole south are missing, and what " +
+      "is drawn is Lombardy, Tuscany and Sardinia — see the Italy map. " +
+      "Czechia is the same shape of hole: České dráhy publishes nothing, so " +
+      "only Prague's and Brno's regions are here and the country between " +
+      "them is empty. Hungary and Slovenia are absent entirely, which is " +
+      "why Austria and Croatia look like neighbours that do not touch. " +
+      "Trains published by both countries they run through are " +
       "deduplicated across sources: long distance on line, departure minute " +
       "and destination; regional on geography, since “S1” runs in half of " +
       "Europe and only the origin, the destination and the minute can tell " +
       "two regional trains apart. Route geometry follows each feed: Germany, " +
-      "Poland, Denmark, Tuscany and Spanish Cercanías run on real track, " +
-      "the rest interpolate straight between stops. For the fullest version " +
-      "of any one country, use its own map.",
+      "Austria, Norway, Ireland, Poland, Denmark, Tuscany and Spanish " +
+      "Cercanías run on real track, the rest interpolate straight between " +
+      "stops. For the fullest version of any one country, use its own map.",
   },
   de: {
     label:"Germany", pill:"DE", unit:"trains",
@@ -1237,6 +1273,292 @@ const NETWORKS = {
       "the region, the rest is regional. Only PID ships route geometry, so " +
       "Bohemian trains follow the track and Moravian ones cut straight " +
       "between stops. As everywhere, this is the published schedule.",
+  },
+  at: {
+    label:"Austria", pill:"AT", unit:"trains",
+    data:"data/at-trains.json", geo:"data/at-geo.json",
+    minorPxPerDeg:90,
+    classes:{
+      express:   {label:"Railjet and ICE", cat:"high-speed",
+                  role:"ice",   size:0.52, secs:640, trail:6, ring:0.85},
+      intercity: {label:"IC, EC and D", cat:"intercity",
+                  role:"ic",    size:0.46, secs:560, trail:5, ring:0.70},
+      regional:  {label:"REX, CJX and R", cat:"regional",
+                  role:"reg",   size:0.30, secs:360, trail:4, ring:0.12},
+      sbahn:     {label:"S-Bahn and CAT", cat:"suburban",
+                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+      night:     {label:"Nightjet and EN", cat:"night",
+                  role:"night", size:0.48, secs:640, trail:6, ring:0.80},
+    },
+    views:{ at: {label:"Austria",
+      core:{lon0:9.30, lon1:17.30, lat0:46.25, lat1:49.15},
+      maxv:{lon0:7.90, lon1:19.00, lat0:45.30, lat1:50.20},
+      clock:{lat:48.95, lon:16.60}} },
+    cities:[
+      ["Wien",48.2085,16.3721,1],         ["Graz",47.0707,15.4395,1],
+      ["Linz",48.3060,14.2860,1],         ["Salzburg",47.8025,13.0450,1],
+      ["Innsbruck",47.2654,11.3928,1],    ["Klagenfurt",46.6247,14.3079,1],
+      ["Villach",46.6111,13.8558,0],      ["Bregenz",47.5031,9.7471,1],
+      ["St. Pölten",48.2047,15.6256,0],   ["Wels",48.1600,14.0290,0],
+      ["Wiener Neustadt",47.8150,16.2450,0], ["Steyr",48.0430,14.4200,0],
+      ["Feldkirch",47.2380,9.5990,0],     ["Amstetten",48.1230,14.8720,0],
+      ["Leoben",47.3790,15.0940,0],       ["Bruck a. d. Mur",47.4110,15.2800,0],
+      ["Kufstein",47.5830,12.1670,0],     ["Wörgl",47.4900,12.0670,0],
+      ["Zell am See",47.3230,12.7960,0],  ["Bischofshofen",47.4160,13.2200,0],
+      ["Attnang-Puchheim",48.0100,13.7130,0], ["Spittal",46.7960,13.4890,0],
+      ["Krems",48.4090,15.6060,0],        ["Tulln",48.3300,16.0570,0],
+      ["Mödling",48.0860,16.2870,0],      ["Baden",48.0060,16.2340,0],
+      ["Landeck",47.1400,10.5670,0],      ["Selzthal",47.5490,14.3120,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> across " +
+      "Austria over one " + d.weekday + " — ÖBB, the Montafonerbahn and the " +
+      "City Airport Train, Bregenz to the Hungarian border. " + dateStr(d) + ".",
+    note: "ÖBB Postbus and the Vienna U-Bahn are excluded: this is the railway.",
+    caveats: "<strong>This is a 2024 timetable.</strong> The only openly " +
+      "mirrored ÖBB feed runs 10 December 2023 to 14 December 2024 — one " +
+      "annual timetable period, complete, with route geometry for 99% of " +
+      "its trains — and then it stops. Austria's current data sits behind " +
+      "the national access point at data.mobilitaetsverbuende.at, which " +
+      "this build cannot reach. Wednesday 21 August 2024 is an ordinary " +
+      "summer weekday inside the feed's strongest stretch. Category comes " +
+      "from ÖBB's own prefix on the train number, not from the route table, " +
+      "whose short names are route-group codes that mix railjets in with " +
+      "S-Bahnen. REX and CJX are drawn as regional, not intercity: a " +
+      "Regionalexpress is Austria's equivalent of a German RE, and a German " +
+      "RE is regional on every other page here. As everywhere, this is the " +
+      "published schedule, not what ran.",
+  },
+  sk: {
+    label:"Slovakia", pill:"SK", unit:"trains",
+    data:"data/sk-trains.json", geo:"data/sk-geo.json",
+    minorPxPerDeg:80,
+    classes:{
+      express:   {label:"Railjet and SuperCity", cat:"high-speed",
+                  role:"ice",   size:0.52, secs:640, trail:6, ring:0.85},
+      intercity: {label:"EC, IC, Ex and rýchlik", cat:"intercity",
+                  role:"ic",    size:0.46, secs:560, trail:5, ring:0.70},
+      regional:  {label:"Osobný and REX", cat:"regional",
+                  role:"reg",   size:0.30, secs:340, trail:4, ring:0.12},
+      night:     {label:"Night train", cat:"night",
+                  role:"night", size:0.48, secs:640, trail:6, ring:0.80},
+    },
+    views:{ sk: {label:"Slovakia",
+      /* lon0 reaches into Austria so that Bratislava, which sits almost
+         on the border, clears the legend panel instead of being dropped by
+         the label pass. */
+      core:{lon0:15.90, lon1:22.60, lat0:47.45, lat1:49.45},
+      maxv:{lon0:14.60, lon1:24.10, lat0:46.60, lat1:50.40},
+      clock:{lat:48.95, lon:21.60}} },
+    cities:[
+      ["Bratislava",48.1583,17.1067,1],   ["Košice",48.7164,21.2611,1],
+      ["Žilina",49.2200,18.7400,1],       ["Prešov",48.9970,21.2390,1],
+      ["Nitra",48.3060,18.0860,1],        ["Banská Bystrica",48.7350,19.1460,1],
+      ["Trnava",48.3760,17.5870,0],       ["Trenčín",48.8940,18.0430,0],
+      ["Poprad",49.0550,20.2980,0],       ["Martin",49.0650,18.9250,0],
+      ["Zvolen",48.5760,19.1290,0],       ["Michalovce",48.7540,21.9180,0],
+      ["Humenné",48.9330,21.9110,0],      ["Levice",48.2180,18.6070,0],
+      ["Nové Zámky",47.9860,18.1620,0],   ["Púchov",49.1230,18.3260,0],
+      ["Ružomberok",49.0790,19.3080,0],   ["Liptovský Mikuláš",49.0840,19.6180,0],
+      ["Spišská Nová Ves",48.9430,20.5620,0], ["Čadca",49.4360,18.7910,0],
+      ["Komárno",47.7590,18.1290,0],      ["Štúrovo",47.7970,18.7180,0],
+      ["Vrútky",49.1120,18.9200,0],       ["Kysak",48.8390,21.2270,0],
+      ["Prievidza",48.7710,18.6280,0],    ["Lučenec",48.3320,19.6670,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> across " +
+      "Slovakia over one " + d.weekday + " — ŽSSK, RegioJet and Leo Express, " +
+      "Bratislava to the Ukrainian border. " + dateStr(d) + ".",
+    note: "The whole national network, current: Slovakia publishes what its " +
+      "western neighbour does not.",
+    caveats: "One national feed, current, covering every passenger operator " +
+      "on the network — which makes Slovakia the easiest country on this " +
+      "atlas after the Nordics. Železničná spoločnosť Slovensko carries the " +
+      "great majority; RegioJet and Leo Express run the Bratislava–Košice " +
+      "trunk beside it. There is <strong>no route geometry</strong> in the " +
+      "feed, so trains take the straight line between stops: across the " +
+      "Tatras and along the Váh that reads shorter and straighter than the " +
+      "railway is. Category comes from the train's own designation — Os is " +
+      "the all-stops osobný, REX the regional express, R the rýchlik, Ex and " +
+      "EC and rj the long distance — and the tiers separate cleanly when " +
+      "measured: Os averages 2.8 km between stops, R 12.5 km, railjet 36 km. " +
+      "As everywhere, this is the published schedule.",
+  },
+  hr: {
+    label:"Croatia", pill:"HR", unit:"trains",
+    data:"data/hr-trains.json", geo:"data/hr-geo.json",
+    minorPxPerDeg:70,
+    classes:{
+      intercity: {label:"Long distance", cat:"intercity",
+                  role:"ic",    size:0.50, secs:600, trail:6, ring:0.80},
+      regional:  {label:"Regional", cat:"regional",
+                  role:"reg",   size:0.32, secs:360, trail:4, ring:0.14},
+      suburban:  {label:"Zagreb and Split local", cat:"suburban",
+                  role:"tram",  size:0.28, secs:320, trail:3, ring:0.10},
+    },
+    views:{ hr: {label:"Croatia",
+      core:{lon0:13.30, lon1:19.50, lat0:42.35, lat1:46.60},
+      maxv:{lon0:12.10, lon1:21.00, lat0:41.40, lat1:47.60},
+      clock:{lat:45.60, lon:19.10}} },
+    cities:[
+      ["Zagreb",45.8046,15.9776,1],       ["Split",43.5100,16.4390,1],
+      ["Rijeka",45.3270,14.4460,1],       ["Osijek",45.5590,18.6790,1],
+      ["Zadar",44.1150,15.2270,1],        ["Pula",44.8710,13.8480,1],
+      ["Slavonski Brod",45.1600,18.0130,0], ["Karlovac",45.4890,15.5470,0],
+      ["Varaždin",46.3060,16.3380,0],     ["Sisak",45.4850,16.3760,0],
+      ["Vinkovci",45.2890,18.8050,0],     ["Vukovar",45.3510,18.9970,0],
+      ["Koprivnica",46.1620,16.8290,0],   ["Knin",44.0410,16.1980,0],
+      ["Šibenik",43.7350,15.8900,0],      ["Ogulin",45.2670,15.2260,0],
+      ["Čakovec",46.3870,16.4340,0],      ["Dugo Selo",45.8000,16.2350,0],
+      ["Zabok",46.0290,15.9110,0],        ["Novska",45.3400,16.9790,0],
+      ["Križevci",46.0270,16.5440,0],     ["Nova Gradiška",45.2560,17.3830,0],
+      ["Gospić",44.5460,15.3740,0],       ["Đakovo",45.3080,18.4110,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> across " +
+      "Croatia over one " + d.weekday + " — HŽ Putnički prijevoz, the whole " +
+      "national network. " + dateStr(d) + ".",
+    note: "728 trains is not a gap in the data; it is the size of the network.",
+    caveats: "HŽ Putnički prijevoz publishes the whole country in one " +
+      "current file — Zagreb out to Rijeka, Split, Osijek, Vukovar and " +
+      "Varaždin, plus the Istrian line from Pula that reaches the rest of " +
+      "Croatia only by crossing Slovenia. Nothing is missing; the network " +
+      "really is this size. Two things the feed does not give. There is " +
+      "<strong>no route geometry</strong>, so trains take the straight line " +
+      "between stops — along the Lika line to Split that badly understates " +
+      "the distance, because the railway winds where the straight line does " +
+      "not. And there is <strong>no train category anywhere</strong>: the " +
+      "routes are named for their corridor and the train number is a bare " +
+      "number. So the tier here is measured rather than read, from how far " +
+      "each run goes and how far apart it stops — 18 trains clear 120 km at " +
+      "8 km or more per stop and are drawn as long distance, 235 stay under " +
+      "60 km stopping every 2.5 km and are drawn as local, and the other " +
+      "475 are regional. The thresholds sit in gaps in the distribution, " +
+      "not through clusters. As everywhere, this is the published schedule.",
+  },
+  ie: {
+    label:"Ireland", pill:"IE", unit:"trains",
+    data:"data/ie-trains.json", geo:"data/ie-geo.json",
+    minorPxPerDeg:60,
+    classes:{
+      intercity: {label:"InterCity", cat:"intercity",
+                  role:"ic",    size:0.52, secs:600, trail:6, ring:0.80},
+      commuter:  {label:"Commuter", cat:"commuter",
+                  role:"reg",   size:0.34, secs:380, trail:4, ring:0.16},
+      dart:      {label:"DART — Dublin electric", cat:"suburban",
+                  role:"tram",  size:0.30, secs:320, trail:3, ring:0.12},
+    },
+    views:{ ie: {label:"Ireland",
+      core:{lon0:-10.60, lon1:-5.40, lat0:51.40, lat1:55.35},
+      maxv:{lon0:-11.60, lon1:-3.90, lat0:50.60, lat1:56.10},
+      clock:{lat:54.35, lon:-4.40}} },
+    cities:[
+      ["Dublin",53.3498,-6.2603,1],       ["Cork",51.8985,-8.4756,1],
+      ["Galway",53.2707,-9.0568,1],       ["Limerick",52.6638,-8.6267,1],
+      ["Waterford",52.2593,-7.1101,1],    ["Belfast",54.5973,-5.9301,1],
+      ["Sligo",54.2766,-8.4761,1],        ["Tralee",52.2713,-9.7016,0],
+      ["Westport",53.8008,-9.5150,0],     ["Athlone",53.4239,-7.9407,0],
+      ["Drogheda",53.7179,-6.3561,0],     ["Dundalk",54.0019,-6.4058,0],
+      ["Kilkenny",52.6541,-7.2448,0],     ["Ennis",52.8438,-8.9864,0],
+      ["Killarney",52.0599,-9.5044,0],    ["Wexford",52.3369,-6.4633,0],
+      ["Portlaoise",53.0344,-7.2994,0],   ["Mallow",52.1394,-8.6494,0],
+      ["Cobh",51.8510,-8.2967,0],         ["Bray",53.2028,-6.0983,0],
+      ["Maynooth",53.3811,-6.5914,0],     ["Newry",54.1751,-6.3402,0],
+      ["Portadown",54.4204,-6.4453,0],    ["Carlow",52.8365,-6.9341,0],
+      ["Longford",53.7276,-7.7932,0],     ["Nenagh",52.8639,-8.1961,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> across " +
+      "Ireland over one " + d.weekday + " — Iarnród Éireann, every route it " +
+      "runs, on its own published track geometry. " + dateStr(d) + ".",
+    note: "One operator, nineteen routes, and the whole island: nothing here " +
+      "is missing.",
+    caveats: "Ireland publishes a single national rail feed through the " +
+      "National Transport Authority, and it is a small tidy thing: one " +
+      "operator, nineteen routes, route geometry for every train. Dublin to " +
+      "Belfast, Cork, Galway, Sligo, Tralee, Westport and Waterford, plus " +
+      "the Dublin and Cork suburban networks. Nothing is missing — the " +
+      "network is this size. The feed's own route names are nearly useless, " +
+      "fourteen of the nineteen being called simply “rail”, so the class " +
+      "comes from the first letter of the train number, which is the " +
+      "operator's fleet code and separates cleanly when measured: A runs " +
+      "132 km with 19 km between stops, E — the DART — runs 27 km stopping " +
+      "every kilometre, and P and D have the same profile as each other and " +
+      "are drawn as one thing, whatever the depot. Trips numbered BUS are " +
+      "rail-replacement coaches and are dropped. As everywhere, this is the " +
+      "published schedule.",
+  },
+  scan: {
+    label:"Scandinavia", pill:"SE·NO", unit:"trains",
+    data:"data/scan-trains.json", geo:"data/scan-geo.json",
+    minorPxPerDeg:110,
+    classes:{
+      highspeed: {label:"SJ Snabbtåg", cat:"high-speed",
+                  role:"ice",   size:0.50, secs:640, trail:6, ring:0.85},
+      intercity: {label:"Long distance — SJ, Öresundståg, fjerntog", cat:"intercity",
+                  role:"ic",    size:0.42, secs:560, trail:5, ring:0.60},
+      regional:  {label:"Regional", cat:"regional",
+                  role:"reg",   size:0.28, secs:340, trail:4, ring:0.10},
+      suburban:  {label:"Pendeltåg, lokaltog and airport", cat:"suburban",
+                  role:"tram",  size:0.26, secs:300, trail:3, ring:0.08},
+      night:     {label:"Night train", cat:"night",
+                  role:"night", size:0.46, secs:640, trail:6, ring:0.80},
+    },
+    views:{
+      scan:  {label:"All",
+              core:{lon0:4.20, lon1:26.00, lat0:55.10, lat1:69.60},
+              maxv:{lon0:0.50, lon1:33.00, lat0:53.50, lat1:71.40},
+              clock:{lat:66.90, lon:27.60}},
+      south: {label:"South",
+              core:{lon0:5.00, lon1:19.60, lat0:55.20, lat1:61.40},
+              maxv:{lon0:2.60, lon1:23.00, lat0:54.00, lat1:64.00},
+              clock:{lat:61.10, lon:17.60}},
+      north: {label:"North",
+              core:{lon0:11.00, lon1:25.00, lat0:62.00, lat1:69.30},
+              maxv:{lon0:8.00, lon1:31.00, lat0:60.20, lat1:71.20},
+              clock:{lat:68.90, lon:22.20}},
+    },
+    cities:[
+      ["Stockholm",59.3300,18.0590,1],    ["Göteborg",57.7089,11.9746,1],
+      ["Malmö",55.6090,13.0000,1],        ["Oslo",59.9110,10.7500,1],
+      ["Bergen",60.3894,5.3320,1],        ["Trondheim",63.4360,10.3990,1],
+      ["Stavanger",58.9700,5.7330,1],     ["Uppsala",59.8580,17.6460,0],
+      ["Linköping",58.4160,15.6250,0],    ["Örebro",59.2740,15.2130,0],
+      ["Västerås",59.6110,16.5450,0],     ["Norrköping",58.5960,16.1900,0],
+      ["Jönköping",57.7830,14.1650,0],    ["Sundsvall",62.3900,17.3060,0],
+      ["Umeå",63.8290,20.2590,1],         ["Luleå",65.5840,22.1550,1],
+      ["Kiruna",67.8560,20.2250,1],       ["Narvik",68.4380,17.4270,1],
+      ["Bodø",67.2830,14.3810,1],         ["Kristiansand",58.1440,7.9950,0],
+      ["Drammen",59.7420,10.2050,0],      ["Lillehammer",61.1150,10.4660,0],
+      ["Halden",59.1250,11.3870,0],       ["Karlstad",59.3780,13.5040,0],
+      ["Kalmar",56.6630,16.3620,0],       ["Växjö",56.8790,14.8090,0],
+      ["Helsingborg",56.0460,12.6940,0],  ["Lund",55.7060,13.1870,0],
+      ["Borlänge",60.4830,15.4270,0],     ["Gävle",60.6760,17.1410,0],
+      ["Östersund",63.1790,14.6360,0],    ["Boden",65.8250,21.6890,0],
+      ["Hallsberg",59.0670,15.1090,0],    ["Åre",63.3990,13.0810,0],
+      ["Ålesund",62.4720,6.1550,0],       ["Skien",59.2090,9.6090,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> across " +
+      "Sweden and Norway over one " + d.weekday + " — Malmö to Narvik and " +
+      "Bergen to Stockholm, from two current national aggregates. " +
+      dateStr(d) + ".",
+    note: "Denmark has a page of its own; the three meet on the European map.",
+    caveats: "Two national aggregates, both current, drawn together because " +
+      "the railway is: Öresundståg runs Copenhagen–Malmö–Göteborg, SJ runs " +
+      "Stockholm–Oslo, and the night trains cross both borders. The feeds " +
+      "classify in completely different ways and each is taken at its own " +
+      "word. Sweden uses the extended GTFS route types properly, so the tier " +
+      "is read off — with two corrections, because the type describes the " +
+      "vehicle and this map is about the journey: Arlanda Express is filed " +
+      "as high speed but is a 37 km airport shuttle, and Snälltåget's 620 km " +
+      "Malmö–Stockholm run is a night train. Norway states the tier in the " +
+      "line code instead — F fjerntog, RE regionekspress, R regiontog, L " +
+      "lokaltog — and the codes mean what they say: F runs 363 km with 26 km " +
+      "between stops, L runs 25 km with 1.5 km. RE is drawn as regional, not " +
+      "intercity, the same call the Austrian page makes about REX. " +
+      "<strong>Sweden ships no route geometry</strong>, so Swedish trains " +
+      "cut straight between stops while Norwegian ones follow the track. " +
+      "The Stockholm tunnelbana and the Oslo T-bane are metros and stay " +
+      "out. 306 trains appeared twice — once in each file, under different " +
+      "numbers, or twice in Trafiklab's own aggregate — and were merged on " +
+      "where and when they run rather than on what they are called. As " +
+      "everywhere, this is the published schedule, not what ran.",
   },
   london: {
     label:"London", pill:"London", unit:"trains",
