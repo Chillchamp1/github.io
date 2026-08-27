@@ -232,17 +232,68 @@ long-distance spine — 12,825 trains, **1.1 MB** — paints immediately, and th
 118,682 regional services are fetched afterwards and merged in. Nothing is
 dropped; the small trains simply arrive a moment later.
 
-### One rendering note
+### Making it run
 
-Painting 92,000 trips a frame made it worth measuring where the time
-actually goes. Hoisting the per-class colour strings and line widths out of
-the draw loop — building `rgba(90,169,255,0.41)` inside it meant tens of
-thousands of string builds and CSS colour parses a frame — is a real win.
-Batching the same draws into one `Path2D` per class is **not**: measured, it
-was slightly slower. The map is fill-rate bound, not call-count bound, which
-the same scene at devicePixelRatio 1 confirms — 31 fps against 11 at DPR 2
-in a software-rendered headless browser, where a real GPU-backed one is far
-faster.
+Nineteen countries on one frame made it worth measuring where the time
+actually goes, rather than guessing. Everything below was measured by
+ablating individual canvas primitives from a Playwright driver — no edits to
+the page — at 08:00 with about 9,300 trains running, in a software-rendered
+headless browser. Absolute figures are pessimistic; a real GPU is far
+faster. The ranking is the point.
+
+| | phone, 390×844 @ DPR 3 | share |
+|---|---|---|
+| trail strokes | 45.4 ms | 45% |
+| departure rings | 13.2 ms | 13% |
+| train dots | 9.2 ms | 9% |
+| JS, basemap blit, labels | 17.8 ms | 18% |
+| **whole frame** | **101.6 ms — about 10 fps** | |
+
+Two things fell out of that, and both are about draw calls spent on marks
+nobody can see.
+
+**Trail segments were sub-pixel.** Of 1,441,796 segments sampled at the
+continent frame, **89.3% were shorter than one pixel** and 100% shorter than
+two: fifteen thousand strokes a frame painting a smudge that never left the
+dot drawn on top of it. The trail loop now takes one `posAt` for the tail
+and draws at most one segment per two device pixels, keeping the same tail
+length and the same fade — so sub-pixel segments fell to 0.3%, segments per
+frame from 1.44 million to 221 thousand, and the graded tails come back by
+themselves as you zoom in, because the test is in pixels rather than in the
+config.
+
+**Departure rings never grew.** Mean radius 1.69 px; on the combined map a
+regional ring travels 0.2 px over its whole life — `ringGrow` 4.5 against a
+ring scale of 0.05. A ring is now drawn only once it grows by at least one
+device pixel, which removes exactly the ones that never move and leaves
+every country map untouched.
+
+With the canvas also capped at 2× device pixels rather than 3 — this map is
+fill-rate bound, so a phone reporting DPR 3 was paying 2.25× the raster for
+detail a 390-point frame cannot show — the same scene goes from **101.6 ms
+to 21.8 ms a frame on a phone**, and from 31.7 ms to 13.6 ms on a 1440×900
+desktop frame. The trains drawn are identical: per-class counts match the
+old build minute for minute across the whole day, night trains included.
+
+Three other things were tried and **measured worse**, which is why the code
+does not do them:
+
+- **Batching trails into shared paths.** Two separate prototypes, both
+  slower. Accumulating the segments into one path and stroking once was
+  catastrophic — 6 fps — because Skia then builds one enormous geometry and
+  can no longer cull. Hoisting the per-class colour strings and line widths
+  out of the loop, on the other hand, is a real win and is what the code
+  does: building `rgba(90,169,255,0.41)` inside the loop meant tens of
+  thousands of string builds and CSS colour parses a frame.
+- **An active-trip index.** The draw loop walks all 131,507 trips each frame
+  to find the nine thousand that are moving, which looked like obvious
+  waste. Replacing it with a sorted-by-departure sweep and an incremental
+  active set measured about 1 ms a frame *slower*: V8 optimises that
+  early-out better than the extra indirection and per-frame compaction cost.
+  What did help was removing the one- or two-element array the loop used to
+  allocate per trip per frame to iterate over — a branch does the same job.
+- **De-duplicating dots that land on an already-painted pixel.** 29% of dots
+  are overdrawn; skipping them saved 3%. Not worth the state.
 
 For the fullest version of any one country, its own map is still there.
 
