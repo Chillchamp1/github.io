@@ -1,7 +1,7 @@
 # A day on the rails
 
 24-hour time-lapses of one real day of rail traffic, built from official
-open timetables: twenty-one networks, from a cross-border map of nineteen
+open timetables: twenty-two networks, from a cross-border map of nineteen
 countries down to single cities. Every dot is a scheduled train. The map is dark at
 every hour, so the trains are the only bright thing on it.
 
@@ -14,8 +14,8 @@ one region. The networks live in one
 app at `index.html`, switched by the pills in the top-left corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
 `#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`,
-`#iberia`, `#it`, `#uk`, `#cz`, `#at`, `#sk`, `#hr`, `#ie`, `#scan`,
-`#london`. Every network carries a "Data notes & gaps"
+`#iberia`, `#it`, `#uk`, `#cz`, `#at`, `#sk`, `#hr`, `#ie`, `#scan`, `#cn`
+(plus `#cn/bohai`, `#cn/yrd`, `#cn/prd`, `#cn/west`), `#london`. Every network carries a "Data notes & gaps"
 section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
@@ -840,6 +840,77 @@ agree: `8614` and `8614 8614` are one train, while `158` and `118` leave
 Stockholm for Hallsberg in the same minute and are two portions of a train
 that splits.
 
+## The China page
+
+`#cn` is **6,924 scheduled trains across China** — the whole G, D, C, Z, T
+and K universe, from the Pearl delta to Xinjiang and up onto the Tibetan
+plateau, at 2,319 stations. It is the largest single network here and the
+only one built without an open timetable of any kind.
+
+China publishes **no GTFS feed and no national timetable file**. The
+schedule is queryable only one train at a time, from the national booking
+system, so this dataset is a crawl of 6,924 such queries covering every code
+in the published train list. Four consequences, all larger than the gaps on
+the European maps.
+
+**No service calendar.** A train that runs on alternate days, or only in
+summer, is indistinguishable from a daily one and is drawn as daily. The
+honest reading of the K and Z rows below is "codes in the timetable", not
+"trains that ran on Sunday". The seasonal K-series extras are the worst of
+it.
+
+**Three days, not one.** The source rate-limits, so the crawl ran over 26,
+27 and 28 July 2026. 76% of it is Sunday 26 July; the rest is whichever day
+that train was asked about.
+
+**No route geometry.** Trains take the straight line between stops, which
+understates the Qinghai–Tibet and Lanzhou–Xinjiang lines badly — both wind
+where the straight line does not.
+
+**Codes absent from the seed list are missed**, mostly K4xxx extras added
+since it was published.
+
+Urban metro and suburban rail are not here, but unlike the German or Tokyo
+maps nothing has been filtered out: the booking system does not sell them,
+so mainline is all there is.
+
+The tier is *read*, not measured — unlike Croatia, the class is printed on
+the train, and the letter is the operator's own:
+
+| Class | What it is | Trains |
+|---|---|---|
+| G | High-speed EMU, 300–350 km/h | 3,466 |
+| D | EMU on high-speed track, 200–250 km/h | 1,320 |
+| C | Short intercity EMU | 1,446 |
+| K | Loco-hauled on conventional track | 538 |
+| Z and T | Direct express and express, almost all sleepers | 154 |
+
+The 154 Z and T sleepers are why this page needed a change to the renderer.
+Every other network here finishes inside a day or spills a few hours into
+the next, and trips were drawn in at most two daily passes. China's do not
+finish: Lhasa to Guangzhou is 55 hours, Ürümqi to Shanghai 57, Jiamusi to
+Chengdu 58. A trip is now drawn in one pass per day it spans, and the
+per-minute occupancy that drives the overnight fast-forward is folded over
+as many days as the longest run needs, instead of two. 136 trips here are
+still moving when the clock has gone round twice.
+
+Names are written the way the station is: **Chinese first, romanisation in
+brackets** — 北京南 (Beijing South), 拉萨 (Lhasa), 乌鲁木齐 (Ürümqi). The
+Chinese is the name, painted on the building and printed on the ticket; the
+romanisation is the gloss. Cities on the map carry both too.
+
+The source publishes no romanisation at all, so it comes from a geocoding
+pass, preferring the exonym where one exists — Kashgar, Yarkant, Kargilik,
+Korla, Shigatse — and falling back to joined pinyin. Two rules do the rest,
+and both ask the data rather than a list. A trailing 北/南/东/西 becomes North, South,
+East or West **only when the stem is itself a place**, so 济南西 is Jinan
+West but 济南 stays Jinan and 丹东 stays Dandong. And a name that repeats
+across provinces — there is a 大安 in Jilin and another by Shenzhen, a 桂林
+in Guangxi and another in Sichuan — is placed by whichever reading makes the
+train's own route shortest, which settles 103 of them. The build then checks
+its own work: any hop implying more than 400 km/h is a placement error, not
+a train, and the build says so.
+
 ## The London page
 
 `#london` is **11,075 trains on Wednesday 26 August 2026**: the
@@ -956,6 +1027,29 @@ long-distance and regional feeds (such as the [gtfs.de](https://gtfs.de/en/feeds
 a feed uses extended GTFS route types (DELFI: 101 high-speed, 102
 long-distance, 105 sleeper, 106 regional rail) and name-first for plain
 type-2 feeds. Times are stored in whole minutes to keep the JSON compact.
+
+China does not come from a GTFS feed, so it has its own builder. It takes
+the crawl of per-train stop lists plus the two geocoding gazetteers that
+place the station names, none of which this repo carries — they are the
+output of a separate crawler, and the source publishes no file to mirror:
+
+```sh
+python3 build/build_cn.py raw-timetables.json \
+    --stations raw-stations.json --cities raw-city-coords.json \
+    -o data/cn-trains.json
+python3 build/build_geo_countries.py countries-10m.json -o data/cn-geo.json \
+    --home China "Hong Kong" Macao \
+    --neighbours Mongolia Russia Kazakhstan Kyrgyzstan Tajikistan Afghanistan \
+                 Pakistan India Nepal Bhutan Bangladesh Myanmar Laos Vietnam \
+                 Thailand "North Korea" "South Korea" Japan Taiwan \
+    --box 68 14 142 56
+python3 build/simplify_geo.py data/cn-geo.json --outline-tol 500 --states-tol 900
+```
+
+The builder prints what it dropped, how many ambiguous station names the
+route-shortening pass settled, and a warning listing any station left on a
+hop that implies more than 400 km/h — which is how a name geocoded to the
+wrong province announces itself.
 
 A portrait video for phones and social posts comes from the page itself:
 
