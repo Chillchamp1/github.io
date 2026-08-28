@@ -1560,6 +1560,108 @@ const NETWORKS = {
       "where and when they run rather than on what they are called. As " +
       "everywhere, this is the published schedule, not what ran.",
   },
+  cn: {
+    label:"China", pill:"CN", unit:"trains",
+    data:"data/cn-trains.json", geo:"data/cn-geo.json",
+    minorPxPerDeg:20,
+    classes:{
+      g:  {label:"High-speed \u2014 G (300\u2013350 km/h)", cat:"high-speed",
+           role:"ice",   size:0.46, secs:600, trail:6, ring:0.55},
+      d:  {label:"High-speed \u2014 D (200\u2013250 km/h)", cat:"D-series",
+           role:"ic",    size:0.40, secs:540, trail:5, ring:0.30},
+      c:  {label:"Intercity \u2014 C", cat:"intercity",
+           role:"tram",  size:0.32, secs:360, trail:4, ring:0.16},
+      k:  {label:"Conventional \u2014 K", cat:"conventional",
+           role:"reg",   size:0.36, secs:520, trail:4, ring:0.22},
+      zt: {label:"Sleeper express \u2014 Z and T", cat:"sleeper",
+           role:"night", size:0.46, secs:660, trail:6, ring:0.80},
+    },
+    views:{
+      cn:   {label:"China",
+             core:{lon0:73.00, lon1:135.50, lat0:17.80, lat1:53.90},
+             maxv:{lon0:69.00, lon1:142.00, lat0:14.50, lat1:55.80},
+             clock:{lat:21.20, lon:132.50}},
+      bohai:{label:"Beijing and the north",
+             core:{lon0:112.60, lon1:123.00, lat0:35.90, lat1:42.30},
+             maxv:{lon0:109.50, lon1:126.50, lat0:34.20, lat1:44.00},
+             clock:{lat:37.20, lon:124.60}},
+      yrd:  {label:"Yangtze delta",
+             core:{lon0:115.80, lon1:123.00, lat0:28.30, lat1:34.20},
+             maxv:{lon0:113.50, lon1:125.50, lat0:26.80, lat1:35.60},
+             clock:{lat:30.10, lon:124.30}},
+      prd:  {label:"Pearl delta",
+             core:{lon0:111.60, lon1:116.20, lat0:21.80, lat1:24.60},
+             maxv:{lon0:109.80, lon1:118.20, lat0:20.60, lat1:25.80},
+             clock:{lat:21.40, lon:117.30}},
+      west: {label:"Xinjiang and Tibet",
+             core:{lon0:73.20, lon1:105.00, lat0:26.50, lat1:49.50},
+             maxv:{lon0:70.50, lon1:110.00, lat0:24.50, lat1:51.50},
+             clock:{lat:47.60, lon:107.20}},
+    },
+    cities:[
+      ["北京 (Beijing)",39.8636,116.3728,1],    ["上海 (Shanghai)",31.1960,121.3162,1],
+      ["广州 (Guangzhou)",22.9916,113.2668,1],  ["深圳 (Shenzhen)",22.6135,114.0257,1],
+      ["成都 (Chengdu)",30.6313,104.1389,1],    ["重庆 (Chongqing)",29.6123,106.5473,1],
+      ["武汉 (Wuhan)",30.6099,114.4189,1],      ["西安 (Xi'an)",34.3810,108.9341,1],
+      ["郑州 (Zhengzhou)",34.7602,113.7733,1],  ["南京 (Nanjing)",31.9712,118.7928,1],
+      ["杭州 (Hangzhou)",30.2935,120.2082,1],   ["天津 (Tianjin)",39.1377,117.2027,1],
+      ["沈阳 (Shenyang)",41.8173,123.4294,1],   ["哈尔滨 (Harbin)",45.7600,126.6254,1],
+      ["长沙 (Changsha)",28.1501,113.0599,1],   ["昆明 (Kunming)",24.8734,102.8604,1],
+      ["乌鲁木齐 (Ürümqi)",43.8379,87.5250,1],    ["拉萨 (Lhasa)",29.6259,91.0687,1],
+      ["兰州 (Lanzhou)",36.0676,103.7493,1],    ["西宁 (Xining)",36.6208,101.8130,0],
+      ["呼和浩特 (Hohhot)",40.8459,111.7598,0],   ["南宁 (Nanning)",22.8448,108.4099,0],
+      ["贵阳 (Guiyang)",26.6228,106.6724,0],    ["福州 (Fuzhou)",26.1168,119.3156,0],
+      ["厦门 (Xiamen)",24.6397,118.0686,0],     ["济南 (Jinan)",36.6690,116.8881,0],
+      ["青岛 (Qingdao)",36.1692,120.3681,0],    ["大连 (Dalian)",39.0157,121.6024,0],
+      ["石家庄 (Shijiazhuang)",38.0659,114.4592,0],["太原 (Taiyuan)",37.7917,112.6058,0],
+      ["合肥 (Hefei)",31.8022,117.2846,0],      ["南昌 (Nanchang)",28.6257,115.7877,0],
+      ["桂林 (Guilin)",25.3315,110.2982,0],     ["三亚 (Sanya)",18.2987,109.4887,0],
+      ["海口 (Haikou)",19.9857,110.3387,0],     ["喀什 (Kashgar)",39.4919,76.0461,0],
+      ["格尔木 (Golmud)",36.3829,94.9061,0],     ["香港 (Hong Kong)",22.3028,114.1650,0],
+      ["日喀则 (Shigatse)",29.2233,88.9119,0],   ["银川 (Yinchuan)",38.4917,106.1686,0],
+      ["长春 (Changchun)",43.9088,125.3177,0],  ["徐州 (Xuzhou)",34.2676,117.2994,0],
+      ["宁波 (Ningbo)",29.8646,121.5327,0],     ["温州 (Wenzhou)",27.9693,120.5816,0],
+      ["敦煌 (Dunhuang)",40.1678,94.7834,0],    ["满洲里 (Manzhouli)",49.5841,117.4440,0],
+      ["丹东 (Dandong)",40.1229,124.3818,0],    ["延吉 (Yanji)",42.9024,129.4078,0],
+      ["北海 (Beihai)",21.4811,109.1205,0],     ["和田 (Hotan)",37.1000,80.0167,0],
+      ["阿勒泰 (Altay)",47.7175,88.0872,0],      ["库尔勒 (Korla)",41.7457,86.1927,0],
+    ],
+    meta: d => "<strong>" + d.trips.length + " scheduled trains</strong> across " +
+      "China \u2014 the whole G, D, C, Z, T and K universe, from the Pearl " +
+      "delta to Xinjiang and up onto the Tibetan plateau. Crawled from the " +
+      "national booking system over 26\u201328 July 2026; the clock is " +
+      "Beijing time, which the whole country keeps. " + dateStr(d) + ".",
+    note: "A composite of three consecutive days, not one operating day: " +
+      "the source answers one train at a time and rate-limits, so the crawl " +
+      "took three. 76% of it is Sunday 26 July.",
+    caveats: "China publishes <strong>no open timetable</strong>. There is " +
+      "no GTFS feed, no national file, nothing to mirror: the schedule is " +
+      "only queryable one train at a time from the booking system, and this " +
+      "is a crawl of 6,924 such queries covering every G, D, C, Z, T and K " +
+      "code in the 2022 published train list. Four things follow, and they " +
+      "are all larger than the gaps on the European maps. " +
+      "There is <strong>no service calendar</strong>, so a train that runs " +
+      "on alternate days or only in summer is drawn exactly like a daily " +
+      "one; the K-series seasonal extras are the worst of it, and the " +
+      "honest reading of the K and Z counts is 'codes in the timetable', " +
+      "not 'trains that ran on Sunday'. " +
+      "The crawl ran over <strong>three days</strong> rather than one, so " +
+      "trains that changed between 26 and 28 July appear on whichever day " +
+      "they were asked about. " +
+      "There is <strong>no route geometry</strong>, so trains take the " +
+      "straight line between stops \u2014 which understates the " +
+      "Qinghai\u2013Tibet and Lanzhou\u2013Xinjiang lines badly, since " +
+      "both wind where the straight line does not. " +
+      "And codes absent from the 2022 seed list are missed entirely, mostly " +
+      "K4xxx extras added since. " +
+      "Urban metro and suburban rail are not here because the source does " +
+      "not sell them \u2014 unlike the German or Tokyo maps, nothing has " +
+      "been filtered out; mainline is all there is. " +
+      "The 154 Z and T sleepers are the reason this map has a third day in " +
+      "it at all: Lhasa to Guangzhou is 55 hours, Jiamusi to Chengdu 58, " +
+      "and those trains are still moving when the clock has gone round " +
+      "twice.",
+  },
   london: {
     label:"London", pill:"London", unit:"trains",
     data:"data/london-trains.json", geo:"data/london-geo.json",
@@ -1791,16 +1893,26 @@ function applyData(data, geo){
   /* Per-minute occupancy, folded over midnight: drives the overnight
      fast-forward on networks that sleep. */
   OCC = (() => {
-    const delta = new Int32Array(2882);
+    /* Wide enough for the longest run, folded onto one day at the end: a
+       58-hour sleeper fills three rows and must count in all of them, or
+       the fast-forward skips hours that still have trains in them. */
+    let span = 2;
+    for (const t of TRIPS) span = Math.max(span, Math.ceil(t.t1/86400) + 1);
+    const width = span * 1440;
+    const delta = new Int32Array(width + 2);
     for (const t of TRIPS){
       const a = Math.max(0, Math.floor(t.t0/60));
-      const b = Math.min(2879, Math.floor(t.t1/60));
+      const b = Math.min(width - 1, Math.floor(t.t1/60));
       if (b >= a){ delta[a]++; delta[b+1]--; }
     }
-    const run2 = new Int32Array(2880);
-    for (let m = 0, run = 0; m < 2880; m++){ run += delta[m]; run2[m] = run; }
+    const runs = new Int32Array(width);
+    for (let m = 0, run = 0; m < width; m++){ run += delta[m]; runs[m] = run; }
     const occ = new Int32Array(1440);
-    for (let m = 0; m < 1440; m++) occ[m] = run2[m] + run2[m+1440];
+    for (let m = 0; m < 1440; m++){
+      let v = 0;
+      for (let k = m; k < width; k += 1440) v += runs[k];
+      occ[m] = v;
+    }
     return occ;
   })();
 
@@ -2333,8 +2445,11 @@ function draw(){
        is now, once a day on, which is how the small hours get their
        arrivals. This used to build a fresh one- or two-element array per
        trip per frame to iterate -- 131,507 allocations a frame on the
-       combined map, for a branch. */
-    const passes = t.t1 > DAY_SECONDS ? 2 : 1;
+       combined map, for a branch. A run longer than a day needs one pass
+       per day it spans: China's 58-hour sleepers vanished on their second
+       night when this was two. */
+    const passes = t.t1 > DAY_SECONDS
+      ? Math.ceil(t.t1 / DAY_SECONDS) : 1;
     for (let q = 0; q < passes; q++){
       const sec = simSec + (q ? DAY_SECONDS : 0);
       const head = posAt(t, sec);
