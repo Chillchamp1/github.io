@@ -223,7 +223,11 @@ if (TIMELINE){
      only legend the film needs, and it swaps to Berlin's categories with
      the overlay. */
   await page.addStyleTag({content:
-    "#hint,#nets,#meta,#controls,#figbtn,#legend{display:none!important}"});
+    "#hint,#nav,#controls,#figbtn,#about,#legend{display:none!important}"});
+  /* The drawn key yields to the HTML one wherever that is on the canvas, and
+     it has just stopped being there -- the page only finds that out when it
+     measures again. */
+  await page.evaluate(() => window.railCam.relayout());
   await page.waitForTimeout(500);
   process.stdout.write(`base pass: ${Math.round(DUR*FPS)} frames\n`);
   await shoot(page, base, 0, DUR, "base");
