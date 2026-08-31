@@ -40,34 +40,57 @@
   #glow[hidden]{display:none}
   #dock{display:contents}
 
-  /* ---- network switcher ------------------------------------------------ */
-  /* One app, four networks. The pills sit in the top-left corner on every
-     screen size, so switching never needs a scroll. */
-  #nets{
+  /* ---- map picker ------------------------------------------------------ */
+  /* Twenty-one maps, three buttons. Every network used to be a pill in a
+     wrapping row, with a second row of framings under it and the caption
+     under that -- ninety pixels of chrome across the top of a map whose
+     whole point is the map. A continent opens a menu instead, and the menu
+     shuts the moment you have chosen: on screen it is one row, always. */
+  #nav{
     position:fixed;z-index:6;left:14px;top:14px;
-    display:flex;gap:4px;padding:4px;
-    /* Eight networks overflow a phone's width: let the row wrap rather than
-       run off the screen, and keep it clear of the map's right half. */
-    flex-wrap:wrap;max-width:calc(100vw - 40px);
+    display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+    max-width:calc(100vw - 28px);
   }
-  #nets button{
+  #conts{display:flex;gap:4px;padding:4px;max-width:100%}
+  #conts button{
+    display:flex;align-items:baseline;gap:5px;min-width:0;
     padding:4px 10px;font-size:0.72rem;border:1px solid transparent;
-    color:var(--ink-3);
+    color:var(--ink-3);white-space:nowrap;
   }
-  #nets button[aria-pressed="true"]{color:var(--ink);border-color:var(--rule)}
-  /* The US region picker sits right under the network pills, on the map,
-     so it is reachable without a scroll on any screen. */
-  #regions{
-    position:fixed;z-index:6;left:14px;top:56px;
-    display:flex;gap:4px;padding:4px;flex-wrap:wrap;max-width:70vw;
+  /* Two different states, and they are genuinely independent: which
+     continent you are on, and which menu happens to be open. */
+  #conts button[aria-current="page"]{color:var(--ink-2)}
+  #conts button[aria-expanded="true"]{border-color:var(--rule)}
+  /* The map you are on is the brightest word in the row and the continent
+     is the quieter half of the breadcrumb: you are looking at Germany, in
+     Europe, not at a button called Europe. */
+  #conts .where{color:var(--ink);overflow:hidden;text-overflow:ellipsis}
+  #conts .where::before{content:"·";margin-right:5px;color:var(--ink-3)}
+  #conts .caret{font-size:0.5rem;opacity:0.4;line-height:1}
+
+  #picker{
+    padding:11px 13px 12px;
+    max-width:min(430px,calc(100vw - 28px));
+    max-height:min(56vh,470px);overflow:auto;
   }
-  #regions[hidden]{display:none}
-  #regions button{
-    padding:3px 9px;font-size:0.7rem;border:1px solid transparent;
-    color:var(--ink-3);
+  #picker[hidden]{display:none}
+  #picker h3{
+    font-size:0.57rem;letter-spacing:0.16em;text-transform:uppercase;
+    color:var(--ink-3);font-weight:500;margin:12px 0 6px;
   }
-  #regions button[aria-pressed="true"]{color:var(--ink);border-color:var(--rule)}
-  body[data-regions] #meta{top:96px}
+  #picker h3:first-child{margin-top:0}
+  #picker .row{display:flex;flex-wrap:wrap;gap:4px}
+  #picker button{
+    padding:3px 9px;font-size:0.71rem;border:1px solid transparent;
+    color:var(--ink-2);
+  }
+  /* A framing of the map beside it, not a map of its own: smaller, dimmer,
+     and carrying a middot, because a wrapping row puts "South" and "North"
+     on the line below "Scandinavia" where nothing else says whose they are. */
+  #picker button.frame{padding:3px 8px;font-size:0.67rem;color:var(--ink-3)}
+  #picker button.frame::before{content:"·";margin-right:5px;opacity:0.55}
+  #picker button:hover{color:var(--ink)}
+  #picker button[aria-current="true"]{color:var(--ink);border-color:var(--rule)}
 
   /* ---- clock ---------------------------------------------------------- */
   header{
@@ -101,7 +124,7 @@
     backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
   }
   #legend{position:fixed;z-index:3;left:20px;bottom:20px;padding:13px 15px 11px;min-width:222px;max-width:330px}
-  #legend h2,#figures h2{
+  #legend h2,#about h2{
     font-size:0.62rem;letter-spacing:0.17em;text-transform:uppercase;
     color:var(--ink-3);font-weight:500;margin-bottom:9px;
   }
@@ -112,18 +135,14 @@
     font-family:"IBM Plex Mono",monospace;font-size:0.76rem;
     color:var(--ink-2);font-variant-numeric:tabular-nums;
   }
+  /* The key used to carry a paragraph explaining itself. That paragraph is
+     in the about panel now and this footer is empty unless the data failed
+     to load, so it costs nothing until it has something to say. */
   #legend footer{
     margin-top:9px;padding-top:8px;border-top:1px solid var(--rule);
     font-size:0.66rem;line-height:1.45;color:var(--ink-3);
   }
-  /* One link out of the app, under the legend note rather than among the
-     network pills: the comparison is not another network, it is a
-     different question. */
-  #vslink{
-    display:inline-block;margin-top:8px;font-size:0.66rem;color:var(--ink-3);
-    text-decoration:none;border-bottom:1px solid var(--rule);
-  }
-  #vslink:hover{color:var(--ink-2)}
+  #legend footer:empty{display:none}
 
   #controls{
     position:fixed;z-index:3;right:20px;bottom:20px;padding:11px 14px;
@@ -169,16 +188,28 @@
   }
   #scrub:focus-visible{outline:1px solid var(--ink-3);outline-offset:2px}
 
-  /* ---- provenance + table --------------------------------------------- */
-  #meta{
-    position:absolute;z-index:3;left:14px;top:52px;max-width:250px;
-    font-size:0.68rem;line-height:1.5;color:var(--ink-3);
-    background:rgba(5,8,14,.62);padding:9px 12px;border-radius:8px;
+  /* ---- the about panel ------------------------------------------------- */
+  /* Every sentence on this page lives here and nowhere else: the caption
+     that used to sit over the map, the paragraph under the key, the table,
+     the sources and the gaps. One button, one panel, closed by default --
+     the map does not need a caption to be looked at, and the reader who
+     wants the provenance wants all of it in one place anyway. */
+  #figbtn{position:fixed;z-index:4;right:20px;top:20px;font-size:0.72rem}
+  #about{
+    position:fixed;z-index:4;right:20px;top:60px;padding:14px 16px;
+    /* Stops above the play controls rather than running under them: it is
+       long enough on the combined map to reach the bottom of any screen. */
+    max-width:360px;max-height:calc(100vh - 152px);overflow:auto;display:none;
   }
-  #meta strong{color:var(--ink-2);font-weight:500}
-  #figbtn{position:fixed;z-index:4;right:20px;top:20px}
-  #figures{position:fixed;z-index:3;right:20px;top:60px;padding:14px 16px;max-width:335px;display:none}
-  #figures[data-open="true"]{display:block}
+  #about[data-open="true"]{display:block}
+  #about h2{margin-top:15px}
+  #about h2:first-child{margin-top:0}
+  #about .lead{
+    margin:0 0 3px;font-size:0.74rem;line-height:1.5;color:var(--ink-2);
+  }
+  #about .lead strong{color:var(--ink);font-weight:500}
+  #about a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--rule)}
+  #about a:hover{color:var(--ink)}
   table{border-collapse:collapse;width:100%;font-size:0.78rem}
   th,td{text-align:right;padding:4px 0 4px 12px;white-space:nowrap}
   th:first-child,td:first-child{text-align:left;padding-left:0}
@@ -189,7 +220,7 @@
   tbody td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink-2)}
   tbody td:first-child{font-family:inherit;color:var(--ink)}
   tbody tr:last-child td{border-top:1px solid var(--rule);padding-top:7px}
-  #figures p{margin-top:11px;font-size:0.66rem;line-height:1.5;color:var(--ink-3)}
+  #about p{margin-top:11px;font-size:0.66rem;line-height:1.5;color:var(--ink-3)}
 
   #tooltip{
     position:fixed;z-index:5;pointer-events:none;opacity:0;
@@ -219,16 +250,16 @@
   @media (max-width:820px){
     body{overflow:auto;overflow-x:hidden}
     #stage{position:relative;inset:auto;width:100%;height:100svh;height:100dvh}
-    #meta,#figbtn{display:none}
-    #nets,#regions{position:absolute}
-    #nets{max-width:calc(100vw - 28px)}
-    #nets button{padding:3px 8px;font-size:0.68rem}
+    #nav{position:absolute}
+    #conts button{padding:3px 8px;font-size:0.68rem}
     #dock{
       display:flex;flex-direction:column;gap:12px;
       padding:12px 12px 20px;
     }
-    #legend,#controls,#figures{position:static;z-index:auto;max-width:none;min-width:0}
-    #figures{display:block}
+    #legend,#controls,#about{position:static;z-index:auto;max-width:none;min-width:0;max-height:none}
+    /* The about panel is a disclosure here too, not a wall of text under
+       the key: the phone is where the scroll below the map got long. */
+    #figbtn{position:static;z-index:auto;width:100%}
     #controls{flex-wrap:wrap;justify-content:space-between;padding:12px 14px}
     #profile{flex:1 1 140px;width:auto;min-width:0}
     #hint{
@@ -249,22 +280,19 @@
     <div id="clock"><span class="hrs">--</span><span class="mins">:--</span></div>
     <div id="running">&nbsp;</div>
   </header>
-  <nav id="nets" class="panel" aria-label="Network"></nav>
-  <div id="regions" class="panel" role="group" aria-label="Region" hidden></div>
-  <div id="meta"></div>
+  <nav id="nav" aria-label="Choose a map">
+    <div id="conts" class="panel" role="group" aria-label="Continent"></div>
+    <div id="picker" class="panel" hidden></div>
+  </nav>
   <div id="hint">Scroll for legend and controls<span>&#8964;</span></div>
 </div>
 
-<button id="figbtn" class="panel" aria-expanded="false" aria-controls="figures">Figures</button>
-
 <div id="dock">
   <div id="legend" class="panel">
-    <h2>Train category</h2>
+    <h2>In frame now</h2>
     <div id="legend-rows"></div>
     <footer id="legend-note"></footer>
-    <a id="vslink" href="vs.html">Rail against air traffic, same map &#8594;</a>
   </div>
-  <aside id="figures" class="panel" aria-label="Trains by category"></aside>
   <div id="controls" class="panel">
     <button id="play" aria-pressed="true">Pause</button>
     <div id="profile">
@@ -288,6 +316,8 @@
              min="0.1" max="1" step="0.05" value="0.5"></label>
     </div>
   </div>
+  <button id="figbtn" class="panel" aria-expanded="false" aria-controls="about">About this map</button>
+  <aside id="about" class="panel" aria-label="About this map"></aside>
 </div>
 
 <div id="tooltip"><span class="tn"></span><br><span class="th"></span></div>
@@ -367,13 +397,14 @@ const NETWORKS = {
          widens symmetrically, and centred on the data Lisboa lands
          fourteen pixels inside the legend and is dropped. */
       eu:      {label:"Europe",
-                /* lat1 was 58.85 until Sweden and Norway arrived, and the
-                   number that matters is not where Oslo is (59.91) but where
-                   the toolbars end: the two pill rows cover the top 90 px of
-                   the canvas, so a capital at the frame's edge is a capital
-                   behind a button. 63.60 puts Oslo at 120 px and Stockholm at
-                   139, clear of both, and costs 17% of scale everywhere else.
-                   Kiruna and Narvik stay out and have the Nordics preset. */
+                /* lat1 was 58.85 until Sweden and Norway arrived. 63.60 is
+                   where Trondheim and the Swedish middle stay on the front
+                   door -- Trondheim sits 31 px from the top edge -- at a cost
+                   of 17% of the scale everywhere else. It was also once the
+                   line that kept Oslo and Stockholm out from under two rows
+                   of pills; the toolbar is one 34 px row now and no longer
+                   constrains it. Kiruna and Narvik stay out: they have the
+                   Nordics framing and the Scandinavia map. */
                 core:{lon0:-11.10, lon1:23.30, lat0:36.00, lat1:63.60},
                 maxv:{lon0:-14.00, lon1:32.00, lat0:32.80, lat1:71.40},
                 clock:{lat:59.20, lon:24.60}},
@@ -475,8 +506,8 @@ const NETWORKS = {
       "the newest openly mirrored ones).",
     note: "Nineteen countries on one map and one clock, so a EuroCity from " +
       "Zürich to Hamburg or a railjet from Wien to Bratislava is one dot for " +
-      "its whole run instead of stopping at the border. Use the buttons " +
-      "under the network pills to frame one country without leaving the map.",
+      "its whole run instead of stopping at the border. The Europe menu, " +
+      "top left, reframes it on one country without leaving the map.",
     caveats: "Every source merged onto the one Wednesday they all cover, " +
       "10 June 2026: the German DELFI dataset, OVapi/NDOV with SNCB and " +
       "Luxembourg for the Benelux, the Swiss SKI+/SBB aggregate, " +
@@ -1622,6 +1653,40 @@ const dateStr = d => new Date(d.date+"T12:00:00Z").toLocaleDateString(
   "en-GB", {day:"numeric", month:"long", year:"numeric", timeZone:"UTC"});
 
 /* ====================================================================== */
+/* The picker. Twenty-one maps, sorted once into three continents; a
+   continent is the only thing on screen, and its menu is the only place
+   that lists maps. A network with more than one framing puts its frames in
+   here as well -- `frames:true` -- so the ten ways of framing Europe and
+   the five of framing the US are found the same way as everything else,
+   rather than living in a second row of pills that was on screen always
+   and empty on eighteen of the twenty-one maps. `first` renames a
+   network's own chip where the network's name would read oddly beside its
+   framings: on the combined map "Europe · Europe" is worse than
+   "Everything". */
+const CONTINENTS = [
+  {id:"europe", label:"Europe", home:"eu", groups:[
+    {head:"The continent, one clock",
+     items:[{net:"eu", frames:true, first:"Everything"}]},
+    {head:"One country in full",
+     items:["de", "fr", "ch", "nl", "uk", "ie", "iberia", "it", "at", "cz",
+            "pl", "sk", "hr", "dk", {net:"scan", frames:true}]},
+    {head:"City networks", items:["berlin", "london"]}]},
+  {id:"americas", label:"Americas", home:"us", groups:[
+    {head:"The country, one clock",
+     items:[{net:"us", frames:true, first:"Everything"}]},
+    /* Two chips in this menu are about New York and they are not the same
+       map: the framing above is the national dataset pointed at the city,
+       this is the one with the subway in it. */
+    {head:"City networks", items:[{net:"ny", first:"New York transit"}]}]},
+  {id:"asia", label:"Asia", home:"tokyo", groups:[
+    {head:"City networks", items:["tokyo"]}]},
+];
+const CONT_OF = {};
+for (const c of CONTINENTS)
+  for (const g of c.groups)
+    for (const it of g.items) CONT_OF[it.net || it] = c;
+
+/* ====================================================================== */
 /* Routing: #us, #us/chi, #tokyo ... Old single-page fragments still work. */
 function parseHash(){
   const h = (location.hash || "").replace("#","");
@@ -1688,6 +1753,9 @@ function setView(id){
   document.querySelectorAll(".spd button[data-mps]").forEach(o =>
     o.setAttribute("aria-pressed", String(+o.dataset.mps === minutesPerSecond)));
   updateZoomUI();
+  /* Every route into a new map goes through here -- a chip, a hash, the
+     back button -- so this is the one place the breadcrumb has to follow. */
+  renderConts();
 }
 
 function applyData(data, geo){
@@ -2064,19 +2132,33 @@ function placeClock(){
    goes under the frame instead of over it. */
 function placeKey(){
   const ROW = 14, PADX = 8, PADY = 6, DOT = 3;
+  /* Two keys for one map is one key too many. The HTML key carries live
+     counts and wins wherever it is actually over the canvas; this drawn one
+     is what is left when it is not -- below the fold on a phone, and in the
+     video export, which hides the panels and keeps only this. */
+  const lg = document.getElementById("legend");
+  const lb = lg ? lg.getBoundingClientRect() : null;
+  if (lb && lb.height > 0 && lb.bottom > 0 && lb.top < H && lb.left < W){
+    KEY_BOX = {x:0, y:0, w:0, h:0};
+    return;
+  }
   ctx.font = '500 10px "IBM Plex Mono",monospace';
   let textW = 0;
   for (const r of KEY_ROWS) textW = Math.max(textW, ctx.measureText(r).width);
   const boxW = PADX*2 + DOT*2 + 7 + textW, boxH = PADY*2 + ROW*KEY_ROWS.length;
-  /* Bottom-right of the window, lifted clear of whatever the play controls
-     occupy -- measured rather than guessed, because that panel changes
-     height with the day-profile strip. */
+  /* Bottom-right of the window, lifted clear of whatever is already down
+     there -- measured rather than guessed, because the controls change
+     height with the day-profile strip and on a phone they are not on the
+     map at all, where the scroll hint is instead. */
   const M = 14;
-  const ctl = document.getElementById("controls");
-  const cb = ctl ? ctl.getBoundingClientRect() : null;
-  /* offsetParent is null for a fixed panel, so measure the rectangle and
-     ask whether it has a height instead of whether it is laid out. */
-  const floor = cb && cb.height > 0 && cb.top > 0 && cb.top < H ? cb.top : H;
+  let floor = H;
+  for (const id of ["controls", "hint"]){
+    const el = document.getElementById(id);
+    const b = el ? el.getBoundingClientRect() : null;
+    /* offsetParent is null for a fixed panel, so measure the rectangle and
+       ask whether it has a height instead of whether it is laid out. */
+    if (b && b.height > 0 && b.top > 0 && b.top < floor) floor = b.top;
+  }
   let x = W - boxW - M;
   let y = floor - boxH - M;
   if (SY < H*0.55){ x = W/2 - boxW/2; y = OY + SY + 12; }
@@ -2100,7 +2182,7 @@ function placeLabels(){
      Lisboa outright; on a phone the panels scroll below the map, and a
      rect that does not overlap the canvas is simply dropped. */
   const taken = [CLOCK_BOX, KEY_BOX];
-  for (const id of ["legend", "controls"]){
+  for (const id of ["legend", "controls", "nav", "figbtn", "about"]){
     const el = document.getElementById(id);
     if (!el) continue;
     const b = el.getBoundingClientRect();
@@ -2480,7 +2562,7 @@ function draw(){
     c.drawImage(profBase, 0, 0);
   }
 
-  drawKey(hues, bgBot);
+  if (KEY_BOX.w) drawKey(hues, bgBot);
 
   /* city names, pre-placed with no overlaps */
   ctx.font = '400 11px "IBM Plex Sans",system-ui,sans-serif';
@@ -2585,59 +2667,30 @@ function buildChrome(){
       '<span class="nm">'+meta.label+'</span>'+
       '<span class="ct" id="lg-count-'+i+'">0</span></div>');
   });
-  const scopeNote = DATA.note
-    ? " " + DATA.note.split(" — ")[0].replace(/\.\s*$/,"") + "."
-    : "";
-  document.getElementById("legend-note").textContent =
-    "Count = " + NET.unit + " moving inside the frame at this minute. Dot size " +
-    "follows category. A ring opens where a service begins; the strip by the " +
-    "scrubber counts those starts across the day. " + NET.note + scopeNote +
-    " Data notes and known gaps: see the Figures panel.";
+  document.getElementById("legend-note").textContent = "";
 
-  document.getElementById("meta").innerHTML = NET.meta(DATA);
-
-  const fig = document.getElementById("figures");
+  /* The whole of the page's prose, in the order someone reading it would
+     want: what this is, then the numbers, then how to read the map, then
+     where it came from and what is missing from it. */
   const frows = CLASSES.map((k,i) =>
     "<tr><td>" + (CLASS_META[k]||{label:k}).label + "</td><td>" +
     (DATA.counts[k]||0) + "</td><td>" + PEAK[i] + "</td></tr>").join("");
   const total = CLASSES.reduce((a,k)=>a+(DATA.counts[k]||0), 0);
-  fig.innerHTML =
+  document.getElementById("about").innerHTML =
+    "<p class=\"lead\">" + NET.meta(DATA) + "</p>" +
     "<h2>" + NET.label + " by category</h2>" +
     "<table><thead><tr><th>Category</th><th>Trips</th><th>Peak</th></tr></thead><tbody>" +
     frows + "<tr><td>All categories</td><td>" + total + "</td><td>&mdash;</td></tr>" +
     "</tbody></table><p>Trips = distinct scheduled services on the day. Peak = " +
     "the most of that category moving at once." +
     (DATA.note ? " " + DATA.note : "") + " Source: " + DATA.source + ".</p>" +
-    (NET.caveats ? "<h2 style=\"margin-top:14px\">Data notes &amp; gaps</h2><p style=\"margin-top:4px\">" +
-      NET.caveats + "</p>" : "");
-
-  /* region row only where a network has more than one view */
-  const holder = document.getElementById("regions");
-  holder.innerHTML = "";
-  const views = Object.entries(NET.views);
-  holder.hidden = views.length < 2;
-  if (holder.hidden) document.body.removeAttribute("data-regions");
-  else document.body.setAttribute("data-regions", "");
-  /* The pill row wraps to two lines on a phone, so the region row cannot
-     sit at a fixed offset: park it under whatever height the pills took. */
-  if (!holder.hidden){
-    const nets = document.getElementById("nets");
-    holder.style.top = (nets.offsetTop + nets.offsetHeight + 4) + "px";
-  }
-  for (const [id, v] of views){
-    const b = document.createElement("button");
-    b.textContent = v.label;
-    b.setAttribute("aria-pressed", String(id === VIEWID));
-    b.addEventListener("click", () => {
-      if (id === VIEWID) return;
-      setView(id);
-      writeHash();
-      holder.querySelectorAll("button").forEach((o,i) =>
-        o.setAttribute("aria-pressed", String(views[i][0] === id)));
-      resize();
-    });
-    holder.appendChild(b);
-  }
+    "<h2>Reading the map</h2><p>The count beside each colour is " + NET.unit +
+    " moving inside the frame at this minute. Dot size follows category. A " +
+    "ring opens where a service begins; the strip behind the scrubber counts " +
+    "those starts across the day. Scroll or pinch to zoom, drag to pan. " +
+    NET.note + "</p>" +
+    (NET.caveats ? "<h2>Data notes &amp; gaps</h2><p>" + NET.caveats + "</p>" : "") +
+    "<p><a href=\"vs.html\">Rail against air traffic, same map &#8594;</a></p>";
 }
 
 function writeHash(){
@@ -2647,23 +2700,104 @@ function writeHash(){
 }
 
 /* ====================================================================== */
-/* Network switching                                                        */
-const netsEl = document.getElementById("nets");
-for (const [id, n] of Object.entries(NETWORKS)){
+/* Choosing a map                                                           */
+const navEl = document.getElementById("nav");
+const contsEl = document.getElementById("conts");
+const pickerEl = document.getElementById("picker");
+let openCont = null;
+
+for (const c of CONTINENTS){
   const b = document.createElement("button");
-  b.textContent = n.pill;
-  b.dataset.net = id;
-  b.setAttribute("aria-pressed", String(id === NETID));
-  b.addEventListener("click", () => switchNetwork(id));
-  netsEl.appendChild(b);
+  b.dataset.cont = c.id;
+  /* A disclosure, not a menu: the panel is a group of links to maps and
+     Tab walks it, so claiming menu semantics would promise arrow keys
+     that are not there. */
+  b.setAttribute("aria-controls", "picker");
+  b.setAttribute("aria-expanded", "false");
+  b.addEventListener("click", () =>
+    openCont === c.id ? closePicker() : openPicker(c.id));
+  contsEl.appendChild(b);
 }
+
+/* What the button says after its continent: nothing on that continent's
+   front door, the framing when the combined map is framed, the network
+   otherwise. The leaf of the breadcrumb, never the whole path -- three
+   buttons only stay three buttons if none of them grows a sentence. */
+function whereLabel(){
+  const c = CONT_OF[NETID], first = Object.keys(NET.views)[0];
+  if (c && NETID === c.home) return VIEWID === first ? "" : NET.views[VIEWID].label;
+  return NET.label + (VIEWID === first ? "" : " · " + NET.views[VIEWID].label);
+}
+
+function renderConts(){
+  const here = CONT_OF[NETID];
+  for (const b of contsEl.children){
+    const c = CONTINENTS.find(x => x.id === b.dataset.cont);
+    const where = here === c ? whereLabel() : "";
+    b.innerHTML = "<span>" + c.label + "</span>" +
+      (where ? '<span class="where">' + where + "</span>" : "") +
+      '<span class="caret">&#9662;</span>';
+    if (here === c) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  }
+}
+
+function closePicker(){
+  openCont = null;
+  pickerEl.hidden = true;
+  pickerEl.innerHTML = "";
+  for (const b of contsEl.children) b.setAttribute("aria-expanded", "false");
+}
+
+function openPicker(contId){
+  const c = CONTINENTS.find(x => x.id === contId);
+  pickerEl.innerHTML = "";
+  for (const g of c.groups){
+    const h = document.createElement("h3");
+    h.textContent = g.head;
+    const row = document.createElement("div");
+    row.className = "row";
+    for (const item of g.items){
+      const id = item.net || item, n = NETWORKS[id];
+      if (!n) continue;
+      const views = Object.keys(n.views);
+      row.appendChild(chip(id, views[0], item.first || n.label, false));
+      if (item.frames)
+        for (const v of views.slice(1))
+          row.appendChild(chip(id, v, n.views[v].label, true));
+    }
+    pickerEl.append(h, row);
+  }
+  openCont = contId;
+  pickerEl.hidden = false;
+  for (const b of contsEl.children)
+    b.setAttribute("aria-expanded", String(b.dataset.cont === contId));
+}
+
+function chip(net, view, label, frame){
+  const b = document.createElement("button");
+  b.textContent = label;
+  if (frame) b.className = "frame";
+  if (net === NETID && view === VIEWID) b.setAttribute("aria-current", "true");
+  b.addEventListener("click", () => {
+    closePicker();
+    if (net !== NETID) switchNetwork(net, view);
+    else if (view !== VIEWID){ setView(view); writeHash(); resize(); }
+  });
+  return b;
+}
+
+/* Anywhere else is a dismissal, the map included -- which is the point of
+   putting the maps behind a menu at all. */
+document.addEventListener("pointerdown", e => {
+  if (openCont && !navEl.contains(e.target)) closePicker();
+}, true);
+window.addEventListener("keydown", e => { if (e.key === "Escape") closePicker(); });
 
 async function switchNetwork(id, viewId){
   if (!NETWORKS[id]) return;
   if (id === NETID && DATA) return;
   NETID = id; NET = NETWORKS[id];
-  netsEl.querySelectorAll("button").forEach(b =>
-    b.setAttribute("aria-pressed", String(b.dataset.net === id)));
   setView(NET.views[viewId] ? viewId : Object.keys(NET.views)[0]);
   writeHash();
   const loading = document.getElementById("loading");
@@ -2725,6 +2859,18 @@ window.addEventListener("hashchange", () => {
 
 /* ====================================================================== */
 /* Input                                                                    */
+/* The about panel had a button and no handler: on a wide screen it could
+   not be opened at all, and on a phone it could not be closed. */
+{
+  const btn = document.getElementById("figbtn");
+  const panel = document.getElementById("about");
+  btn.addEventListener("click", () => {
+    const on = panel.getAttribute("data-open") !== "true";
+    panel.setAttribute("data-open", String(on));
+    btn.setAttribute("aria-expanded", String(on));
+  });
+}
+
 const playBtn = document.getElementById("play");
 playBtn.addEventListener("click", () => {
   playing = !playing;
@@ -2918,6 +3064,10 @@ window.railCam = {
   play(on){ playing = on; playBtn.setAttribute("aria-pressed", String(on));
             playBtn.textContent = on ? "Pause" : "Play"; },
   frame(){ draw(); },
+  /* The drawn key and the label placement are measured from the HTML
+     panels, so a film that hides them has to say so: otherwise the key
+     stays suppressed by a legend that is no longer on screen. */
+  relayout(){ resize(); },
 };
 
 new ResizeObserver(resize).observe(stage);

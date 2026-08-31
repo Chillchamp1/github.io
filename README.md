@@ -9,14 +9,15 @@ every hour, so the trains are the only bright thing on it.
 
 The landing map is the combined one — nineteen countries from Portugal to
 Slovakia and Sicily to the Arctic Circle on one Wednesday, where trains
-cross borders instead of stopping at them, with buttons to reframe it on any
+cross borders instead of stopping at them, and it can be reframed on any
 one region. The networks live in one
-app at `index.html`, switched by the pills in the top-left corner or by URL
+app at `index.html`, chosen from the continent buttons in the top-left
+corner or by URL
 fragment: `#eu`, `#de`, `#nl`, `#us` (plus `#us/ne`, `#us/chi`, `#us/bay`,
 `#us/nyc`), `#tokyo`, `#berlin`, `#ny`, `#fr`, `#ch`, `#pl`, `#dk`,
 `#iberia`, `#it`, `#uk`, `#cz`, `#at`, `#sk`, `#hr`, `#ie`, `#scan`,
 `#london`. Every network carries a "Data notes & gaps"
-section in its Figures panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
+section in its about panel — what is missing, what is weak, and why. The old per-country pages redirect there. Each dataset is
 fetched when its network is first opened, so the app needs http(s) — GitHub
 Pages, or `python3 -m http.server` locally; a bare file:// open cannot fetch.
 Every day starts at midnight, and a network that sleeps overnight — Tokyo,
@@ -63,10 +64,15 @@ is already dense, and two left the map permanently speckled. The strip behind
 the scrubber counts the same starts across the day, in one ink because the
 categorical hues stay reserved for the trains.
 
-A compact key — a swatch and one word per category — is drawn on the map
-itself, pinned to the bottom-right corner above the play controls. It costs
-the frame nothing and means a screen recording carries its own legend; the
-panel below the map keeps the full labels, the live counts and the note.
+A compact key — a swatch and one word per category — can be drawn on the map
+itself, pinned to the bottom-right corner above whatever else is down there.
+It costs the frame nothing and means a screen recording carries its own
+legend. It yields to the HTML key wherever that one is actually over the
+canvas, which is measured rather than assumed: on a wide screen the HTML key
+sits in the bottom-left with its live counts and the drawn one stays away,
+on a phone the HTML key is below the fold and the drawn one is what you see,
+and the video export hides the panels and so gets it too. Two keys on one
+map is one key too many.
 
 The words are the same on every map that has an equivalent: **high-speed,
 intercity, regional, night**. A high-speed train is a high-speed train
@@ -79,6 +85,54 @@ railways — which is why the key visibly changes when the city maps come up.
 The clock sits on the Baltic about 30 km off the Fischland-Darß coast, where
 the nearest station is far enough away that it never covers the network. Giving
 it open water rather than a reserved band hands the whole stage to the map.
+
+### Twenty-one maps behind three buttons
+
+The switcher used to be one pill per network. That was fine at four networks
+and unaffordable at twenty-one: a row of pills, a second row of framing
+buttons under it wherever a network had more than one frame, and the caption
+paragraph under that. Measured on the landing map, that stack reached **261
+px down a 1440×900 canvas** and **180 px into an 844 px phone screen** —
+where the pill row alone wrapped to three lines and the framings to three
+more. It cost that on every map, on a page where eighteen of the
+twenty-one networks had nothing to put in the framing row at all.
+
+Now the top-left is one row of three: **Europe**, **Americas**, **Asia**.
+Clicking one opens a menu of everything on that continent, grouped — the
+combined map and its ten framings, then each country's own fuller dataset,
+then the city networks — and the menu closes the moment you choose. The
+button of the continent you are on carries the map you are on after it, in
+brighter ink than the continent itself: you are looking at Germany, in
+Europe, not at a button called Europe. Framings are chips in the same flow,
+smaller and dimmer and prefixed with a middot, because a wrapping row puts
+"South" and "North" on the line below "Scandinavia" where nothing else says
+whose they are.
+
+A network's framings live in that menu rather than in a row of their own,
+which is what makes the chrome **48 px on a desktop and 45 on a phone, the
+same on all twenty-one maps**, against the 261 and 180 above.
+`CONTINENTS` in `index.html` is the whole configuration: a list of
+groups, each a list of network ids, with `frames:true` on the ones whose
+framings should be expanded and `first` to rename a network's own chip where
+its name would read oddly beside them ("Europe · Europe" is worse than
+"Everything").
+
+### One panel for all the prose
+
+The words used to be in four places: a caption over the map's top-left, a
+paragraph under the key explaining how to read it, a figures panel with the
+per-category table and the sources, and a "Data notes & gaps" section inside
+that. Three of them were on screen at all times and the fourth could not be
+opened at all on a desktop — the Figures button had never been given a click
+handler, so the panel was reachable only on a phone, where it was reachable
+only by being permanently open.
+
+All of it is now one **About this map** panel, closed by default on every
+screen size, in the order someone reading it would want: what this is, the
+category table with trips and peaks, how to read the map, then the sources
+and what is missing from them. The key keeps its swatches and its live
+counts and nothing else. What is left on the map is the map, the clock, the
+key, three continent buttons and the play controls.
 
 Hover a train for its line and destination. Space bar toggles playback.
 **The map zooms**: mouse wheel or double-click on desktop, two fingers on a
@@ -102,8 +156,8 @@ The window itself adapts to its container: whichever axis has room to spare is w
 towards the reach of the feed's international services. A phone in portrait
 gets Germany filling the screen rather than a small map marooned between two
 empty bands; a wide desktop gets the neighbours. On
-phones the map keeps a full screen to itself and the legend, figures and
-controls sit below the fold.
+phones the map keeps a full screen to itself and the key, the controls and
+the about button sit below the fold.
 
 Finding the night trains takes more than matching on "NJ". DELFI names most
 NightJet and EuroNight runs by their long-distance line number with an N
@@ -139,20 +193,21 @@ maps have always drawn, because at ninety-two thousand services a ring
 opens somewhere every few pixels and the map stops being about the trains.
 
 **One dataset, ten framings.** At the whole-continent frame a Danish local
-train is 23 pixels per degree of speck, so the buttons under the network
-pills reframe the same data without leaving the map that has all of it on
-it: `#eu/central`, `#eu/iberia`, `#eu/italy`, `#eu/poland`,
+train is 23 pixels per degree of speck, so the Europe menu reframes the same
+data without leaving the map that has all of it on it: `#eu/central`,
+`#eu/iberia`, `#eu/italy`, `#eu/poland`,
 `#eu/britain` (Britain and Ireland), `#eu/north` (Denmark), `#eu/alps`
 (Austria, Slovakia, Czechia and the eastern Alps), `#eu/adria` (Croatia)
 and `#eu/nordic`.
 
-**The default frame is set by the toolbar, not by the data.** Adding Sweden
-and Norway meant deciding where the top edge goes, and the number that
-matters is not Oslo's latitude (59.91) but the 90 px of pill rows that
-overlay the canvas: at the old `lat1` of 58.85 both Nordic capitals sat
-behind a button. `lat1` is now 63.60, which puts Oslo at 120 px and
-Stockholm at 139, and costs 17% of scale everywhere else. Kiruna, Narvik
-and Bodø stay out of the default view and have `#eu/nordic`.
+**Where the top edge goes.** Adding Sweden and Norway meant choosing between
+scale and reach. `lat1` is 63.60, which keeps Trondheim and the Swedish
+middle on the front door — Trondheim lands 31 px from the top edge — and
+costs 17% of scale everywhere else. It was also once the line that kept Oslo
+and Stockholm from sitting behind the two rows of pills that used to cover
+the top 90 px of the canvas; the toolbar is a single 34 px row now and no
+longer has an opinion. Kiruna, Narvik and Bodø stay out of the default view
+and have `#eu/nordic`.
 
 ### The shared date, and what it cost
 
